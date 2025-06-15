@@ -48,9 +48,9 @@ public class SummarizeSteps
         res.Value.Should().Be(expected);
     }
 
-    [Then(@"the operation should fail with reason ""(.*)""")]
+    [Then(@"the summarization should fail with reason ""(.*)""")]
     [Scope(Feature = "SummarizeMetricValues")]
-    public void ThenFailWith(string reason)
+    public void ThenSummarizationFailWith(string reason)
     {
         var res = (PipelineResult<double>)_ctx["sumResult"];
         res.IsSuccess.Should().BeFalse();

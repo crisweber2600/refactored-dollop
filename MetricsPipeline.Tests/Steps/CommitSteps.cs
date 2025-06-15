@@ -94,9 +94,9 @@ public class CommitSteps
         res.Error.Should().Be(reason);
     }
 
-    [Then(@"the operation should fail with reason ""(.*)""")]
+    [Then(@"the commit should fail with reason ""(.*)""")]
     [Scope(Feature = "CommitOrDiscardSummary")]
-    public void ThenOperationFailReason(string reason)
+    public void ThenCommitFailReason(string reason)
     {
         var res = (PipelineResult<Unit>)_ctx["commitResult"];
         res.Error.Should().Be(reason);
