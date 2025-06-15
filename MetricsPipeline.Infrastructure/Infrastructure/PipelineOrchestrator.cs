@@ -36,6 +36,7 @@ public class PipelineOrchestrator : IPipelineOrchestrator
         if (!last.IsSuccess) return PipelineResult<PipelineState>.Failure(last.Error!);
 
         var validation = _val.IsWithinThreshold(summ.Value!, last.Value!, threshold);
+        if (!validation.IsSuccess) return PipelineResult<PipelineState>.Failure(validation.Error!);
         var state = new PipelineState(source, fetch.Value!, summ.Value, last.Value, threshold, now);
 
         if (validation.Value!)
