@@ -6,8 +6,12 @@ using Microsoft.EntityFrameworkCore;
 public static class DependencyInjection
 {
     public static IServiceCollection AddMetricsPipeline(this IServiceCollection services, Action<DbContextOptionsBuilder> dbCfg)
+        => services.AddMetricsPipeline<SummaryDbContext>(dbCfg);
+
+    public static IServiceCollection AddMetricsPipeline<TContext>(this IServiceCollection services, Action<DbContextOptionsBuilder> dbCfg)
+        where TContext : SummaryDbContext
     {
-        services.AddDbContext<SummaryDbContext>(dbCfg);
+        services.AddDbContext<SummaryDbContext, TContext>(dbCfg);
         // Use a scoped lifetime for the in-memory gather service so that
         // the orchestrator and step definitions share the same instance
         // within a single scenario while avoiding cross-scenario state.
@@ -18,6 +22,7 @@ public static class DependencyInjection
         services.AddTransient<IDiscardHandler, LoggingDiscardHandler>();
         services.AddTransient<ISummaryRepository, EfSummaryRepository>();
         services.AddTransient<IPipelineOrchestrator, PipelineOrchestrator>();
+        services.AddHostedService<PipelineWorker>();
         return services;
     }
 }
