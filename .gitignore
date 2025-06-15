@@ -2,3 +2,4 @@
 **/obj/
 *.feature.cs
 *.binlog
+/.vs
