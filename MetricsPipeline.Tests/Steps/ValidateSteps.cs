@@ -15,6 +15,7 @@ public class ValidateSteps
     }
 
     [Given(@"the last committed summary value is (.*)")]
+    [Scope(Feature = "ValidateSummaryAgainstThreshold")]
     public void GivenLastCommitted(double last)
     {
         _ctx["last"] = last;

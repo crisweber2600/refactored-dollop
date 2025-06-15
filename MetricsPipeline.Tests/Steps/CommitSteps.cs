@@ -95,6 +95,7 @@ public class CommitSteps
     }
 
     [Then(@"the operation should fail with reason ""(.*)""")]
+    [Scope(Feature = "CommitOrDiscardSummary")]
     public void ThenOperationFailReason(string reason)
     {
         var res = (PipelineResult<Unit>)_ctx["commitResult"];
@@ -109,6 +110,7 @@ public class CommitSteps
     }
 
     [Then(@"the result should be (.*)")]
+    [Scope(Feature = "CommitOrDiscardSummary")]
     public void ThenResultShouldBe(string outcome)
     {
         var res = (PipelineResult<Unit>)_ctx["commitResult"];

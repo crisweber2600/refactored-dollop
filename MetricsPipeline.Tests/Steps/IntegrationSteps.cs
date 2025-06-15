@@ -28,6 +28,7 @@ public class IntegrationSteps
     }
 
     [Given(@"the last committed summary value is (.*)")]
+    [Scope(Feature = "FullPipelineExecution")]
     public void GivenLastCommitted(double val)
     {
         _db.Summaries.Add(new SummaryRecord { Source = _source, Value = val, Timestamp = DateTime.UtcNow.AddMinutes(-10) });
