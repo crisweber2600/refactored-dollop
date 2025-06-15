@@ -10,7 +10,9 @@ public class ReqnrollStartup
     public static IServiceCollection CreateServices()
     {
         var services = new ServiceCollection();
-        services.AddMetricsPipeline(o => o.UseInMemoryDatabase("summaries"));
+        // Use a unique in-memory database for each scenario to avoid
+        // cross-test interference when persisting summaries.
+        services.AddMetricsPipeline(o => o.UseInMemoryDatabase(Guid.NewGuid().ToString()));
         return services;
     }
 }
