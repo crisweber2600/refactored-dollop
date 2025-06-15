@@ -27,7 +27,7 @@ public class IntegrationSteps
         _threshold = t;
     }
 
-    [Given(@"the last committed summary value is (.*)")]
+    [Given(@"the previously committed summary value is (.*)")]
     [Scope(Feature = "FullPipelineExecution")]
     public void GivenLastCommitted(double val)
     {

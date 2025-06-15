@@ -3,7 +3,7 @@ Feature: FullPipelineExecution
 
   Background:
     Given the system is configured with a delta threshold of 5.0
-    And the last committed summary value is 45.0
+    And the previously committed summary value is 45.0
 
   Scenario: End-to-end success path with valid summary
     Given the API at "https://api.example.com/data" returns:
