@@ -35,11 +35,6 @@ public class CommitSteps
         _ctx["state"] = "valid";
     }
 
-    [Given(@"the summary is marked as invalid")]
-    public void GivenSummaryInvalid()
-    {
-        _ctx["state"] = "invalid";
-    }
 
     [Given(@"the database is temporarily unavailable")]
     public void GivenDbUnavailable()
@@ -113,7 +108,7 @@ public class CommitSteps
         res.IsSuccess.Should().BeFalse();
     }
 
-    [Then(@"the result should be (committed|discarded|error:unknown)")]
+    [Then(@"the result should be (.*)")]
     public void ThenResultShouldBe(string outcome)
     {
         var res = (PipelineResult<Unit>)_ctx["commitResult"];

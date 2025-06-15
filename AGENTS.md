@@ -1,0 +1,4 @@
+- Agents may run `dotnet` commands, including adding NuGet packages with `dotnet add package`.
+- Always run `dotnet test` and ensure tests pass after modifications.
+- Focus development efforts on implementing missing functionality and fixing tests.
+- If required information is missing, request clarification.

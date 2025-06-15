@@ -1,4 +1,5 @@
 using MetricsPipeline.Core;
+using MetricsPipeline.Infrastructure;
 using Reqnroll;
 using FluentAssertions;
 
@@ -17,7 +18,12 @@ public class GatherSteps
     [Given(@"the API endpoint ""(.*)"" is available")]
     public void GivenEndpointAvailable(string raw)
     {
-        _ctx["endpoint"] = new Uri(raw);
+        var uri = new Uri(raw);
+        _ctx["endpoint"] = uri;
+        if (_gather is InMemoryGatherService mem)
+        {
+            mem.RegisterEndpoint(uri, new[] {42.0, 43.1, 41.7});
+        }
     }
 
     [Given(@"the API endpoint responds after (\d+) seconds")]
@@ -53,8 +59,8 @@ public class GatherSteps
     [Given(@"the API endpoint (.*) returns content (.*)")]
     public void GivenEndpointReturnsContent(string endpoint, string content)
     {
-        _ctx["endpoint"] = new Uri(endpoint);
-        _ctx["contentType"] = content;
+        _ctx["endpoint"] = endpoint.Trim();
+        _ctx["contentType"] = content.Trim();
     }
 
     [When(@"the system attempts to parse the response")]
@@ -71,10 +77,13 @@ public class GatherSteps
         _ctx["parseResult"] = error is null ? PipelineResult<IReadOnlyList<double>>.Success(Array.Empty<double>()) : PipelineResult<IReadOnlyList<double>>.Failure(error);
     }
 
-    [Then(@"the system should raise a ""(.*)"" error")]
+    [Then("the system should raise a \"(.*)\" error")]
+    [Then("the system should raise a \"(.*)\"")]
     public void ThenSystemRaises(string error)
     {
-        var res = _ctx.ContainsKey("parseResult") ? (dynamic)_ctx["parseResult"] : (dynamic)_ctx["gatherResult"];
+        var res = _ctx.ContainsKey("parseResult")
+            ? (PipelineResult<IReadOnlyList<double>>)_ctx["parseResult"]
+            : (PipelineResult<IReadOnlyList<double>>)_ctx["gatherResult"];
         res.IsSuccess.Should().BeFalse();
         res.Error.Should().Be(error);
     }

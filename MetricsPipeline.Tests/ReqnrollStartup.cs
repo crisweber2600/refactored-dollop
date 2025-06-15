@@ -1,11 +1,16 @@
 using MetricsPipeline.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.EntityFrameworkCore;
+using Reqnroll;
+using Reqnroll.Microsoft.Extensions.DependencyInjection;
 
 public class ReqnrollStartup
 {
-    public void ConfigureServices(IServiceCollection services)
+    [ScenarioDependencies]
+    public static IServiceCollection CreateServices()
     {
+        var services = new ServiceCollection();
         services.AddMetricsPipeline(o => o.UseInMemoryDatabase("summaries"));
+        return services;
     }
 }
