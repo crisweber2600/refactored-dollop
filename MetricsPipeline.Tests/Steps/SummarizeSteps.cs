@@ -41,6 +41,7 @@ public class SummarizeSteps
     }
 
     [Then(@"the result should be ([0-9.]+)")]
+    [Scope(Feature = "SummarizeMetricValues")]
     public void ThenResultShouldBeDouble(double expected)
     {
         var res = (PipelineResult<double>)_ctx["sumResult"];
@@ -48,6 +49,7 @@ public class SummarizeSteps
     }
 
     [Then(@"the operation should fail with reason ""(.*)""")]
+    [Scope(Feature = "SummarizeMetricValues")]
     public void ThenFailWith(string reason)
     {
         var res = (PipelineResult<double>)_ctx["sumResult"];
