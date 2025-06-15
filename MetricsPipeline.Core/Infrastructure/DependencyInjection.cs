@@ -22,7 +22,6 @@ public static class DependencyInjection
         services.AddTransient<IDiscardHandler, LoggingDiscardHandler>();
         services.AddTransient<ISummaryRepository, EfSummaryRepository>();
         services.AddTransient<IPipelineOrchestrator, PipelineOrchestrator>();
-        services.AddHostedService<PipelineWorker>();
         return services;
     }
 }
