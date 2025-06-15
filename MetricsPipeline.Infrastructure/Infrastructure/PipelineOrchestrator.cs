@@ -50,12 +50,12 @@ public class PipelineOrchestrator : IPipelineOrchestrator
             var commitRes = await _commit.CommitAsync(summ.Value!, now, ct);
             return commitRes.IsSuccess
                 ? PipelineResult<PipelineState>.Success(state)
-                : PipelineResult<PipelineState>.Failure(commitRes.Error!);
+                : new PipelineResult<PipelineState>(state, false, commitRes.Error!);
         }
         else
         {
             await _discard.HandleDiscardAsync(summ.Value!, "Delta exceeds threshold", ct);
-            return PipelineResult<PipelineState>.Failure("ValidationFailed");
+            return new PipelineResult<PipelineState>(state, false, "ValidationFailed");
         }
     }
 }

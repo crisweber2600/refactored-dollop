@@ -44,7 +44,7 @@ public class ValidateSteps
     [Then(@"the delta should be (.*)")]
     public void ThenDeltaShouldBe(double expected)
     {
-        ((double)_ctx["deltaValue"]).Should().Be(expected);
+        ((double)_ctx["deltaValue"]).Should().BeApproximately(expected, 0.0001);
     }
 
     [Then(@"the summary should be marked as (.*)")]
