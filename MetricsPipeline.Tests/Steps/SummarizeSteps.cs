@@ -26,7 +26,7 @@ public class SummarizeSteps
         _ctx["metrics"] = new List<double>();
     }
 
-    [When(@"the system summarizes the values using \"(.*)\"")]
+    [When(@"the system summarizes the values using ""(.*)""")]
     public void WhenSystemSummarizes(string strategy)
     {
         var metrics = (List<double>)_ctx["metrics"];
@@ -34,20 +34,20 @@ public class SummarizeSteps
         _ctx["sumResult"] = res;
     }
 
-    [When(@"the system attempts to summarize using \"(.*)\"")]
+    [When(@"the system attempts to summarize using ""(.*)""")]
     public void WhenAttemptSummarize(string strategy)
     {
         WhenSystemSummarizes(strategy);
     }
 
-    [Then(@"the result should be (.*)")]
+    [Then(@"the result should be ([0-9.]+)")]
     public void ThenResultShouldBeDouble(double expected)
     {
         var res = (PipelineResult<double>)_ctx["sumResult"];
         res.Value.Should().Be(expected);
     }
 
-    [Then(@"the operation should fail with reason \"(.*)\"")]
+    [Then(@"the operation should fail with reason ""(.*)""")]
     public void ThenFailWith(string reason)
     {
         var res = (PipelineResult<double>)_ctx["sumResult"];

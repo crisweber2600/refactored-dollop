@@ -10,6 +10,9 @@ public class InMemoryGatherService : IGatherService
             [new Uri("https://api.example.com/empty")] = Array.Empty<double>()
         };
 
+    public void RegisterEndpoint(Uri uri, IReadOnlyList<double> values) => _dataMap[uri] = values;
+    public void RemoveEndpoint(Uri uri) { if (_dataMap.ContainsKey(uri)) _dataMap.Remove(uri); }
+
     public Task<PipelineResult<IReadOnlyList<double>>> FetchMetricsAsync(Uri source, CancellationToken ct = default)
     {
         if (!_dataMap.TryGetValue(source, out var set))

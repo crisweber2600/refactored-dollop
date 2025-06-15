@@ -8,12 +8,19 @@ public class CommitSteps
     private readonly ICommitService _commit;
     private readonly IDiscardHandler _discard;
     private readonly ScenarioContext _ctx;
+    private double _summary = 47.0;
 
     public CommitSteps(ICommitService commit, IDiscardHandler discard, ScenarioContext ctx)
     {
         _commit = commit;
         _discard = discard;
         _ctx = ctx;
+    }
+
+    [Given(@"the system has a summarized value of (.*)")]
+    public void GivenSystemHasValue(double val)
+    {
+        _summary = val;
     }
 
     [Given(@"the summary is marked as (.*)")]
@@ -44,7 +51,7 @@ public class CommitSteps
     [When(@"the system attempts to commit")]
     public async Task WhenSystemCommits()
     {
-        var summary = 47.0;
+        var summary = _summary;
         var now = DateTime.UtcNow;
         if (_ctx.ContainsKey("dbFail"))
         {
@@ -85,14 +92,14 @@ public class CommitSteps
         res.IsSuccess.Should().BeFalse();
     }
 
-    [Then(@"a warning should be logged with reason \"(.*)\"")]
+    [Then(@"a warning should be logged with reason ""(.*)""")]
     public void ThenWarningLogged(string reason)
     {
         var res = (PipelineResult<Unit>)_ctx["commitResult"];
         res.Error.Should().Be(reason);
     }
 
-    [Then(@"the operation should fail with reason \"(.*)\"")]
+    [Then(@"the operation should fail with reason ""(.*)""")]
     public void ThenOperationFailReason(string reason)
     {
         var res = (PipelineResult<Unit>)_ctx["commitResult"];
@@ -106,7 +113,7 @@ public class CommitSteps
         res.IsSuccess.Should().BeFalse();
     }
 
-    [Then(@"the result should be (.*)")]
+    [Then(@"the result should be (committed|discarded|error:unknown)")]
     public void ThenResultShouldBe(string outcome)
     {
         var res = (PipelineResult<Unit>)_ctx["commitResult"];
