@@ -49,7 +49,7 @@ public class PipelineOrchestrator : IPipelineOrchestrator
         else
         {
             await _discard.HandleDiscardAsync(summ.Value!, "Delta exceeds threshold", ct);
-            return PipelineResult<PipelineState>.Failure("Discarded");
+            return PipelineResult<PipelineState>.Failure("ValidationFailed");
         }
     }
 }
