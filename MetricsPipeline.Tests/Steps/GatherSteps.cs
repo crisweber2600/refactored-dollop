@@ -56,7 +56,7 @@ public class GatherSteps
         _ctx["gatherResult"] = result;
     }
 
-    [Given(@"the API endpoint (.*) returns content (.*)")]
+    [Given("the API endpoint \"(.*)\" returns content \"(.*)\"")]
     public void GivenEndpointReturnsContent(string endpoint, string content)
     {
         _ctx["endpoint"] = endpoint.Trim();
