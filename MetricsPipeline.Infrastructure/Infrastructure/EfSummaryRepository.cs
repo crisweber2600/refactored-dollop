@@ -19,11 +19,11 @@ public class EfSummaryRepository : ISummaryRepository
             : PipelineResult<double>.Success(rec.Value);
     }
 
-    public async Task<PipelineResult<Unit>> SaveAsync(double summary, DateTime ts, CancellationToken ct = default)
+    public async Task<PipelineResult<Unit>> SaveAsync(Uri source, double summary, DateTime ts, CancellationToken ct = default)
     {
         try
         {
-            _db.Summaries.Add(new SummaryRecord { Source = new Uri("https://api.example.com/data"), Value = summary, Timestamp = ts });
+            _db.Summaries.Add(new SummaryRecord { Source = source, Value = summary, Timestamp = ts });
             await _db.SaveChangesAsync(ct);
             return PipelineResult<Unit>.Success(new Unit());
         }
