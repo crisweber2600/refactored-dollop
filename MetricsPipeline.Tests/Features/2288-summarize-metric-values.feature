@@ -30,7 +30,7 @@ Feature: SummarizeMetricValues
   Scenario: Handle summarization of empty input set
     Given there are no metric values to summarize
     When the system attempts to summarize using "average"
-    Then the operation should fail with reason "NoData"
+    Then the summarization should fail with reason "NoData"
 
   Scenario Outline: Use different strategies for same data
     Given the input metric values are:

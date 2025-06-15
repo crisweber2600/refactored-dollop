@@ -20,7 +20,7 @@ Feature: CommitOrDiscardSummary
     Given the summary is valid
     And the database is temporarily unavailable
     When the system attempts to commit
-    Then the operation should fail with reason "DatabaseError"
+    Then the commit should fail with reason "DatabaseError"
     And the summary should remain uncommitted
 
   Scenario Outline: Outcome based on validation state
