@@ -50,6 +50,7 @@ public class CommitSteps
         var now = DateTime.UtcNow;
         if (_ctx.ContainsKey("dbFail"))
         {
+            await _discard.HandleDiscardAsync(summary, "DatabaseError");
             _ctx["commitResult"] = PipelineResult<Unit>.Failure("DatabaseError");
         }
         else if ((string)_ctx["state"] == "valid")
