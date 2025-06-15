@@ -7,7 +7,6 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="../MetricsPipeline.Core/MetricsPipeline.Core.csproj" />
-    <ProjectReference Include="../MetricsPipeline.Infrastructure/MetricsPipeline.Infrastructure.csproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
