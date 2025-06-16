@@ -11,11 +11,19 @@ public class ReqnrollStartup
     public static IServiceCollection CreateServices()
     {
         var services = new ServiceCollection();
-        // Use a unique in-memory database for each scenario to avoid
-        // cross-test interference when persisting summaries.
-        services.AddMetricsPipeline(o => o.UseInMemoryDatabase(Guid.NewGuid().ToString()));
+        var provider = Environment.GetEnvironmentVariable("DB_PROVIDER");
+
+        void ConfigureDb(DbContextOptionsBuilder o)
+        {
+            if (string.Equals(provider, "sqlite", StringComparison.OrdinalIgnoreCase))
+                o.UseSqlite($"Data Source={Guid.NewGuid()};Mode=Memory;Cache=Shared");
+            else
+                o.UseInMemoryDatabase(Guid.NewGuid().ToString());
+        }
+
+        services.AddMetricsPipeline(ConfigureDb);
         services.AddRepositoriesAndSagas<SummaryDbContext>(
-            o => o.UseInMemoryDatabase(Guid.NewGuid().ToString()),
+            ConfigureDb,
             cfg => cfg.UsingInMemory((context, c) => { }));
         return services;
     }
