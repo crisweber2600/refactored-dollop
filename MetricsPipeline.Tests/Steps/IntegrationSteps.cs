@@ -28,7 +28,7 @@ public class IntegrationSteps
         _threshold = t;
     }
 
-    [Given(@"the pipeline name is \"(.*)\"")]
+    [Given(@"the pipeline name is ""(.*)""")]
     public void GivenPipelineName(string name)
     {
         _pipeline = name;
@@ -42,7 +42,7 @@ public class IntegrationSteps
         _db.SaveChanges();
     }
 
-    [Given(@"pipeline \"(.*)\" has previously committed summary value (.*)")]
+    [Given(@"pipeline ""(.*)"" has previously committed summary value (.*)")]
     public void GivenNamedPipelineLastCommitted(string name, double val)
     {
         _pipeline = name;
@@ -77,7 +77,7 @@ public class IntegrationSteps
         _run = await _orchestrator.ExecuteAsync(_pipeline, _source, SummaryStrategy.Average, _threshold);
     }
 
-    [When(@"pipeline \"(.*)\" is executed")]
+    [When(@"pipeline ""(.*)"" is executed")]
     public async Task WhenNamedPipelineExecuted(string name)
     {
         _pipeline = name;

@@ -3,3 +3,5 @@
 *.feature.cs
 *.binlog
 /.vs
+*.sh
+**/TestResults/
