@@ -29,13 +29,13 @@ public class IntegrationSteps
         _threshold = t;
     }
 
-    [Given(@"the pipeline name is ""(.*)""")]
+    [Given("the pipeline name is \"(.*)\"")]
     public void GivenPipelineName(string name)
     {
         _pipeline = name;
     }
 
-    [Given(@"the gather method is \"(.*)\"")]
+    [Given("the gather method is \"(.*)\"")]
     public void GivenGatherMethod(string method)
     {
         _gatherMethod = method;
@@ -49,7 +49,7 @@ public class IntegrationSteps
         _db.SaveChanges();
     }
 
-    [Given(@"pipeline ""(.*)"" has previously committed summary value (.*)")]
+    [Given("pipeline \"(.*)\" has previously committed summary value (.*)")]
     public void GivenNamedPipelineLastCommitted(string name, double val)
     {
         _pipeline = name;
