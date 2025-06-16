@@ -99,7 +99,17 @@ When no prior summary exists the orchestrator now treats the run as valid regard
 
 `MetricsPipeline.Console` registers the pipeline services with a dependency injection container and runs `PipelineWorker`, a hosted service that executes the pipeline once at startup. The worker output demonstrates how each stage is called and whether the final summary is persisted or discarded.
 
-The worker can be customised by supplying an alternative gather method name when invoking the orchestrator. A single worker can host several pipelines targeting different data types so multiple gather methods may run side by side. Each pipeline has its own threshold and summarisation strategy, making it simple to plug the library into new domains without rewriting the worker service.
+The worker can be customised by supplying an alternative gather method name when invoking the orchestrator. A single worker can host several pipelines targeting different data types so multiple gather methods may run side by side. Each pipeline has its own threshold and summarisation strategy, making it simple to plug the library into new domains without rewriting the worker service. The method name is passed via the `gatherMethodName` parameter:
+
+```csharp
+await orchestrator.ExecuteAsync(
+    "cpu", source, SummaryStrategy.Average, 10.0, gatherMethodName: "CustomGatherAsync");
+```
+
+- The orchestrator verifies that the supplied method exists on the gather service.
+- Missing methods or incorrect return types cause an `InvalidGatherMethod` error.
+- The test suite now includes an *InvalidGatherMethodName* scenario exercising this path.
+- Execute `dotnet test` to run all scenarios including the new one.
 All HTTP calls use relative paths which combine with the discovered service base address, keeping configuration minimal.
 You can inspect `HttpMetricsClient.BaseAddress` at runtime to confirm which endpoint was resolved.
 
