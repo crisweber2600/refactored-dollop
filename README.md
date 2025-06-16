@@ -1,6 +1,6 @@
 # Metrics Pipeline Demo
 
-This project demonstrates a simple yet fully testable metrics processing pipeline written in **.NET 9**. The code is split across a core library, infrastructure layer and a console host used to showcase the pipeline in action. Behaviour driven tests cover the main scenarios and act as living documentation.
+This project demonstrates a simple yet fully testable metrics processing pipeline written in **.NET 9**. The code is split across a core library, infrastructure layer and a console host used to showcase the pipeline in action. Behaviour driven tests cover the main scenarios and act as living documentation. Components communicate through Aspire's built-in service discovery.
 
 ## Projects
 
@@ -10,7 +10,7 @@ This project demonstrates a simple yet fully testable metrics processing pipelin
 | **MetricsPipeline.Console** | Console application that wires the pipeline together and runs a sample workflow. |
 | **MetricsPipeline.Tests** | xUnit/Reqnroll test suite validating each stage and the end-to-end flow. |
 | **MetricsPipeline.DemoApi** | Minimal API returning sample metrics for the worker to consume. |
-| **MetricsPipeline.AppHost** | Dotnet Aspire host that runs the demo API and worker together. |
+| **MetricsPipeline.AppHost** | Dotnet Aspire host that runs the demo API and worker together using service discovery. |
 
 ## Getting Started
 
@@ -27,10 +27,14 @@ This project demonstrates a simple yet fully testable metrics processing pipelin
    ```bash
    dotnet run --project MetricsPipeline.AppHost
    ```
+   This host links the console project to the demo API using `.WithReference`,
+   so the API address is discovered automatically.
 4. **Run the sample console application alone**
    ```bash
    dotnet run --project MetricsPipeline.Console
    ```
+   The console reads a `services__demoapi__0` environment variable to discover
+   the Demo API address. Set this value when running outside the Aspire host.
 5. **Execute the tests**
    ```bash
    dotnet test
@@ -96,8 +100,11 @@ When no prior summary exists the orchestrator now treats the run as valid regard
 `MetricsPipeline.Console` registers the pipeline services with a dependency injection container and runs `PipelineWorker`, a hosted service that executes the pipeline once at startup. The worker output demonstrates how each stage is called and whether the final summary is persisted or discarded.
 
 The worker can be customised by supplying an alternative gather method name when invoking the orchestrator. A single worker can host several pipelines targeting different data types so multiple gather methods may run side by side. Each pipeline has its own threshold and summarisation strategy, making it simple to plug the library into new domains without rewriting the worker service.
+All HTTP calls use relative paths which combine with the discovered service base address, keeping configuration minimal.
+You can inspect `HttpMetricsClient.BaseAddress` at runtime to confirm which endpoint was resolved.
 
 The `MetricsPipeline.DemoApi` project exposes a minimal `/metrics` endpoint returning sample values. A reusable `HttpMetricsClient` abstracts `HttpClient` so the worker can fetch data from any URI using any HTTP method and deserialize it into a list of typed objects. When running under `MetricsPipeline.AppHost` the console worker automatically calls the demo API through this client.
+The client now exposes a `BaseAddress` property so tests can verify which service endpoint was discovered.
 
 ## Database Migrations
 
@@ -126,6 +133,8 @@ services.AddScoped<IGatherService, MyGatherService>();
 Additional summarisation strategies can be registered in the same way to tailor the pipeline to new data sources.
 
 You can also reuse `HttpMetricsClient` in your own services to call REST endpoints by specifying the HTTP method and target URI. The client returns a strongly typed list so it works with any DTO shape.
+When a `services__<name>__0` environment variable is present the client automatically sets its base address, enabling simple service discovery between projects.
+When hosting multiple projects together you can add them in `MetricsPipeline.AppHost` and call `.WithReference()` so Aspire configures the discovery variables for you.
 
 You can also extend the validation logic by implementing `IValidationService`. The default implementation can summarise any `List<T>` by projecting a property with a LINQ expression. Register your custom service before running the worker to apply domain-specific rules or alternative summarisation logic.
 
@@ -138,6 +147,7 @@ Behaviour driven tests under `MetricsPipeline.Tests` describe the expected behav
 - Validating summaries against previous results
 - Committing or discarding based on validation outcome
 - Repository and unit-of-work behaviour
+- Service discovery of the demo API via environment variables
 
 Running `dotnet test` executes all scenarios and the supporting unit tests. Database migrations only need to be applied when entity models change:
 
