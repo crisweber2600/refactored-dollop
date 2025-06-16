@@ -28,23 +28,22 @@ This project demonstrates a simple yet fully testable metrics processing pipelin
    dotnet run --project MetricsPipeline.AppHost
    ```
    This host links the console project to the demo API using `.WithReference`,
-   so the API address is discovered automatically. Aspire also populates
-   discovery variables like `services__demoapi__0` for each referenced service.
+   so the API address is discovered automatically.
 4. **Run the sample console application alone**
    ```bash
    dotnet run --project MetricsPipeline.Console
    ```
-   The console reads a `services__demoapi__0` environment variable to discover
-   the Demo API address. The `<name>` segment corresponds to the service name
-   supplied to `.WithReference`. Set this variable when running outside the
-   Aspire host.
+   When not using the Aspire host specify the Demo API address manually:
+   ```bash
+   services__demoapi__0="https://localhost:5050" dotnet run --project MetricsPipeline.Console
+   ```
+   The console reads the `services__demoapi__0` variable to discover the API.
 5. **Execute the tests**
    ```bash
    dotnet test
    ```
-
-   During testing you can check `HttpMetricsClient.BaseAddress` to confirm which
-   service endpoint was resolved.
+6. **Define custom pipelines**
+   Configure additional gather methods and thresholds as needed by your application.
 
 The console host fetches a small set of metric values from an in-memory source, summarises them and either commits the result or discards it depending on validation. Each stage writes its status to the console.
 
@@ -105,19 +104,20 @@ When no prior summary exists the orchestrator now treats the run as valid regard
 
 `MetricsPipeline.Console` registers the pipeline services with a dependency injection container and runs `PipelineWorker`, a hosted service that executes the pipeline once at startup. The worker output demonstrates how each stage is called and whether the final summary is persisted or discarded.
 
-The worker can be customised by supplying an alternative gather method name when invoking the orchestrator. A single worker can host several pipelines targeting different data types so multiple gather methods may run side by side. Each pipeline has its own threshold and summarisation strategy, making it simple to plug the library into new domains without rewriting the worker service. The method name is passed via the `gatherMethodName` parameter:
+### Running Multiple Pipelines
+
+The worker can be customised by supplying an alternative gather method name when invoking the orchestrator. A single worker can host several pipelines targeting different data types so multiple gather methods may run side by side. Each pipeline has its own threshold and summarisation strategy, making it simple to plug the library into new domains without rewriting the worker service. Below is an example showing how two pipelines can be executed sequentially using different gather methods:
 
 ```csharp
-await orchestrator.ExecuteAsync(
-    "cpu", source, SummaryStrategy.Average, 10.0, gatherMethodName: "CustomGatherAsync");
+var source = new Uri("/metrics", UriKind.Relative);
+await _orchestrator.ExecuteAsync("demo", source, SummaryStrategy.Average, 5.0, ct);
+await _orchestrator.ExecuteAsync("demo-extended", source, SummaryStrategy.Sum, 10.0, ct, nameof(HttpGatherService.CustomGatherAsync));
 ```
 
-- The orchestrator verifies that the supplied method exists on the gather service.
-- Missing methods or incorrect return types cause an `InvalidGatherMethod` error.
-- The test suite now includes an *InvalidGatherMethodName* scenario exercising this path.
-- Execute `dotnet test` to run all scenarios including the new one.
+Each call to `ExecuteAsync` selects the gather method by name allowing multiple pipelines to reuse the same orchestrator instance.
+
 All HTTP calls use relative paths which combine with the discovered service base address, keeping configuration minimal.
-You can inspect `HttpMetricsClient.BaseAddress` at runtime to confirm which endpoint was resolved.
+You can inspect `HttpMetricsClient.BaseAddress` at runtime to confirm which endpoint was resolved so you know exactly which service the worker discovered.
 
 The `MetricsPipeline.DemoApi` project exposes a minimal `/metrics` endpoint returning sample values. A reusable `HttpMetricsClient` abstracts `HttpClient` so the worker can fetch data from any URI using any HTTP method and deserialize it into a list of typed objects. When running under `MetricsPipeline.AppHost` the console worker automatically calls the demo API through this client.
 The client now exposes a `BaseAddress` property so tests can verify which service endpoint was discovered.
@@ -140,23 +140,26 @@ Seed data files can be placed in the `MetricsPipeline.Console/Seed` folder and w
 
 ## Extending the Pipeline
 
-The default services can be replaced with custom implementations through dependency injection. Implement the required interfaces and register the services before running the worker. For example, a custom gather method can be provided via:
+The default services can be replaced with custom implementations through dependency injection. Additional summarisation strategies and validation rules may be registered in the same way to tailor the pipeline to new data sources.
+
+### Registering a Custom IGatherService
+Implement your own `IGatherService` to pull metrics from alternative sources. Register the implementation before running the worker:
 
 ```csharp
 services.AddScoped<IGatherService, MyGatherService>();
 ```
 
-Additional summarisation strategies can be registered in the same way to tailor the pipeline to new data sources.
+You can also reuse `HttpMetricsClient` in your own services to call REST endpoints by specifying the HTTP method and target URI. The client returns a strongly typed list so it works with any DTO shape. When a `services__<name>__0` environment variable is present the client automatically sets its base address, enabling simple service discovery between projects. When hosting multiple projects together you can add them in `MetricsPipeline.AppHost` and call `.WithReference()` so Aspire configures the discovery variables for you.
 
-You can also reuse `HttpMetricsClient` in your own services to call REST endpoints by specifying the HTTP method and target URI. The client returns a strongly typed list so it works with any DTO shape.
-When an environment variable named `services__<name>__0` is present the client automatically assigns its base address. Aspire sets these variables whenever one project references another using `.WithReference()`.
-The `HttpMetricsClient.BaseAddress` property therefore reflects the resolved endpoint and can be inspected during tests or debugging.
+### Custom Validation Service
+Implement `IValidationService` to enforce domain-specific checks:
 
-You can also extend the validation logic by implementing `IValidationService`. The default implementation can summarise any `List<T>` by projecting a property with a LINQ expression. Register your custom service before running the worker to apply domain-specific rules or alternative summarisation logic.
+```csharp
+services.AddScoped<IValidationService, MyValidationService>();
+```
+Register your custom service before running the worker to apply alternative validation logic.
 
 ## Testing
-
-Behaviour driven tests under `MetricsPipeline.Tests` describe the expected behaviour in feature files and implement step definitions with Reqnroll. The test suite exercises:
 
 - Gathering metrics from various endpoints
 - Summarising values using different strategies
