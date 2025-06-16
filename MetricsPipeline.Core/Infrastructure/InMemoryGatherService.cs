@@ -32,4 +32,10 @@ public class InMemoryGatherService : IGatherService
             ? Task.FromResult(PipelineResult<IReadOnlyList<double>>.Failure("NoData"))
             : Task.FromResult(PipelineResult<IReadOnlyList<double>>.Success(set));
     }
+
+    /// <summary>
+    /// Alternate gather method used for testing dynamic selection.
+    /// </summary>
+    public Task<PipelineResult<IReadOnlyList<double>>> CustomGatherAsync(Uri source, CancellationToken ct = default)
+        => FetchMetricsAsync(source, ct);
 }

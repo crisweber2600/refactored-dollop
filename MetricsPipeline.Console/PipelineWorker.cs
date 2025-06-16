@@ -9,7 +9,9 @@ namespace MetricsPipeline.Infrastructure;
 public class PipelineWorker : BackgroundService
 {
     private readonly IPipelineOrchestrator _orchestrator;
+    private readonly IGatherService _gather;
     private readonly List<string> _executed = new();
+    private IReadOnlyList<double>? _gathered;
 
     /// <summary>
     /// Gets the messages returned by each executed stage.
@@ -20,28 +22,46 @@ public class PipelineWorker : BackgroundService
     /// Initializes a new instance of the worker.
     /// </summary>
     /// <param name="orchestrator">Pipeline orchestrator instance.</param>
-    public PipelineWorker(IPipelineOrchestrator orchestrator)
+    /// <param name="gather">Gather service used by the worker.</param>
+    public PipelineWorker(IPipelineOrchestrator orchestrator, IGatherService gather)
     {
         _orchestrator = orchestrator;
+        _gather = gather;
     }
 
     /// <inheritdoc />
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        RunStage(TaskStage.Gather);
-        RunStage(TaskStage.Validate);
+        await RunStageAsync(TaskStage.Gather, stoppingToken);
+        await RunStageAsync(TaskStage.Validate, stoppingToken);
 
         var source = new Uri("https://api.example.com/data");
         var result = await _orchestrator.ExecuteAsync("demo", source, SummaryStrategy.Average, 5.0, stoppingToken);
 
-        RunStage(result.IsSuccess ? TaskStage.Commit : TaskStage.Revert);
+        await RunStageAsync(result.IsSuccess ? TaskStage.Commit : TaskStage.Revert, stoppingToken);
     }
 
-    private void RunStage(TaskStage stage)
+    private async Task RunStageAsync(TaskStage stage, CancellationToken ct)
     {
-        var strategy = TaskStrategyFactory.Create(stage);
-        var outcome = strategy.Execute();
-        _executed.Add(outcome.Value!);
-        Console.WriteLine(outcome.Value);
+        switch (stage)
+        {
+            case TaskStage.Gather:
+                var gatherResult = await _gather.FetchMetricsAsync(new Uri("https://api.example.com/data"), ct);
+                _gathered = gatherResult.IsSuccess ? gatherResult.Value : Array.Empty<double>();
+                _executed.Add("Gathered");
+                Console.WriteLine("Gathered");
+                break;
+            case TaskStage.Validate:
+                var isValid = _gathered != null && _gathered.Count > 0;
+                _executed.Add(isValid ? "Validated" : "ValidationFailed");
+                Console.WriteLine(isValid ? "Validated" : "ValidationFailed");
+                break;
+            default:
+                var strategy = TaskStrategyFactory.Create(stage);
+                var outcome = strategy.Execute();
+                _executed.Add(outcome.Value!);
+                Console.WriteLine(outcome.Value);
+                break;
+        }
     }
 }

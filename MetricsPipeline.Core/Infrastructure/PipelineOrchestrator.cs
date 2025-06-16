@@ -33,11 +33,18 @@ public class PipelineOrchestrator : IPipelineOrchestrator
         Uri source,
         SummaryStrategy strategy,
         double threshold,
-        CancellationToken ct = default)
+        CancellationToken ct = default,
+        string gatherMethodName = nameof(IGatherService.FetchMetricsAsync))
     {
         var now = DateTime.UtcNow;
 
-        var fetch = await _gather.FetchMetricsAsync(source, ct);
+        var method = _gather.GetType().GetMethod(gatherMethodName);
+        if (method == null)
+            return PipelineResult<PipelineState>.Failure("InvalidGatherMethod");
+        var fetchTask = method.Invoke(_gather, new object[] { source, ct }) as Task<PipelineResult<IReadOnlyList<double>>>;
+        if (fetchTask == null)
+            return PipelineResult<PipelineState>.Failure("InvalidGatherMethod");
+        var fetch = await fetchTask;
         if (!fetch.IsSuccess) return PipelineResult<PipelineState>.Failure(fetch.Error!);
 
         var summ = _sum.Summarize(fetch.Value!, strategy);
