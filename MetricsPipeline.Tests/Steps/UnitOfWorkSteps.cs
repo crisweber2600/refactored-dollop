@@ -23,7 +23,7 @@ public class UnitOfWorkSteps
     [Given("a new summary record with value (.*)")]
     public void GivenNewRecord(double value)
     {
-        _record = new SummaryRecord { Value = value, Source = new("https://test"), Timestamp = DateTime.UtcNow };
+        _record = new SummaryRecord { PipelineName = "test", Value = value, Source = new("https://test"), Timestamp = DateTime.UtcNow };
     }
 
     [When("the record is added without saving")]

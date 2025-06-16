@@ -26,7 +26,7 @@ public class GenericRepositorySteps
     [Given("a summary record with value (.*) for generic repo")]
     public void GivenRecord(double value)
     {
-        _record = new SummaryRecord { Value = value, Source = new("https://test"), Timestamp = DateTime.UtcNow };
+        _record = new SummaryRecord { PipelineName = "test", Value = value, Source = new("https://test"), Timestamp = DateTime.UtcNow };
     }
 
     [When("the generic record is added and saved")]
@@ -55,8 +55,8 @@ public class GenericRepositorySteps
     {
         _ctx["records"] = new List<SummaryRecord>
         {
-            new SummaryRecord { Value = v1, Source = new("https://test"), Timestamp = DateTime.UtcNow },
-            new SummaryRecord { Value = v2, Source = new("https://test"), Timestamp = DateTime.UtcNow }
+            new SummaryRecord { PipelineName = "test", Value = v1, Source = new("https://test"), Timestamp = DateTime.UtcNow },
+            new SummaryRecord { PipelineName = "test", Value = v2, Source = new("https://test"), Timestamp = DateTime.UtcNow }
         };
     }
 

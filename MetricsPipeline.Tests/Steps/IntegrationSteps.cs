@@ -20,6 +20,7 @@ public class IntegrationSteps
 
     private Uri _source = new("https://api.example.com/data");
     private double _threshold = 5.0;
+    private string _pipeline = "default";
 
     [Given(@"the system is configured with a delta threshold of (.*)")]
     public void GivenThreshold(double t)
@@ -27,12 +28,25 @@ public class IntegrationSteps
         _threshold = t;
     }
 
+    [Given(@"the pipeline name is \"(.*)\"")]
+    public void GivenPipelineName(string name)
+    {
+        _pipeline = name;
+    }
+
     [Given(@"the previously committed summary value is (.*)")]
     [Scope(Feature = "FullPipelineExecution")]
     public void GivenLastCommitted(double val)
     {
-        _db.Summaries.Add(new SummaryRecord { Source = _source, Value = val, Timestamp = DateTime.UtcNow.AddMinutes(-10) });
+        _db.Summaries.Add(new SummaryRecord { PipelineName = _pipeline, Source = _source, Value = val, Timestamp = DateTime.UtcNow.AddMinutes(-10) });
         _db.SaveChanges();
+    }
+
+    [Given(@"pipeline \"(.*)\" has previously committed summary value (.*)")]
+    public void GivenNamedPipelineLastCommitted(string name, double val)
+    {
+        _pipeline = name;
+        GivenLastCommitted(val);
     }
 
     [Given(@"the API at ""(.*)"" returns:")]
@@ -60,7 +74,14 @@ public class IntegrationSteps
     [When(@"the pipeline is executed")]
     public async Task WhenPipelineExecuted()
     {
-        _run = await _orchestrator.ExecuteAsync(_source, SummaryStrategy.Average, _threshold);
+        _run = await _orchestrator.ExecuteAsync(_pipeline, _source, SummaryStrategy.Average, _threshold);
+    }
+
+    [When(@"pipeline \"(.*)\" is executed")]
+    public async Task WhenNamedPipelineExecuted(string name)
+    {
+        _pipeline = name;
+        await WhenPipelineExecuted();
     }
 
     [Then(@"the summary should be (.*)")]
