@@ -46,6 +46,18 @@ namespace MetricsPipeline.Core
         /// <param name="maxDelta">Allowed difference between values.</param>
         /// <returns>True when the delta is within range.</returns>
         PipelineResult<bool> IsWithinThreshold(double current, double previous, double maxDelta);
+
+        /// <summary>
+        /// Calculates a summary from a list of items and validates the delta.
+        /// </summary>
+        /// <typeparam name="T">Item type.</typeparam>
+        /// <param name="items">Collection of items.</param>
+        /// <param name="selector">Expression selecting the value to summarise.</param>
+        /// <param name="strategy">Summarisation strategy.</param>
+        /// <param name="previous">Last committed summary value.</param>
+        /// <param name="maxDelta">Allowed difference between values.</param>
+        /// <returns>True when the calculated summary is within range.</returns>
+        PipelineResult<bool> IsWithinThreshold<T>(IReadOnlyList<T> items, Func<T, double> selector, SummaryStrategy strategy, double previous, double maxDelta);
     }
 
     /// <summary>

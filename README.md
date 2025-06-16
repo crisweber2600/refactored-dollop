@@ -16,11 +16,11 @@ This project demonstrates a simple yet fully testable metrics processing pipelin
    ```bash
    dotnet build
    ```
-2. **Apply the latest database migrations**
+2. **Apply migrations if new entities have been added**
    ```bash
-   dotnet ef database update --project MetricsPipeline.Core --startup-project MetricsPipeline.Console
+   dotnet ef migrations add <name> --project MetricsPipeline.Core
    ```
-   The design-time context now uses SQLite so migrations work on any platform.
+   Updating the database can then be performed manually when required.
 3. **Run the sample console application**
    ```bash
    dotnet run --project MetricsPipeline.Console
@@ -89,7 +89,7 @@ When no prior summary exists the orchestrator now treats the run as valid regard
 
 `MetricsPipeline.Console` registers the pipeline services with a dependency injection container and runs `PipelineWorker`, a hosted service that executes the pipeline once at startup. The worker output demonstrates how each stage is called and whether the final summary is persisted or discarded.
 
-The worker can be customised by supplying an alternative gather method name when invoking the orchestrator. This allows integration tests to swap in specialised data sources with a single step.
+The worker can be customised by supplying an alternative gather method name when invoking the orchestrator. A single worker can host several pipelines targeting different data types so multiple gather methods may run side by side. Each pipeline has its own threshold and summarisation strategy, making it simple to plug the library into new domains without rewriting the worker service.
 
 ## Database Migrations
 
@@ -103,8 +103,8 @@ Run migrations whenever the models change:
 
 ```bash
 dotnet ef migrations add <name> --project MetricsPipeline.Core
-dotnet ef database update --project MetricsPipeline.Core
 ```
+The database should be updated manually only when required rather than as part of every test run.
 Seed data files can be placed in the `MetricsPipeline.Console/Seed` folder and will be imported on startup if they do not already exist in the database.
 
 ## Extending the Pipeline
@@ -117,7 +117,7 @@ services.AddScoped<IGatherService, MyGatherService>();
 
 Additional summarisation strategies can be registered in the same way to tailor the pipeline to new data sources.
 
-You can also extend the validation logic by implementing `IValidationService`. Register your custom service before running the worker to apply domain-specific rules.
+You can also extend the validation logic by implementing `IValidationService`. The default implementation can summarise any `List<T>` by projecting a property with a LINQ expression. Register your custom service before running the worker to apply domain-specific rules or alternative summarisation logic.
 
 ## Testing
 
@@ -129,11 +129,9 @@ Behaviour driven tests under `MetricsPipeline.Tests` describe the expected behav
 - Committing or discarding based on validation outcome
 - Repository and unit-of-work behaviour
 
-Running `dotnet test` executes all scenarios and the supporting unit tests.
-Run the database migrations before testing to ensure the schema is in sync:
+Running `dotnet test` executes all scenarios and the supporting unit tests. Database migrations only need to be applied when entity models change:
 
 ```bash
-dotnet ef database update --project MetricsPipeline.Core
 dotnet test --collect:"XPlat Code Coverage"
 ```
 
