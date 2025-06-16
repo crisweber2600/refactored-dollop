@@ -15,6 +15,7 @@ public class GenericRepositorySteps
     private readonly ScenarioContext _ctx;
     private SummaryRecord? _record;
     private IReadOnlyList<SummaryRecord>? _results;
+    private SummaryRecord? _retrieved;
 
     public GenericRepositorySteps(IGenericRepository<SummaryRecord> repo, IUnitOfWork uow, ScenarioContext ctx)
     {
@@ -73,6 +74,18 @@ public class GenericRepositorySteps
     {
         var spec = new ValueGreaterThanSpec(value);
         _results = await _repo.SearchAsync(spec);
+    }
+
+    [When("the generic record is retrieved by id")]
+    public async Task WhenRetrievedById()
+    {
+        _retrieved = await _repo.GetByIdAsync(_record!.Id);
+    }
+
+    [Then("the retrieved generic record value should be (.*)")]
+    public void ThenRetrievedValue(double value)
+    {
+        _retrieved!.Value.Should().Be(value);
     }
 
     [Then("the search result count should be (\\d+)")]

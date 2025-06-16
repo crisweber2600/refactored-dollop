@@ -13,3 +13,9 @@ Feature: GenericRepository
     When the records are added and saved to generic repo
     And searching for records with value greater than 10
     Then the search result count should be 1
+
+  Scenario: Retrieve record by id
+    Given a summary record with value 7 for generic repo
+    When the generic record is added and saved
+    And the generic record is retrieved by id
+    Then the retrieved generic record value should be 7
