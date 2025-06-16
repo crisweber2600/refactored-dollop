@@ -9,6 +9,7 @@ public class EfGenericRepository<TEntity> : IGenericRepository<TEntity>
     protected readonly DbContext _context;
     protected readonly DbSet<TEntity> _set;
     private readonly bool _allowHardDelete;
+    public bool IgnoreSoftDeleteFilter { get; set; }
 
     public EfGenericRepository(DbContext context, bool allowHardDelete = false)
     {
@@ -64,7 +65,9 @@ public class EfGenericRepository<TEntity> : IGenericRepository<TEntity>
 
     public async Task<IReadOnlyList<TEntity>> GetAllAsync(params string[] includeStrings)
     {
-        IQueryable<TEntity> query = _set.Where(e => !e.IsDeleted);
+        IQueryable<TEntity> query = IgnoreSoftDeleteFilter
+            ? _set.IgnoreQueryFilters()
+            : _set;
         foreach (var include in includeStrings)
             query = query.Include(include);
         return await query.ToListAsync();
@@ -72,7 +75,10 @@ public class EfGenericRepository<TEntity> : IGenericRepository<TEntity>
 
     public async Task<TEntity?> GetByIdAsync(int id, params string[] includeStrings)
     {
-        IQueryable<TEntity> query = _set.Where(e => e.Id == id && !e.IsDeleted);
+        IQueryable<TEntity> query = IgnoreSoftDeleteFilter
+            ? _set.IgnoreQueryFilters()
+            : _set;
+        query = query.Where(e => e.Id == id);
         foreach (var include in includeStrings)
             query = query.Include(include);
         return await query.FirstOrDefaultAsync();
@@ -80,7 +86,7 @@ public class EfGenericRepository<TEntity> : IGenericRepository<TEntity>
 
     public async Task<int> GetCountAsync(ISpecification<TEntity>? specification = null)
     {
-        var query = _set.AsQueryable().Where(e => !e.IsDeleted);
+        var query = IgnoreSoftDeleteFilter ? _set.IgnoreQueryFilters() : _set.AsQueryable();
         if (specification?.Criteria != null)
             query = query.Where(specification.Criteria);
         return await query.CountAsync();
@@ -88,7 +94,7 @@ public class EfGenericRepository<TEntity> : IGenericRepository<TEntity>
 
     public async Task<IReadOnlyList<TEntity>> SearchAsync(ISpecification<TEntity> specification)
     {
-        var query = _set.AsQueryable().Where(e => !e.IsDeleted);
+        var query = IgnoreSoftDeleteFilter ? _set.IgnoreQueryFilters() : _set.AsQueryable();
         if (specification.Criteria != null)
             query = query.Where(specification.Criteria);
         return await query.ToListAsync();
