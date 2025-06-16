@@ -30,7 +30,9 @@ public class SummarizeSteps
     public void WhenSystemSummarizes(string strategy)
     {
         var metrics = (List<double>)_ctx["metrics"];
-        var res = _sum.Summarize(metrics, Enum.Parse<SummaryStrategy>(strategy, true));
+        if (!Enum.TryParse<SummaryStrategy>(strategy, true, out var strat))
+            strat = (SummaryStrategy)(-1);
+        var res = _sum.Summarize(metrics, strat);
         _ctx["sumResult"] = res;
     }
 
@@ -55,5 +57,12 @@ public class SummarizeSteps
         var res = (PipelineResult<double>)_ctx["sumResult"];
         res.IsSuccess.Should().BeFalse();
         res.Error.Should().Be(reason);
+    }
+
+    [Then(@"the summarization should fail with reason ""(.*)""")]
+    [Scope(Feature = "InvalidSummarizationStrategy")]
+    public void ThenSummarizationFailInvalid(string reason)
+    {
+        ThenSummarizationFailWith(reason);
     }
 }
