@@ -31,7 +31,7 @@ public class CommitSteps
         _ctx["state"] = state;
     }
 
-    [Given(@"committing for pipeline \"(.*)\"")]
+    [Given(@"committing for pipeline ""(.*)""")]
     public void GivenPipeline(string pipeline)
     {
         _pipeline = pipeline;
