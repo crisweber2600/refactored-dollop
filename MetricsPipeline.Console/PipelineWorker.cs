@@ -25,7 +25,7 @@ public class PipelineWorker : BackgroundService
         RunStage(TaskStage.Validate);
 
         var source = new Uri("https://api.example.com/data");
-        var result = await _orchestrator.ExecuteAsync(source, SummaryStrategy.Average, 5.0, stoppingToken);
+        var result = await _orchestrator.ExecuteAsync("demo", source, SummaryStrategy.Average, 5.0, stoppingToken);
 
         RunStage(result.IsSuccess ? TaskStage.Commit : TaskStage.Revert);
     }

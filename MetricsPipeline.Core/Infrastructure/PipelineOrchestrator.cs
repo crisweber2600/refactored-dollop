@@ -22,7 +22,11 @@ public class PipelineOrchestrator : IPipelineOrchestrator
     }
 
     public async Task<PipelineResult<PipelineState>> ExecuteAsync(
-        Uri source, SummaryStrategy strategy, double threshold, CancellationToken ct = default)
+        string pipelineName,
+        Uri source,
+        SummaryStrategy strategy,
+        double threshold,
+        CancellationToken ct = default)
     {
         var now = DateTime.UtcNow;
 
@@ -32,7 +36,7 @@ public class PipelineOrchestrator : IPipelineOrchestrator
         var summ = _sum.Summarize(fetch.Value!, strategy);
         if (!summ.IsSuccess) return PipelineResult<PipelineState>.Failure(summ.Error!);
 
-        var last = await _repo.GetLastCommittedAsync(source, ct);
+        var last = await _repo.GetLastCommittedAsync(pipelineName, ct);
         if (!last.IsSuccess)
         {
             if (last.Error == "NoPriorSummary")
@@ -43,11 +47,11 @@ public class PipelineOrchestrator : IPipelineOrchestrator
 
         var validation = _val.IsWithinThreshold(summ.Value!, last.Value!, threshold);
         if (!validation.IsSuccess) return PipelineResult<PipelineState>.Failure(validation.Error!);
-        var state = new PipelineState(source, fetch.Value!, summ.Value, last.Value, threshold, now);
+        var state = new PipelineState(pipelineName, source, fetch.Value!, summ.Value, last.Value, threshold, now);
 
         if (validation.Value!)
         {
-            var commitRes = await _commit.CommitAsync(summ.Value!, now, ct);
+            var commitRes = await _commit.CommitAsync(pipelineName, source, summ.Value!, now, ct);
             return commitRes.IsSuccess
                 ? PipelineResult<PipelineState>.Success(state)
                 : new PipelineResult<PipelineState>(state, false, commitRes.Error!);
