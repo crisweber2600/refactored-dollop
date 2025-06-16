@@ -15,11 +15,11 @@ public class EfGenericRepository<TEntity> : IGenericRepository<TEntity>
         _set = context.Set<TEntity>();
     }
 
-    public async Task AddAsync(TEntity entity, CancellationToken ct = default)
-        => await _set.AddAsync(entity, ct);
+    public async Task AddAsync(TEntity entity)
+        => await _set.AddAsync(entity);
 
-    public async Task AddRangeAsync(IEnumerable<TEntity> entities, CancellationToken ct = default)
-        => await _set.AddRangeAsync(entities, ct);
+    public async Task AddRangeAsync(IEnumerable<TEntity> entities)
+        => await _set.AddRangeAsync(entities);
 
     public void Delete(TEntity entity)
     {
@@ -36,26 +36,36 @@ public class EfGenericRepository<TEntity> : IGenericRepository<TEntity>
         _set.UpdateRange(entities);
     }
 
-    public async Task<IReadOnlyList<TEntity>> GetAllAsync(CancellationToken ct = default)
-        => await _set.Where(e => !e.IsDeleted).ToListAsync(ct);
+    public async Task<IReadOnlyList<TEntity>> GetAllAsync(params string[] includeStrings)
+    {
+        IQueryable<TEntity> query = _set.Where(e => !e.IsDeleted);
+        foreach (var include in includeStrings)
+            query = query.Include(include);
+        return await query.ToListAsync();
+    }
 
-    public async Task<TEntity?> GetByIdAsync(int id, CancellationToken ct = default)
-        => await _set.FirstOrDefaultAsync(e => e.Id == id && !e.IsDeleted, ct);
+    public async Task<TEntity?> GetByIdAsync(int id, params string[] includeStrings)
+    {
+        IQueryable<TEntity> query = _set.Where(e => e.Id == id && !e.IsDeleted);
+        foreach (var include in includeStrings)
+            query = query.Include(include);
+        return await query.FirstOrDefaultAsync();
+    }
 
-    public async Task<int> GetCountAsync(ISpecification<TEntity>? specification = null, CancellationToken ct = default)
+    public async Task<int> GetCountAsync(ISpecification<TEntity>? specification = null)
     {
         var query = _set.AsQueryable().Where(e => !e.IsDeleted);
         if (specification?.Criteria != null)
             query = query.Where(specification.Criteria);
-        return await query.CountAsync(ct);
+        return await query.CountAsync();
     }
 
-    public async Task<IReadOnlyList<TEntity>> SearchAsync(ISpecification<TEntity> specification, CancellationToken ct = default)
+    public async Task<IReadOnlyList<TEntity>> SearchAsync(ISpecification<TEntity> specification)
     {
         var query = _set.AsQueryable().Where(e => !e.IsDeleted);
         if (specification.Criteria != null)
             query = query.Where(specification.Criteria);
-        return await query.ToListAsync(ct);
+        return await query.ToListAsync();
     }
 
     public void Update(TEntity entity)
