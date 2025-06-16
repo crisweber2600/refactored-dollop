@@ -8,6 +8,7 @@
   <ItemGroup>
     <ProjectReference Include="../MetricsPipeline.Core/MetricsPipeline.Core.csproj" />
     <ProjectReference Include="../MetricsPipeline.Console/MetricsPipeline.Console.csproj" />
+    <ProjectReference Include="../MetricsPipeline.DemoApi/MetricsPipeline.DemoApi.csproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="coverlet.collector" Version="6.0.4">
@@ -26,6 +27,7 @@
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="9.0.0" />
     <PackageReference Include="MassTransit" Version="8.0.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="9.0.0" />
   </ItemGroup>
   <ItemGroup>
     <Using Include="Xunit" />

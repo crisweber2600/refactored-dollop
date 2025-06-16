@@ -35,7 +35,7 @@ public class PipelineWorker : BackgroundService
         await RunStageAsync(TaskStage.Gather, stoppingToken);
         await RunStageAsync(TaskStage.Validate, stoppingToken);
 
-        var source = new Uri("https://api.example.com/data");
+        var source = new Uri("http://localhost:5000/metrics");
         var result = await _orchestrator.ExecuteAsync("demo", source, SummaryStrategy.Average, 5.0, stoppingToken);
 
         await RunStageAsync(result.IsSuccess ? TaskStage.Commit : TaskStage.Revert, stoppingToken);
@@ -46,7 +46,7 @@ public class PipelineWorker : BackgroundService
         switch (stage)
         {
             case TaskStage.Gather:
-                var gatherResult = await _gather.FetchMetricsAsync(new Uri("https://api.example.com/data"), ct);
+                var gatherResult = await _gather.FetchMetricsAsync(new Uri("http://localhost:5000/metrics"), ct);
                 _gathered = gatherResult.IsSuccess ? gatherResult.Value : Array.Empty<double>();
                 _executed.Add("Gathered");
                 Console.WriteLine("Gathered");
