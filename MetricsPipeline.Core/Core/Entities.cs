@@ -7,7 +7,9 @@ public interface IBaseEntity
     int Id { get; set; }
 }
 
-public interface IRootEntity { }
+public interface IEntity { }
+
+public interface IRootEntity : IEntity { }
 
 public interface ISoftDelete
 {
