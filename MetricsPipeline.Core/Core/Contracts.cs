@@ -123,6 +123,7 @@ namespace MetricsPipeline.Core
             Uri source,
             SummaryStrategy strategy,
             double threshold,
-            CancellationToken ct = default);
+            CancellationToken ct = default,
+            string gatherMethodName = nameof(IGatherService.FetchMetricsAsync));
     }
 }

@@ -15,7 +15,7 @@ internal class FakeOrchestrator : IPipelineOrchestrator
     private readonly bool _success;
     public FakeOrchestrator(bool success) { _success = success; }
 
-    public Task<PipelineResult<PipelineState>> ExecuteAsync(string name, Uri source, SummaryStrategy strategy, double threshold, CancellationToken ct = default)
+    public Task<PipelineResult<PipelineState>> ExecuteAsync(string name, Uri source, SummaryStrategy strategy, double threshold, CancellationToken ct = default, string gatherMethodName = "FetchMetricsAsync")
     {
         if (_success)
         {
@@ -27,9 +27,16 @@ internal class FakeOrchestrator : IPipelineOrchestrator
 }
 
 // Exposes the protected ExecuteAsync method for testing
+internal class FakeGatherService : IGatherService
+{
+    public Task<PipelineResult<IReadOnlyList<double>>> FetchMetricsAsync(Uri source, CancellationToken ct = default)
+        => Task.FromResult(PipelineResult<IReadOnlyList<double>>.Success(new List<double>{1.0,2.0}));
+}
+
 internal class TestWorker : PipelineWorker
 {
-    public TestWorker(IPipelineOrchestrator orchestrator) : base(orchestrator) { }
+    public TestWorker(IPipelineOrchestrator orchestrator)
+        : base(orchestrator, new FakeGatherService()) { }
     public Task RunAsync() => base.ExecuteAsync(CancellationToken.None);
 }
 

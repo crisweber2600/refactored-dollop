@@ -21,6 +21,7 @@ public class IntegrationSteps
     private Uri _source = new("https://api.example.com/data");
     private double _threshold = 5.0;
     private string _pipeline = "default";
+    private string _gatherMethod = "FetchMetricsAsync";
 
     [Given(@"the system is configured with a delta threshold of (.*)")]
     public void GivenThreshold(double t)
@@ -32,6 +33,12 @@ public class IntegrationSteps
     public void GivenPipelineName(string name)
     {
         _pipeline = name;
+    }
+
+    [Given(@"the gather method is \"(.*)\"")]
+    public void GivenGatherMethod(string method)
+    {
+        _gatherMethod = method;
     }
 
     [Given(@"the previously committed summary value is (.*)")]
@@ -74,7 +81,7 @@ public class IntegrationSteps
     [When(@"the pipeline is executed")]
     public async Task WhenPipelineExecuted()
     {
-        _run = await _orchestrator.ExecuteAsync(_pipeline, _source, SummaryStrategy.Average, _threshold);
+        _run = await _orchestrator.ExecuteAsync(_pipeline, _source, SummaryStrategy.Average, _threshold, default, _gatherMethod);
     }
 
     [When(@"pipeline ""(.*)"" is executed")]
