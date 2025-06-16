@@ -9,6 +9,8 @@ public class CommitSteps
     private readonly IDiscardHandler _discard;
     private readonly ScenarioContext _ctx;
     private double _summary = 47.0;
+    private string _pipeline = "default";
+    private readonly Uri _source = new("https://api.example.com/data");
 
     public CommitSteps(ICommitService commit, IDiscardHandler discard, ScenarioContext ctx)
     {
@@ -27,6 +29,12 @@ public class CommitSteps
     public void GivenSummaryState(string state)
     {
         _ctx["state"] = state;
+    }
+
+    [Given(@"committing for pipeline \"(.*)\"")]
+    public void GivenPipeline(string pipeline)
+    {
+        _pipeline = pipeline;
     }
 
     [Given(@"the summary is valid")]
@@ -55,7 +63,7 @@ public class CommitSteps
         }
         else if ((string)_ctx["state"] == "valid")
         {
-            _ctx["commitResult"] = await _commit.CommitAsync(summary, now);
+            _ctx["commitResult"] = await _commit.CommitAsync(_pipeline, _source, summary, now);
         }
         else if ((string)_ctx["state"] == "invalid")
         {

@@ -9,6 +9,7 @@ namespace MetricsPipeline.Core
     }
 
     public record PipelineState(
+        string PipelineName,
         Uri SourceEndpoint,
         IReadOnlyList<double> RawMetrics,
         double? Summary,
