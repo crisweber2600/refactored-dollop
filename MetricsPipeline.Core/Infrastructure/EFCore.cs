@@ -2,12 +2,13 @@ namespace MetricsPipeline.Infrastructure;
 using MetricsPipeline.Core;
 using Microsoft.EntityFrameworkCore;
 
-public class SummaryRecord
+public class SummaryRecord : ISoftDelete, IBaseEntity, IRootEntity
 {
     public int Id { get; set; }
     public Uri Source { get; set; } = default!;
     public double Value { get; set; }
     public DateTime Timestamp { get; set; }
+    public bool IsDeleted { get; set; }
 }
 
 public class SummaryDbContext : DbContext
