@@ -8,15 +8,24 @@ public class EfGenericRepository<TEntity> : IGenericRepository<TEntity>
 {
     protected readonly DbContext _context;
     protected readonly DbSet<TEntity> _set;
+    private readonly bool _allowHardDelete;
 
-    public EfGenericRepository(DbContext context)
+    public EfGenericRepository(DbContext context, bool allowHardDelete = false)
     {
         _context = context;
+        _allowHardDelete = allowHardDelete;
         _set = context.Set<TEntity>();
     }
 
     public async Task AddAsync(TEntity entity)
         => await _set.AddAsync(entity);
+
+    public async Task<int> CreateAsync(TEntity entity)
+    {
+        await _set.AddAsync(entity);
+        await _context.SaveChangesAsync();
+        return entity.Id;
+    }
 
     public async Task AddRangeAsync(IEnumerable<TEntity> entities)
         => await _set.AddRangeAsync(entities);
@@ -25,6 +34,23 @@ public class EfGenericRepository<TEntity> : IGenericRepository<TEntity>
     {
         entity.IsDeleted = true;
         _set.Update(entity);
+    }
+
+    public async Task<int> DeleteAsync(TEntity entity, bool hardDelete)
+    {
+        if (hardDelete)
+        {
+            if (!_allowHardDelete)
+                throw new HardDeleteNotPermittedException();
+            _set.Remove(entity);
+        }
+        else
+        {
+            entity.IsDeleted = true;
+            _set.Update(entity);
+        }
+        await _context.SaveChangesAsync();
+        return entity.Id;
     }
 
     public void DeleteRange(IEnumerable<TEntity> entities)
@@ -70,6 +96,13 @@ public class EfGenericRepository<TEntity> : IGenericRepository<TEntity>
 
     public void Update(TEntity entity)
         => _set.Update(entity);
+
+    public async Task<int> UpdateAsync(TEntity entity)
+    {
+        _set.Update(entity);
+        await _context.SaveChangesAsync();
+        return entity.Id;
+    }
 
     public void UpdateRange(IEnumerable<TEntity> entities)
         => _set.UpdateRange(entities);
