@@ -18,8 +18,9 @@ This project demonstrates a simple yet fully testable metrics processing pipelin
    ```
 2. **Apply the latest database migrations**
    ```bash
-   dotnet ef database update --project MetricsPipeline.Core
+   dotnet ef database update --project MetricsPipeline.Core --startup-project MetricsPipeline.Console
    ```
+   The design-time context now uses SQLite so migrations work on any platform.
 3. **Run the sample console application**
    ```bash
    dotnet run --project MetricsPipeline.Console
@@ -82,9 +83,13 @@ Entity Framework Core is used for persistence via the `SummaryDbContext`. Summar
 
 The orchestrator collects metrics, summarises them, retrieves the last committed value from `EfSummaryRepository` and validates the delta. If validation passes it commits the new summary. Otherwise the discard handler is triggered.
 
+When no prior summary exists the orchestrator now treats the run as valid regardless of the delta, ensuring that the first execution of a new pipeline always commits its results.
+
 ## Console Application
 
 `MetricsPipeline.Console` registers the pipeline services with a dependency injection container and runs `PipelineWorker`, a hosted service that executes the pipeline once at startup. The worker output demonstrates how each stage is called and whether the final summary is persisted or discarded.
+
+The worker can be customised by supplying an alternative gather method name when invoking the orchestrator. This allows integration tests to swap in specialised data sources with a single step.
 
 ## Database Migrations
 
@@ -100,6 +105,7 @@ Run migrations whenever the models change:
 dotnet ef migrations add <name> --project MetricsPipeline.Core
 dotnet ef database update --project MetricsPipeline.Core
 ```
+Seed data files can be placed in the `MetricsPipeline.Console/Seed` folder and will be imported on startup if they do not already exist in the database.
 
 ## Extending the Pipeline
 
@@ -110,6 +116,8 @@ services.AddScoped<IGatherService, MyGatherService>();
 ```
 
 Additional summarisation strategies can be registered in the same way to tailor the pipeline to new data sources.
+
+You can also extend the validation logic by implementing `IValidationService`. Register your custom service before running the worker to apply domain-specific rules.
 
 ## Testing
 

@@ -13,7 +13,7 @@ public class SummaryDbContextFactory : IDesignTimeDbContextFactory<SummaryDbCont
     public SummaryDbContext CreateDbContext(string[] args)
     {
         var optionsBuilder = new DbContextOptionsBuilder<SummaryDbContext>();
-        optionsBuilder.UseSqlServer("Server=(localdb)\\MSSQLLocalDB;Database=MetricsPipeline;Trusted_Connection=True;");
+        optionsBuilder.UseSqlite("Data Source=metrics.db");
         return new SummaryDbContext(optionsBuilder.Options);
     }
 }
