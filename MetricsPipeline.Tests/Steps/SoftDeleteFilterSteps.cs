@@ -1,6 +1,7 @@
 using FluentAssertions;
 using MetricsPipeline.Core;
 using MetricsPipeline.Infrastructure;
+using Microsoft.EntityFrameworkCore;
 using Reqnroll;
 
 namespace MetricsPipeline.Tests.Steps;
@@ -12,6 +13,9 @@ public class SoftDeleteFilterSteps
     private readonly SummaryDbContext _db;
     private readonly IGenericRepository<SummaryRecord> _repo;
     private int _count;
+    private int _simpleCount;
+    private SummaryRecord? _found;
+    private SimpleRecord? _simple;
 
     public SoftDeleteFilterSteps(SummaryDbContext db, IGenericRepository<SummaryRecord> repo)
     {
@@ -34,6 +38,14 @@ public class SoftDeleteFilterSteps
         _db.SaveChanges();
     }
 
+    [Given("a simple record exists")]
+    public void GivenSimpleRecord()
+    {
+        _simple = new SimpleRecord { Info = "simple" };
+        _db.Set<SimpleRecord>().Add(_simple);
+        _db.SaveChanges();
+    }
+
     [Given("the repository ignores the soft delete filter")]
     public void GivenIgnoreFilter()
     {
@@ -47,9 +59,34 @@ public class SoftDeleteFilterSteps
         _count = await _repo.GetCountAsync();
     }
 
+    [When("counting simple records")]
+    public void WhenCountingSimple()
+    {
+        _simpleCount = _db.Set<SimpleRecord>().Count();
+    }
+
+    [When("finding deleted summary by id")]
+    public async Task WhenFindingDeleted()
+    {
+        var id = _db.Summaries.IgnoreQueryFilters().First().Id;
+        _found = await _repo.GetByIdAsync(id);
+    }
+
     [Then("the summary count should be (\\d+)")]
     public void ThenSummaryCount(int expected)
     {
         _count.Should().Be(expected);
+    }
+
+    [Then("the simple record count should be (\\d+)")]
+    public void ThenSimpleCount(int expected)
+    {
+        _simpleCount.Should().Be(expected);
+    }
+
+    [Then("the result should be null")]
+    public void ThenResultNull()
+    {
+        _found.Should().BeNull();
     }
 }
