@@ -7,10 +7,10 @@ public class EfSummaryRepository : ISummaryRepository
     private readonly SummaryDbContext _db;
     public EfSummaryRepository(SummaryDbContext db) => _db = db;
 
-    public async Task<PipelineResult<double>> GetLastCommittedAsync(Uri source, CancellationToken ct = default)
+    public async Task<PipelineResult<double>> GetLastCommittedAsync(string pipelineName, CancellationToken ct = default)
     {
         var rec = await _db.Summaries
-                           .Where(s => s.Source == source)
+                           .Where(s => s.PipelineName == pipelineName)
                            .OrderByDescending(s => s.Timestamp)
                            .FirstOrDefaultAsync(ct);
 
@@ -19,11 +19,11 @@ public class EfSummaryRepository : ISummaryRepository
             : PipelineResult<double>.Success(rec.Value);
     }
 
-    public async Task<PipelineResult<Unit>> SaveAsync(double summary, DateTime ts, CancellationToken ct = default)
+    public async Task<PipelineResult<Unit>> SaveAsync(string pipelineName, Uri source, double summary, DateTime ts, CancellationToken ct = default)
     {
         try
         {
-            _db.Summaries.Add(new SummaryRecord { Source = new Uri("https://api.example.com/data"), Value = summary, Timestamp = ts });
+            _db.Summaries.Add(new SummaryRecord { PipelineName = pipelineName, Source = source, Value = summary, Timestamp = ts });
             await _db.SaveChangesAsync(ct);
             return PipelineResult<Unit>.Success(new Unit());
         }

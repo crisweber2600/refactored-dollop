@@ -19,7 +19,7 @@ namespace MetricsPipeline.Core
 
     public interface ICommitService
     {
-        Task<PipelineResult<Unit>> CommitAsync(double summary, DateTime ts, CancellationToken ct = default);
+        Task<PipelineResult<Unit>> CommitAsync(string pipelineName, Uri source, double summary, DateTime ts, CancellationToken ct = default);
     }
 
     public interface IDiscardHandler
@@ -29,13 +29,14 @@ namespace MetricsPipeline.Core
 
     public interface ISummaryRepository
     {
-        Task<PipelineResult<double>> GetLastCommittedAsync(Uri source, CancellationToken ct = default);
-        Task<PipelineResult<Unit>> SaveAsync(double summary, DateTime ts, CancellationToken ct = default);
+        Task<PipelineResult<double>> GetLastCommittedAsync(string pipelineName, CancellationToken ct = default);
+        Task<PipelineResult<Unit>> SaveAsync(string pipelineName, Uri source, double summary, DateTime ts, CancellationToken ct = default);
     }
 
     public interface IPipelineOrchestrator
     {
         Task<PipelineResult<PipelineState>> ExecuteAsync(
+            string pipelineName,
             Uri source,
             SummaryStrategy strategy,
             double threshold,
