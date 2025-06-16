@@ -1,5 +1,6 @@
 namespace MetricsPipeline.Infrastructure;
 using System.Reflection;
+using System.Linq.Expressions;
 using MetricsPipeline.Core;
 using Microsoft.EntityFrameworkCore;
 
@@ -29,7 +30,12 @@ public class SummaryDbContext : DbContext
 
         foreach (var type in entityTypes)
         {
-            modelBuilder.Entity(type);
+            var entity = modelBuilder.Entity(type);
+            var param = Expression.Parameter(type, "e");
+            var prop = Expression.Property(param, nameof(ISoftDelete.IsDeleted));
+            var condition = Expression.Equal(prop, Expression.Constant(false));
+            var lambda = Expression.Lambda(condition, param);
+            entity.HasQueryFilter(lambda);
         }
 
         modelBuilder.ApplyConfigurationsFromAssembly(assembly);

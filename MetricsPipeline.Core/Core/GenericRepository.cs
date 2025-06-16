@@ -3,6 +3,7 @@ namespace MetricsPipeline.Core;
 public interface IGenericRepository<T>
     where T : class, ISoftDelete, IBaseEntity, IRootEntity
 {
+    bool IgnoreSoftDeleteFilter { get; set; }
     Task<int> CreateAsync(T entity);
     Task<int> UpdateAsync(T entity);
     Task<int> DeleteAsync(T entity, bool hardDelete);

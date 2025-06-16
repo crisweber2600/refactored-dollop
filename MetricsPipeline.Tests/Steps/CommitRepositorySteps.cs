@@ -3,6 +3,7 @@ using MetricsPipeline.Core;
 using FluentAssertions;
 using Reqnroll;
 using System.Linq;
+using Microsoft.EntityFrameworkCore;
 
 namespace MetricsPipeline.Tests.Steps;
 
@@ -85,7 +86,7 @@ public class CommitRepositorySteps
     [Then("the record should be marked deleted")]
     public void ThenMarkedDeleted()
     {
-        var entity = _db.Summaries.First(e => e.Id == _createdId);
+        var entity = _db.Summaries.IgnoreQueryFilters().First(e => e.Id == _createdId);
         entity.IsDeleted.Should().BeTrue();
     }
 
