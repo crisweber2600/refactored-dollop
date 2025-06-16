@@ -1,5 +1,6 @@
 - Agents may run `dotnet` commands, including adding NuGet packages with `dotnet add package`.
 - When introducing new functionality, first add BDD feature files and step definitions to cover the behavior.
+- Always attempt to run `dotnet ef database update` before executing the test suite.
 - Always run `dotnet test` and ensure tests pass after modifications.
 - Focus development efforts on implementing missing functionality and fixing tests.
 - If required information is missing, request clarification.
@@ -8,3 +9,5 @@
 - Make code changes and add missing packages with `dotnet add package` when needed.
 - Re-run `dotnet test`; only commit when all tests succeed.
 - Keep tasks small and focused on making the tests pass.
+- Update `README.md` with improvements reflecting new functionality and guidance.
+- Each pull request must contain at least five distinct enhancements to the README.

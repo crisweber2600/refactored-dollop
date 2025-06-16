@@ -16,11 +16,15 @@ This project demonstrates a simple yet fully testable metrics processing pipelin
    ```bash
    dotnet build
    ```
-2. **Run the sample console application**
+2. **Apply the latest database migrations**
+   ```bash
+   dotnet ef database update --project MetricsPipeline.Core
+   ```
+3. **Run the sample console application**
    ```bash
    dotnet run --project MetricsPipeline.Console
    ```
-3. **Execute the tests**
+4. **Execute the tests**
    ```bash
    dotnet test
    ```
@@ -82,6 +86,31 @@ The orchestrator collects metrics, summarises them, retrieves the last committed
 
 `MetricsPipeline.Console` registers the pipeline services with a dependency injection container and runs `PipelineWorker`, a hosted service that executes the pipeline once at startup. The worker output demonstrates how each stage is called and whether the final summary is persisted or discarded.
 
+## Database Migrations
+
+Entity Framework Core migrations are included with the project. Ensure the `dotnet-ef` tool is installed:
+
+```bash
+dotnet tool install --global dotnet-ef
+```
+
+Run migrations whenever the models change:
+
+```bash
+dotnet ef migrations add <name> --project MetricsPipeline.Core
+dotnet ef database update --project MetricsPipeline.Core
+```
+
+## Extending the Pipeline
+
+The default services can be replaced with custom implementations through dependency injection. Implement the required interfaces and register the services before running the worker. For example, a custom gather method can be provided via:
+
+```csharp
+services.AddScoped<IGatherService, MyGatherService>();
+```
+
+Additional summarisation strategies can be registered in the same way to tailor the pipeline to new data sources.
+
 ## Testing
 
 Behaviour driven tests under `MetricsPipeline.Tests` describe the expected behaviour in feature files and implement step definitions with Reqnroll. The test suite exercises:
@@ -93,6 +122,12 @@ Behaviour driven tests under `MetricsPipeline.Tests` describe the expected behav
 - Repository and unit-of-work behaviour
 
 Running `dotnet test` executes all scenarios and the supporting unit tests.
+Run the database migrations before testing to ensure the schema is in sync:
+
+```bash
+dotnet ef database update --project MetricsPipeline.Core
+dotnet test --collect:"XPlat Code Coverage"
+```
 
 ## Contributing
 
