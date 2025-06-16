@@ -22,6 +22,7 @@ public class ReqnrollStartup
         }
 
         services.AddMetricsPipeline(ConfigureDb);
+        services.AddHttpClient<HttpMetricsClient>();
         services.AddRepositoriesAndSagas<SummaryDbContext>(
             ConfigureDb,
             cfg => cfg.UsingInMemory((context, c) => { }));

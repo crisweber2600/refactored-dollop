@@ -36,11 +36,16 @@ public class GenericValidationSteps
             _items.Add(new ValueItem { Amount = double.Parse(row[0]) });
     }
 
-    [When("the list is validated by (summing|averaging) Amount")]
-    public void WhenValidated(string method)
+    [When("the list is validated by summing Amount")]
+    public void WhenValidatedSum()
     {
-        var strategy = method == "summing" ? SummaryStrategy.Sum : SummaryStrategy.Average;
-        _result = _val.IsWithinThreshold(_items, i => i.Amount, strategy, _last, _delta);
+        _result = _val.IsWithinThreshold(_items, i => i.Amount, SummaryStrategy.Sum, _last, _delta);
+    }
+
+    [When("the list is validated by averaging Amount")]
+    public void WhenValidatedAverage()
+    {
+        _result = _val.IsWithinThreshold(_items, i => i.Amount, SummaryStrategy.Average, _last, _delta);
     }
 
     [Then("the summary should be marked as (.*)")]
