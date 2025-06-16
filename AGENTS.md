@@ -1,6 +1,6 @@
 - Agents may run `dotnet` commands, including adding NuGet packages with `dotnet add package`.
 - When introducing new functionality, first add BDD feature files and step definitions to cover the behavior.
-- Always attempt to run `dotnet ef database update` before executing the test suite.
+- Only add new EF Core migrations when entity models change. Do not run `dotnet ef database update` automatically.
 - Always run `dotnet test` and ensure tests pass after modifications.
 - Focus development efforts on implementing missing functionality and fixing tests.
 - If required information is missing, request clarification.
