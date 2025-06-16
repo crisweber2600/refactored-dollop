@@ -28,17 +28,23 @@ This project demonstrates a simple yet fully testable metrics processing pipelin
    dotnet run --project MetricsPipeline.AppHost
    ```
    This host links the console project to the demo API using `.WithReference`,
-   so the API address is discovered automatically.
+   so the API address is discovered automatically. Aspire also populates
+   discovery variables like `services__demoapi__0` for each referenced service.
 4. **Run the sample console application alone**
    ```bash
    dotnet run --project MetricsPipeline.Console
    ```
    The console reads a `services__demoapi__0` environment variable to discover
-   the Demo API address. Set this value when running outside the Aspire host.
+   the Demo API address. The `<name>` segment corresponds to the service name
+   supplied to `.WithReference`. Set this variable when running outside the
+   Aspire host.
 5. **Execute the tests**
    ```bash
    dotnet test
    ```
+
+   During testing you can check `HttpMetricsClient.BaseAddress` to confirm which
+   service endpoint was resolved.
 
 The console host fetches a small set of metric values from an in-memory source, summarises them and either commits the result or discards it depending on validation. Each stage writes its status to the console.
 
@@ -133,8 +139,8 @@ services.AddScoped<IGatherService, MyGatherService>();
 Additional summarisation strategies can be registered in the same way to tailor the pipeline to new data sources.
 
 You can also reuse `HttpMetricsClient` in your own services to call REST endpoints by specifying the HTTP method and target URI. The client returns a strongly typed list so it works with any DTO shape.
-When a `services__<name>__0` environment variable is present the client automatically sets its base address, enabling simple service discovery between projects.
-When hosting multiple projects together you can add them in `MetricsPipeline.AppHost` and call `.WithReference()` so Aspire configures the discovery variables for you.
+When an environment variable named `services__<name>__0` is present the client automatically assigns its base address. Aspire sets these variables whenever one project references another using `.WithReference()`.
+The `HttpMetricsClient.BaseAddress` property therefore reflects the resolved endpoint and can be inspected during tests or debugging.
 
 You can also extend the validation logic by implementing `IValidationService`. The default implementation can summarise any `List<T>` by projecting a property with a LINQ expression. Register your custom service before running the worker to apply domain-specific rules or alternative summarisation logic.
 
