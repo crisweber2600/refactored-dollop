@@ -1,3 +1,4 @@
+// Console application entry point running the metrics pipeline demo.
 using MetricsPipeline.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Hosting;
@@ -12,4 +13,3 @@ var host = Host.CreateDefaultBuilder(args)
     .Build();
 
 await host.RunAsync();
-

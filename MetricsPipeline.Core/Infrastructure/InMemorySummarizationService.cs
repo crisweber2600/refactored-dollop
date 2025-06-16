@@ -1,8 +1,12 @@
 namespace MetricsPipeline.Infrastructure;
 using MetricsPipeline.Core;
 
+/// <summary>
+/// Summarization service that calculates results in memory.
+/// </summary>
 public class InMemorySummarizationService : ISummarizationService
 {
+    /// <inheritdoc />
     public PipelineResult<double> Summarize(IReadOnlyList<double> metrics, SummaryStrategy strategy)
     {
         if (metrics == null || metrics.Count == 0)

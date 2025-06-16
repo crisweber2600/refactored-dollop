@@ -3,11 +3,27 @@ using MetricsPipeline.Core;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.EntityFrameworkCore;
 
+/// <summary>
+/// Extension methods for registering pipeline services.
+/// </summary>
 public static class DependencyInjection
 {
+    /// <summary>
+    /// Registers the pipeline using the default <see cref="SummaryDbContext"/>.
+    /// </summary>
+    /// <param name="services">Service collection to configure.</param>
+    /// <param name="dbCfg">Action configuring the database context.</param>
+    /// <returns>The updated service collection.</returns>
     public static IServiceCollection AddMetricsPipeline(this IServiceCollection services, Action<DbContextOptionsBuilder> dbCfg)
         => services.AddMetricsPipeline<SummaryDbContext>(dbCfg);
 
+    /// <summary>
+    /// Registers the pipeline using a custom context type.
+    /// </summary>
+    /// <typeparam name="TContext">The context implementing <see cref="SummaryDbContext"/>.</typeparam>
+    /// <param name="services">Service collection to configure.</param>
+    /// <param name="dbCfg">Action configuring the database context.</param>
+    /// <returns>The updated service collection.</returns>
     public static IServiceCollection AddMetricsPipeline<TContext>(this IServiceCollection services, Action<DbContextOptionsBuilder> dbCfg)
         where TContext : SummaryDbContext
     {
