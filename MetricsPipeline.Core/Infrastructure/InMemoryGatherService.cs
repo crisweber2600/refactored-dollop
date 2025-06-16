@@ -1,6 +1,9 @@
 namespace MetricsPipeline.Infrastructure;
 using MetricsPipeline.Core;
 
+/// <summary>
+/// Simple gather service that serves metrics from an in-memory dictionary.
+/// </summary>
 public class InMemoryGatherService : IGatherService
 {
     private readonly IDictionary<Uri, IReadOnlyList<double>> _dataMap =
@@ -10,9 +13,17 @@ public class InMemoryGatherService : IGatherService
             [new Uri("https://api.example.com/empty")] = Array.Empty<double>()
         };
 
+    /// <summary>
+    /// Registers or replaces a metric endpoint.
+    /// </summary>
     public void RegisterEndpoint(Uri uri, IReadOnlyList<double> values) => _dataMap[uri] = values;
+
+    /// <summary>
+    /// Removes a previously registered endpoint.
+    /// </summary>
     public void RemoveEndpoint(Uri uri) { if (_dataMap.ContainsKey(uri)) _dataMap.Remove(uri); }
 
+    /// <inheritdoc />
     public Task<PipelineResult<IReadOnlyList<double>>> FetchMetricsAsync(Uri source, CancellationToken ct = default)
     {
         if (!_dataMap.TryGetValue(source, out var set))

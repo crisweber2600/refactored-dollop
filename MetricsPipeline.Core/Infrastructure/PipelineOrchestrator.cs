@@ -1,6 +1,9 @@
 namespace MetricsPipeline.Infrastructure;
 using MetricsPipeline.Core;
 
+/// <summary>
+/// Orchestrates the stages of the metrics pipeline.
+/// </summary>
 public class PipelineOrchestrator : IPipelineOrchestrator
 {
     private readonly IGatherService _gather;
@@ -10,6 +13,9 @@ public class PipelineOrchestrator : IPipelineOrchestrator
     private readonly ICommitService _commit;
     private readonly IDiscardHandler _discard;
 
+    /// <summary>
+    /// Initializes the orchestrator with the required dependencies.
+    /// </summary>
     public PipelineOrchestrator(
         IGatherService gather,
         ISummarizationService sum,
@@ -21,6 +27,7 @@ public class PipelineOrchestrator : IPipelineOrchestrator
         _gather = gather; _sum = sum; _repo = repo; _val = val; _commit = commit; _discard = discard;
     }
 
+    /// <inheritdoc />
     public async Task<PipelineResult<PipelineState>> ExecuteAsync(
         string pipelineName,
         Uri source,

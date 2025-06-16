@@ -3,6 +3,9 @@ using Microsoft.Extensions.Hosting;
 
 namespace MetricsPipeline.Infrastructure;
 
+/// <summary>
+/// Hosted service that runs the demo metrics pipeline.
+/// </summary>
 public class PipelineWorker : BackgroundService
 {
     private readonly IPipelineOrchestrator _orchestrator;
@@ -13,12 +16,16 @@ public class PipelineWorker : BackgroundService
     /// </summary>
     public IReadOnlyList<string> ExecutedStages => _executed;
 
+    /// <summary>
+    /// Initializes a new instance of the worker.
+    /// </summary>
+    /// <param name="orchestrator">Pipeline orchestrator instance.</param>
     public PipelineWorker(IPipelineOrchestrator orchestrator)
     {
         _orchestrator = orchestrator;
     }
 
-
+    /// <inheritdoc />
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         RunStage(TaskStage.Gather);

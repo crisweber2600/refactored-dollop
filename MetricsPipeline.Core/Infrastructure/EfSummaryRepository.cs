@@ -2,11 +2,20 @@ namespace MetricsPipeline.Infrastructure;
 using MetricsPipeline.Core;
 using Microsoft.EntityFrameworkCore;
 
+/// <summary>
+/// Summary repository backed by Entity Framework Core.
+/// </summary>
 public class EfSummaryRepository : ISummaryRepository
 {
     private readonly SummaryDbContext _db;
+
+    /// <summary>
+    /// Initializes the repository with the provided context.
+    /// </summary>
+    /// <param name="db">Database context.</param>
     public EfSummaryRepository(SummaryDbContext db) => _db = db;
 
+    /// <inheritdoc />
     public async Task<PipelineResult<double>> GetLastCommittedAsync(string pipelineName, CancellationToken ct = default)
     {
         var rec = await _db.Summaries
@@ -19,6 +28,7 @@ public class EfSummaryRepository : ISummaryRepository
             : PipelineResult<double>.Success(rec.Value);
     }
 
+    /// <inheritdoc />
     public async Task<PipelineResult<Unit>> SaveAsync(string pipelineName, Uri source, double summary, DateTime ts, CancellationToken ct = default)
     {
         try
