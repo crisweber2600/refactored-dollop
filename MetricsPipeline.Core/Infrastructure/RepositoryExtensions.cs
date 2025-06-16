@@ -15,6 +15,7 @@ public static class RepositoryExtensions
         services.AddDbContext<TContext>(dbCfg);
         services.AddScoped<DbContext>(p => p.GetRequiredService<TContext>());
         services.AddScoped(typeof(IRepository<>), typeof(EfRepository<>));
+        services.AddScoped(typeof(IGenericRepository<>), typeof(EfGenericRepository<>));
         services.AddScoped<IUnitOfWork, UnitOfWork<TContext>>();
         services.AddMassTransit(cfg => busCfg?.Invoke(cfg));
         return services;
