@@ -9,6 +9,11 @@ public class HttpMetricsClient
 {
     private readonly HttpClient _client;
 
+    /// <summary>
+    /// Gets the base address configured on the underlying <see cref="HttpClient"/>.
+    /// </summary>
+    public Uri? BaseAddress => _client.BaseAddress;
+
     public HttpMetricsClient(HttpClient client)
     {
         _client = client;

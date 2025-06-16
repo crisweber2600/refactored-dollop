@@ -2,7 +2,10 @@ using Aspire.Hosting;
 
 var builder = DistributedApplication.CreateBuilder(args);
 
-builder.AddProject("demoapi", "../MetricsPipeline.DemoApi/MetricsPipeline.DemoApi.csproj");
-builder.AddProject("worker", "../MetricsPipeline.Console/MetricsPipeline.Console.csproj");
+var demo = builder.AddProject("demoapi", "../MetricsPipeline.DemoApi/MetricsPipeline.DemoApi.csproj")
+    .WithHttpEndpoint();
+
+builder.AddProject("worker", "../MetricsPipeline.Console/MetricsPipeline.Console.csproj")
+    .WithReference(demo);
 
 builder.Build().Run();

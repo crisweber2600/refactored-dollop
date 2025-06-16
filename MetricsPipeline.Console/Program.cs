@@ -7,12 +7,17 @@ using MetricsPipeline.Core;
 using Microsoft.Extensions.DependencyInjection;
 
 var host = Host.CreateDefaultBuilder(args)
-    .ConfigureServices(services =>
+    .ConfigureServices((context, services) =>
     {
         services.AddMetricsPipeline(o => o.UseInMemoryDatabase("demo"));
         services.AddHttpClient<HttpMetricsClient>(c =>
         {
-            c.BaseAddress = new Uri("http://localhost:5000");
+            var discovered = context.Configuration["services:demoapi:0"] ??
+                              context.Configuration["services:demoapi"];
+            if (!string.IsNullOrEmpty(discovered))
+            {
+                c.BaseAddress = new Uri(discovered);
+            }
         });
         services.AddTransient<IGatherService, HttpGatherService>();
         services.AddHostedService<PipelineWorker>();
