@@ -51,15 +51,21 @@ public class PipelineOrchestrator : IPipelineOrchestrator
         if (!summ.IsSuccess) return PipelineResult<PipelineState>.Failure(summ.Error!);
 
         var last = await _repo.GetLastCommittedAsync(pipelineName, ct);
+        bool firstRun = false;
         if (!last.IsSuccess)
         {
             if (last.Error == "NoPriorSummary")
+            {
                 last = PipelineResult<double>.Success(0);
+                firstRun = true;
+            }
             else
                 return PipelineResult<PipelineState>.Failure(last.Error!);
         }
 
-        var validation = _val.IsWithinThreshold(summ.Value!, last.Value!, threshold);
+        var validation = firstRun
+            ? PipelineResult<bool>.Success(true)
+            : _val.IsWithinThreshold(summ.Value!, last.Value!, threshold);
         if (!validation.IsSuccess) return PipelineResult<PipelineState>.Failure(validation.Error!);
         var state = new PipelineState(pipelineName, source, fetch.Value!, summ.Value, last.Value, threshold, now);
 
