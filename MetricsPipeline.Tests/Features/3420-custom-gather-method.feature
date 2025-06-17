@@ -3,7 +3,7 @@ Feature: CustomGatherMethod
 
   Scenario: Execute pipeline using alternate gather method
     Given the gather method is "CustomGatherAsync"
-    And the API at "https://api.example.com/data" returns:
+    And the gather service returns:
       | MetricValue |
       | 44.5 |
       | 45.0 |

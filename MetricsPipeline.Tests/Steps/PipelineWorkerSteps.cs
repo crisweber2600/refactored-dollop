@@ -16,11 +16,11 @@ internal class FakeOrchestrator : IPipelineOrchestrator
     private readonly bool _success;
     public FakeOrchestrator(bool success) { _success = success; }
 
-    public Task<PipelineResult<PipelineState<T>>> ExecuteAsync<T>(string name, Uri source, Func<T, double> selector, SummaryStrategy strategy, double threshold, CancellationToken ct = default, string workerMethod = "FetchAsync")
+    public Task<PipelineResult<PipelineState<T>>> ExecuteAsync<T>(string name, Func<T, double> selector, SummaryStrategy strategy, double threshold, CancellationToken ct = default, string workerMethod = "FetchAsync")
     {
         if (_success)
         {
-            var state = new PipelineState<T>(name, source, Array.Empty<T>(), 0, 0, threshold, DateTime.UtcNow);
+            var state = new PipelineState<T>(name, new Uri("/", UriKind.Relative), Array.Empty<T>(), 0, 0, threshold, DateTime.UtcNow);
             return Task.FromResult(PipelineResult<PipelineState<T>>.Success(state));
         }
         return Task.FromResult(PipelineResult<PipelineState<T>>.Failure("fail"));

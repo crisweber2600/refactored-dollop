@@ -7,14 +7,14 @@ using FluentAssertions;
 public class IntegrationSteps
 {
     private readonly IPipelineOrchestrator _orchestrator;
-    private readonly InMemoryGatherService _gather;
+    private readonly ListGatherService _gather;
     private readonly SummaryDbContext _db;
     private PipelineResult<PipelineState<double>>? _run;
 
     public IntegrationSteps(IPipelineOrchestrator orchestrator, IGatherService gather, SummaryDbContext db)
     {
         _orchestrator = orchestrator;
-        _gather = (InMemoryGatherService)gather;
+        _gather = (ListGatherService)gather;
         _db = db;
     }
 
@@ -56,32 +56,32 @@ public class IntegrationSteps
         GivenLastCommitted(val);
     }
 
-    [Given(@"the API at ""(.*)"" returns:")]
+    [Given("the gather service returns:")]
     public void GivenApiReturns(string endpoint, Table table)
     {
         var data = table.Rows.Select(r => double.Parse(r[0])).ToArray();
-        _gather.RegisterEndpoint(new Uri(endpoint), data);
+        _gather.Metrics = data;
         _source = new Uri(endpoint);
     }
 
-    [Given(@"the API at ""(.*)"" is offline")]
+    [Given("the gather service returns no metric values")]
     public void GivenApiOffline(string endpoint)
     {
-        _gather.RemoveEndpoint(new Uri(endpoint));
+        _gather.Metrics = Array.Empty<double>();
         _source = new Uri(endpoint);
     }
 
-    [Given(@"the API at ""(.*)"" returns no metric values")]
+    [Given("the gather service returns no metric values")]
     public void GivenApiEmpty(string endpoint)
     {
-        _gather.RegisterEndpoint(new Uri(endpoint), Array.Empty<double>());
+        _gather.Metrics = Array.Empty<double>();
         _source = new Uri(endpoint);
     }
 
     [When(@"the pipeline is executed")]
     public async Task WhenPipelineExecuted()
     {
-        _run = await _orchestrator.ExecuteAsync<double>(_pipeline, _source, v => v, SummaryStrategy.Average, _threshold, default, _gatherMethod);
+        _run = await _orchestrator.ExecuteAsync<double>(_pipeline, v => v, SummaryStrategy.Average, _threshold, default, _gatherMethod);
     }
 
     [When(@"pipeline ""(.*)"" is executed")]
@@ -125,7 +125,7 @@ public class IntegrationSteps
     [Then(@"the operation should fail at the gather stage")]
     public void ThenFailGather()
     {
-        _run!.Error.Should().Be("DataUnavailable");
+        _run!.Error.Should().Be("NoData");
     }
 
     [Then(@"the system should log an error with reason ""(.*)""")]

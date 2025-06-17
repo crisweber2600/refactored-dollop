@@ -68,17 +68,16 @@ public class MetricsPipelineOptionsSteps
         _provider.GetService<HttpMetricsClient>().Should().NotBeNull();
     }
 
-    [Then("IGatherService should be HttpGatherService")]
-    public void ThenGatherServiceHttp()
+    [Then("IWorkerService should be HttpWorkerService")]
+    public void ThenWorkerServiceHttp()
     {
-        _provider.GetService<IGatherService>().Should().BeOfType<HttpGatherService>();
         _provider.GetService<IWorkerService>().Should().BeOfType<HttpWorkerService>();
     }
 
-    [Then("IGatherService should be InMemoryGatherService")]
-    public void ThenGatherServiceMemory()
+    [Then("IGatherService should be ListGatherService")]
+    public void ThenGatherServiceList()
     {
-        _provider.GetService<IGatherService>().Should().BeOfType<InMemoryGatherService>();
-        _provider.GetService<IWorkerService>().Should().BeOfType<InMemoryGatherService>();
+        _provider.GetService<IGatherService>().Should().BeOfType<ListGatherService>();
+        _provider.GetService<IWorkerService>().Should().BeOfType<ListGatherService>();
     }
 }

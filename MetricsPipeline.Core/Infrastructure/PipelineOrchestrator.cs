@@ -30,7 +30,6 @@ public class PipelineOrchestrator : IPipelineOrchestrator
     /// <inheritdoc />
     public async Task<PipelineResult<PipelineState<T>>> ExecuteAsync<T>(
         string pipelineName,
-        Uri source,
         Func<T, double> selector,
         SummaryStrategy strategy,
         double threshold,
@@ -38,13 +37,25 @@ public class PipelineOrchestrator : IPipelineOrchestrator
         string workerMethod = nameof(IWorkerService.FetchAsync))
     {
         var now = DateTime.UtcNow;
+        var srcProp = _worker.GetType().GetProperty("Source");
+        var source = srcProp?.GetValue(_worker) as Uri ?? new Uri("/", UriKind.Relative);
 
         var method = _worker.GetType().GetMethod(workerMethod);
         if (method == null)
             return PipelineResult<PipelineState<T>>.Failure("InvalidGatherMethod");
         if (method.IsGenericMethodDefinition)
             method = method.MakeGenericMethod(typeof(T));
-        var fetchTask = method.Invoke(_worker, new object[] { source, ct }) as Task<PipelineResult<IReadOnlyList<T>>>;
+
+        object?[] args;
+        var parameters = method.GetParameters();
+        if (parameters.Length == 1)
+            args = new object?[] { ct };
+        else if (parameters.Length == 0)
+            args = Array.Empty<object?>();
+        else
+            return PipelineResult<PipelineState<T>>.Failure("InvalidGatherMethod");
+
+        var fetchTask = method.Invoke(_worker, args) as Task<PipelineResult<IReadOnlyList<T>>>;
         if (fetchTask == null)
             return PipelineResult<PipelineState<T>>.Failure("InvalidGatherMethod");
         var fetch = await fetchTask;
