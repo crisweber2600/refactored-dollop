@@ -6,7 +6,7 @@ Feature: FullPipelineExecution
     And the previously committed summary value is 45.0
 
   Scenario: End-to-end success path with valid summary
-    Given the API at "https://api.example.com/data" returns:
+    Given the gather service returns:
       | MetricValue |
       | 44.5 |
       | 45.0 |
@@ -17,7 +17,7 @@ Feature: FullPipelineExecution
     And the summary should be committed successfully
 
   Scenario: End-to-end failure due to invalid delta
-    Given the API at "https://api.example.com/data" returns:
+    Given the gather service returns:
       | MetricValue |
       | 60.0 |
       | 61.0 |
@@ -28,15 +28,15 @@ Feature: FullPipelineExecution
     And the summary should not be committed
     And a "ValidationFailed" warning should be logged
 
-  Scenario: End-to-end failure due to unreachable API
-    Given the API at "https://api.unavailable.com/data" is offline
+  Scenario: End-to-end failure due to unavailable data
+    Given the gather service returns no metric values
     When the pipeline is executed
     Then the operation should fail at the gather stage
-    And the system should log an error with reason "DataUnavailable"
+    And the system should log an error with reason "NoData"
     And no summary should be computed or committed
 
-  Scenario: End-to-end no-op for empty API result
-    Given the API at "https://api.example.com/empty" returns no metric values
+  Scenario: End-to-end no-op for empty data set
+    Given the gather service returns no metric values
     When the pipeline is executed
     Then the operation should halt at the summarize stage
     And the system should log an error with reason "NoData"

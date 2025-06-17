@@ -69,13 +69,22 @@ This project demonstrates a simple yet fully testable metrics processing pipelin
 14. **Specify a worker type**
    Use `opts.WorkerType = typeof(GenericMetricsWorker)` or call `AddMetricsPipeline(typeof(GenericMetricsWorker), ...)` to register a custom hosted worker.
 15. **Choose a worker mode**
-   Set `opts.WorkerMode = WorkerMode.Http` to enable the HTTP gatherer or leave it as the default `InMemory` mode.
+    Set `opts.WorkerMode = WorkerMode.Http` to use the HTTP worker or leave it as the default mode which relies on `ListGatherService`.
 16. **Register the HTTP client**
    Set `opts.RegisterHttpClient = true` to make `HttpMetricsClient` available for custom services.
 17. **Customise the HTTP client**
    Use `opts.ConfigureClient` to set `BaseAddress` or other settings after service discovery.
-18. **Run tests without restore**
+18. **Specify a worker method**
+   Pass the `workerMethod` name to `ExecuteAsync` when calling the orchestrator.
+   The demo worker exposes `GenericMetricsWorker.WorkerMethod` for this purpose.
+19. **Run tests without restore**
    Invoke `dotnet test --no-restore --no-build` for faster execution once packages are restored.
+20. **Demo worker properties**
+   `GenericMetricsWorker` exposes a `Source` URI and constant `WorkerMethod` so hosts need minimal setup.
+21. **Flexible worker signatures**
+   `ExecuteAsync` now invokes worker methods without supplying a source value.
+22. **Configure the source**
+   Set `GenericMetricsWorker.Source` to control where metrics are retrieved from.
 
 Example configuration enabling the HTTP worker:
 
@@ -96,6 +105,18 @@ services.AddMetricsPipeline(
     o => o.UseInMemoryDatabase("demo"),
     opts => opts.AddWorker = true);
 ```
+Calling the orchestrator directly requires the worker method name:
+
+```csharp
+var result = await orchestrator.ExecuteAsync<MyDto>(
+    "demo",
+    x => x.Value,
+    SummaryStrategy.Average,
+    5.0,
+    CancellationToken.None,
+    GenericMetricsWorker.WorkerMethod);
+```
+The worker selects its own `Source` value so callers no longer supply one.
 The console host fetches a small set of metric values from an in-memory source, summarises them and either commits the result or discards it depending on validation. Each stage writes its status to the console.
 ## Worker Registration and DI Options
 
@@ -123,14 +144,15 @@ At a high level the pipeline flows through a fixed sequence of services coordina
 3. **ValidationService** – compares the new summary to the last committed value and checks the delta against an acceptable threshold.
 4. **CommitService** – persists valid summaries through the repository and database context.
 5. **DiscardHandler** – invoked when validation fails so the summary can be logged or otherwise handled.
+6. **Worker method flexibility** – the orchestrator now calls any worker method that returns a list of items, even if it doesn't take the source parameter.
 
 The orchestrator invokes these services in order and returns a `PipelineState` object describing the entire run.
 
 ### Service Implementations
 
-The default implementations live in `MetricsPipeline.Infrastructure`:
+- The default implementations live in `MetricsPipeline.Infrastructure`:
 
-- `InMemoryGatherService` – serves metric values from an in-memory dictionary and is used for both tests and the demo console.
+- `ListGatherService` – provides metric values from an in-memory collection and is used for both tests and the demo console.
 - Both `IGatherService` and `IWorkerService` now resolve to the same scoped instance so step definitions and the orchestrator share data.
 - `InMemorySummarizationService` – performs calculations in memory and supports the `Average`, `Sum` and `Count` strategies.
 - `ThresholdValidationService` – checks that the difference between the current and previous summaries does not exceed a supplied threshold.
@@ -167,9 +189,8 @@ When no prior summary exists the orchestrator now treats the run as valid regard
 `MetricsPipeline.Console` registers the pipeline services with a dependency injection container and runs `PipelineWorker`, a hosted service defined in the core infrastructure. The worker no longer injects `IWorkerService`; it simply calls the orchestrator and writes whether the run was committed or reverted. This keeps the background task lightweight while retaining full reuse of the orchestrator.
 
 ```csharp
-var source = new Uri("/metrics", UriKind.Relative);
 var result = await _orchestrator.ExecuteAsync<MetricDto>(
-    "demo", source, x => x.Value, SummaryStrategy.Average, 5.0, ct);
+    "demo", x => x.Value, SummaryStrategy.Average, 5.0, ct);
 Console.WriteLine(result.IsSuccess ? "Committed" : "Reverted");
 ```
 
@@ -188,9 +209,8 @@ Additional notes:
 The worker can now be customised by supplying an alternative worker method when invoking the orchestrator. A single worker can host several pipelines targeting different DTOs so multiple methods may run side by side. Each pipeline has its own threshold and summarisation strategy, making it simple to plug the library into new domains without rewriting the worker service. Below is an example showing how two pipelines can be executed sequentially using different worker methods:
 
 ```csharp
-var source = new Uri("/metrics", UriKind.Relative);
-await _orchestrator.ExecuteAsync<MetricDto>("demo", source, x => x.Value, SummaryStrategy.Average, 5.0, ct);
-await _orchestrator.ExecuteAsync<MetricDto>("demo-alt", source, x => x.Value, SummaryStrategy.Sum, 10.0, ct, nameof(HttpWorkerService.FetchAsync));
+await _orchestrator.ExecuteAsync<MetricDto>("demo", x => x.Value, SummaryStrategy.Average, 5.0, ct);
+await _orchestrator.ExecuteAsync<MetricDto>("demo-alt", x => x.Value, SummaryStrategy.Sum, 10.0, ct, nameof(HttpWorkerService.FetchAsync));
 ```
 
 Each call to `ExecuteAsync` selects the worker method by name allowing multiple pipelines to reuse the same orchestrator instance.
@@ -227,7 +247,7 @@ Implement your own `IWorkerService` to pull data from alternative sources. Regis
 ```csharp
 services.AddScoped<IWorkerService, MyWorkerService>();
 ```
-When using the built-in `InMemoryGatherService`, both interfaces resolve to the same scoped instance so registrations should follow the same pattern. Because the worker now delegates entirely to the orchestrator you can swap gather services without modifying the hosted service.
+When using the built-in `ListGatherService`, both interfaces resolve to the same scoped instance so registrations should follow the same pattern. Because the worker now delegates entirely to the orchestrator you can swap gather services without modifying the hosted service.
 
 You can also reuse `HttpMetricsClient` in your own services to call REST endpoints by specifying the HTTP method and target URI. The client returns a strongly typed list so it works with any DTO shape. When a `services__<name>__0` environment variable is present the client automatically sets its base address, enabling simple service discovery between projects. When hosting multiple projects together you can add them in `MetricsPipeline.AppHost` and call `.WithReference()` so Aspire configures the discovery variables for you.
 
