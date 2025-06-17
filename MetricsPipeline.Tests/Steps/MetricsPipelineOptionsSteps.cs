@@ -4,6 +4,7 @@ using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using MetricsPipeline.Infrastructure;
+using MetricsPipeline.Core;
 using Microsoft.EntityFrameworkCore;
 using Reqnroll;
 
