@@ -11,6 +11,7 @@ var host = Host.CreateDefaultBuilder(args)
     .ConfigureServices((context, services) =>
     {
         services.AddMetricsPipeline(
+            typeof(MetricsPipeline.ConsoleApp.GenericMetricsWorker),
             o => o.UseInMemoryDatabase("demo"),
             opts =>
             {

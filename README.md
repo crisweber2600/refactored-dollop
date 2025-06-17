@@ -66,13 +66,15 @@ This project demonstrates a simple yet fully testable metrics processing pipelin
    `AddMetricsPipeline` can now register the hosted worker and HTTP client automatically when configured.
 13. **Enable the worker via options**
    Pass `opts.AddWorker = true` when calling `AddMetricsPipeline` to run `PipelineWorker` as a background service.
-14. **Choose a worker mode**
+14. **Specify a worker type**
+   Use `opts.WorkerType = typeof(GenericMetricsWorker)` or call `AddMetricsPipeline(typeof(GenericMetricsWorker), ...)` to register a custom hosted worker.
+15. **Choose a worker mode**
    Set `opts.WorkerMode = WorkerMode.Http` to enable the HTTP gatherer or leave it as the default `InMemory` mode.
-15. **Register the HTTP client**
+16. **Register the HTTP client**
    Set `opts.RegisterHttpClient = true` to make `HttpMetricsClient` available for custom services.
-16. **Customise the HTTP client**
+17. **Customise the HTTP client**
    Use `opts.ConfigureClient` to set `BaseAddress` or other settings after service discovery.
-17. **Run tests without restore**
+18. **Run tests without restore**
    Invoke `dotnet test --no-restore --no-build` for faster execution once packages are restored.
 
 Example configuration enabling the HTTP worker:
@@ -86,6 +88,14 @@ services.AddMetricsPipeline(
         opts.RegisterHttpClient = true;
     });
 ```
+You can also specify the worker type:
+
+```csharp
+services.AddMetricsPipeline(
+    typeof(GenericMetricsWorker),
+    o => o.UseInMemoryDatabase("demo"),
+    opts => opts.AddWorker = true);
+```
 The console host fetches a small set of metric values from an in-memory source, summarises them and either commits the result or discards it depending on validation. Each stage writes its status to the console.
 ## Worker Registration and DI Options
 
@@ -94,6 +104,7 @@ The console host fetches a small set of metric values from an in-memory source, 
 - **RegisterHttpClient** makes `HttpMetricsClient` available without changing the gather service.
 - **ConfigureClient** lets you set `HttpClient` properties such as `BaseAddress` after service discovery.
 - **Worker classes** live under `MetricsPipeline.Core/Infrastructure/Workers` for reuse across hosts.
+- **WorkerType** lets you specify an alternative hosted worker. Set `opts.WorkerType = typeof(MyWorker)` or use the overload `AddMetricsPipeline(typeof(MyWorker), ...)`.
 
 
 ## Architecture Overview
@@ -219,6 +230,9 @@ services.AddScoped<IWorkerService, MyWorkerService>();
 When using the built-in `InMemoryGatherService`, both interfaces resolve to the same scoped instance so registrations should follow the same pattern. Because the worker now delegates entirely to the orchestrator you can swap gather services without modifying the hosted service.
 
 You can also reuse `HttpMetricsClient` in your own services to call REST endpoints by specifying the HTTP method and target URI. The client returns a strongly typed list so it works with any DTO shape. When a `services__<name>__0` environment variable is present the client automatically sets its base address, enabling simple service discovery between projects. When hosting multiple projects together you can add them in `MetricsPipeline.AppHost` and call `.WithReference()` so Aspire configures the discovery variables for you.
+
+### Creating Hosted Workers
+Implement `IHostedWorker<T>` for background tasks that return typed results. Register the worker via `opts.WorkerType` or by calling `AddMetricsPipeline(typeof(MyWorker), ...)`.
 
 ### Custom Validation Service
 Implement `IValidationService` to enforce domain-specific checks:

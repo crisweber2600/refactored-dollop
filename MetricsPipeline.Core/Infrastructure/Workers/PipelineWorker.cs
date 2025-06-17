@@ -6,7 +6,7 @@ namespace MetricsPipeline.Infrastructure;
 /// <summary>
 /// Hosted service that runs the demo metrics pipeline.
 /// </summary>
-public class PipelineWorker : BackgroundService
+public class PipelineWorker : BackgroundService, IHostedWorker<string>
 {
     private readonly IPipelineOrchestrator _orchestrator;
     private readonly List<string> _executed = new();
@@ -40,6 +40,13 @@ public class PipelineWorker : BackgroundService
         var message = result.IsSuccess ? "Committed" : "Reverted";
         _executed.Add(message);
         Console.WriteLine(message);
+    }
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<string>> RunAsync(CancellationToken ct = default)
+    {
+        await ExecuteAsync(ct);
+        return ExecutedStages;
     }
 }
 

@@ -25,6 +25,12 @@ public class MetricsPipelineOptions
     public bool RegisterHttpClient { get; set; }
 
     /// <summary>
+    /// Optional type of the hosted worker registered when <see cref="AddWorker"/> is true.
+    /// Defaults to <see cref="PipelineWorker"/>.
+    /// </summary>
+    public Type? WorkerType { get; set; }
+
+    /// <summary>
     /// Optional configuration for the registered <see cref="HttpClient"/>.
     /// </summary>
     public Action<IServiceProvider, HttpClient>? ConfigureClient { get; set; }
