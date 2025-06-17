@@ -62,6 +62,8 @@ This project demonstrates a simple yet fully testable metrics processing pipelin
    Set `DOTNET_CLI_TELEMETRY_OPTOUT=1` to disable telemetry during automated runs.
 11. **Add custom workers**
    Place new worker classes in `MetricsPipeline.Core/Infrastructure/Workers` so they can be reused by multiple hosts.
+12. **Use pipeline options**
+   `AddMetricsPipeline` can now register the hosted worker and HTTP client automatically when configured.
 The console host fetches a small set of metric values from an in-memory source, summarises them and either commits the result or discards it depending on validation. Each stage writes its status to the console.
 
 ## Architecture Overview
@@ -131,6 +133,7 @@ Console.WriteLine(result.IsSuccess ? "Committed" : "Reverted");
 ```
 
 The worker exposes an `ExecutedStages` list which now contains a single entry representing the final outcome. Success adds `Committed` while failure adds `Reverted`.
+
 
 ### Running Multiple Pipelines
 
