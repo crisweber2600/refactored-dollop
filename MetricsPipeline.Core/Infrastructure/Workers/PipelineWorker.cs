@@ -1,5 +1,4 @@
 using MetricsPipeline.Core;
-using System.Linq;
 using Microsoft.Extensions.Hosting;
 
 namespace MetricsPipeline.Infrastructure;
@@ -10,9 +9,7 @@ namespace MetricsPipeline.Infrastructure;
 public class PipelineWorker : BackgroundService
 {
     private readonly IPipelineOrchestrator _orchestrator;
-    private readonly IWorkerService _worker;
     private readonly List<string> _executed = new();
-    private IReadOnlyList<double>? _gathered;
 
     /// <summary>
     /// Gets the messages returned by each executed stage.
@@ -23,47 +20,26 @@ public class PipelineWorker : BackgroundService
     /// Initializes a new instance of the worker.
     /// </summary>
     /// <param name="orchestrator">Pipeline orchestrator instance.</param>
-    /// <param name="gather">Gather service used by the worker.</param>
-    public PipelineWorker(IPipelineOrchestrator orchestrator, IWorkerService worker)
+    public PipelineWorker(IPipelineOrchestrator orchestrator)
     {
         _orchestrator = orchestrator;
-        _worker = worker;
     }
 
     /// <inheritdoc />
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        await RunStageAsync(TaskStage.Gather, stoppingToken);
-        await RunStageAsync(TaskStage.Validate, stoppingToken);
-
         var source = new Uri("/metrics", UriKind.Relative);
-        var result = await _orchestrator.ExecuteAsync<MetricDto>("demo", source, x => x.Value, SummaryStrategy.Average, 5.0, stoppingToken);
+        var result = await _orchestrator.ExecuteAsync<MetricDto>(
+            "demo",
+            source,
+            x => x.Value,
+            SummaryStrategy.Average,
+            5.0,
+            stoppingToken);
 
-        await RunStageAsync(result.IsSuccess ? TaskStage.Commit : TaskStage.Revert, stoppingToken);
-    }
-
-    private async Task RunStageAsync(TaskStage stage, CancellationToken ct)
-    {
-        switch (stage)
-        {
-            case TaskStage.Gather:
-                var gatherResult = await _worker.FetchAsync<MetricDto>(new Uri("/metrics", UriKind.Relative), ct);
-                _gathered = gatherResult.IsSuccess ? gatherResult.Value.Select(m => m.Value).ToList() : Array.Empty<double>();
-                _executed.Add("Gathered");
-                Console.WriteLine("Gathered");
-                break;
-            case TaskStage.Validate:
-                var isValid = _gathered != null && _gathered.Count > 0;
-                _executed.Add(isValid ? "Validated" : "ValidationFailed");
-                Console.WriteLine(isValid ? "Validated" : "ValidationFailed");
-                break;
-            default:
-                var strategy = TaskStrategyFactory.Create(stage);
-                var outcome = strategy.Execute();
-                _executed.Add(outcome.Value!);
-                Console.WriteLine(outcome.Value);
-                break;
-        }
+        var message = result.IsSuccess ? "Committed" : "Reverted";
+        _executed.Add(message);
+        Console.WriteLine(message);
     }
 }
 
