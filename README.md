@@ -64,6 +64,14 @@ This project demonstrates a simple yet fully testable metrics processing pipelin
    Place new worker classes in `MetricsPipeline.Core/Infrastructure/Workers` so they can be reused by multiple hosts.
 12. **Use pipeline options**
    `AddMetricsPipeline` can now register the hosted worker and HTTP client automatically when configured.
+13. **Enable the worker via options**
+   Pass `opts.AddWorker = true` when calling `AddMetricsPipeline` to run `PipelineWorker` as a background service.
+14. **Register the HTTP client**
+   Set `opts.RegisterHttpClient = true` to make `HttpMetricsClient` available for custom services.
+15. **Customise the HTTP client**
+   Use `opts.ConfigureClient` to set `BaseAddress` or other settings after service discovery.
+16. **Run tests without restore**
+   Invoke `dotnet test --no-restore --no-build` for faster execution once packages are restored.
 The console host fetches a small set of metric values from an in-memory source, summarises them and either commits the result or discards it depending on validation. Each stage writes its status to the console.
 
 ## Architecture Overview
