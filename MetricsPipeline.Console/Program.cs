@@ -12,8 +12,9 @@ var host = Host.CreateDefaultBuilder(args)
         services.AddMetricsPipeline(o => o.UseInMemoryDatabase("demo"));
         services.AddHttpClient<HttpMetricsClient>(c =>
         {
-            var discovered = context.Configuration["services:demoapi:0"] ??
-                              context.Configuration["services:demoapi"];
+            // Changed key to reference the correct service discovery as configured in MetricsPipeline.AppHost\Program.cs.
+            var discovered = context.Configuration["services:metricspipeline-demoapi:0"] ??
+                             context.Configuration["services:metricspipeline-demoapi"];
             if (!string.IsNullOrEmpty(discovered))
             {
                 c.BaseAddress = new Uri(discovered);
