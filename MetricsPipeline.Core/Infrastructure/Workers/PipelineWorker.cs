@@ -28,10 +28,8 @@ public class PipelineWorker : BackgroundService, IHostedWorker<string>
     /// <inheritdoc />
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        var source = new Uri("/metrics", UriKind.Relative);
         var result = await _orchestrator.ExecuteAsync<MetricDto>(
             "demo",
-            source,
             x => x.Value,
             SummaryStrategy.Average,
             5.0,

@@ -2,7 +2,7 @@ Feature: GenericWorkerService
   Verify that the orchestrator can fetch typed items via IWorkerService
 
   Scenario: Summarise DTO values from the worker service
-    Given the API at "https://api.example.com/custom" returns:
+    Given the gather service returns:
       | Amount |
       | 4 |
       | 6 |

@@ -1,21 +1,21 @@
-Feature: GatherApiData
-  Retrieves metric data from external APIs.
+Feature: GatherData
+  Retrieves metric data from the gather service.
 
-  Scenario: Successfully retrieve metrics from a single endpoint
-    Given the API endpoint "https://example.com/metrics" is available
+  Scenario: Successfully retrieve metrics
+    Given the gather service contains metric data
     When the system requests metric data
-    Then the API should respond with HTTP 200
+    Then the gather request should succeed
     And the response should contain metric values
       | MetricValue |
       | 42.0 |
       | 43.1 |
       | 41.7 |
 
-  Scenario: Fail to retrieve metrics from an unavailable endpoint
-    Given the API endpoint "https://fail.com/metrics" is down
+  Scenario: Fail to retrieve metrics when none available
+    Given the gather service has no metric data
     When the system requests metric data
-    Then the API should respond with HTTP 503
-    And the system should raise a "DataUnavailable" error
+    Then the gather request should fail
+    And the system should raise a "NoData" error
 
   Scenario: Handle API timeout gracefully
     Given the API endpoint responds after 10 seconds

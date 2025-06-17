@@ -16,27 +16,30 @@ namespace MetricsPipeline.Core
     public interface IGatherService
     {
         /// <summary>
-        /// Retrieves metrics from the specified source.
+        /// Collection of metric values to return when fetched.
         /// </summary>
-        /// <param name="source">Endpoint containing the metrics.</param>
+        IReadOnlyList<double> Metrics { get; set; }
+
+        /// <summary>
+        /// Retrieves the configured metric values.
+        /// </summary>
         /// <param name="ct">Optional cancellation token.</param>
         /// <returns>The fetched metrics wrapped in a pipeline result.</returns>
-        Task<PipelineResult<IReadOnlyList<double>>> FetchMetricsAsync(Uri source, CancellationToken ct = default);
+        Task<PipelineResult<IReadOnlyList<double>>> FetchMetricsAsync(CancellationToken ct = default);
     }
 
     /// <summary>
-    /// Generic worker capable of retrieving typed items from a source.
+    /// Generic worker capable of retrieving typed items from a configured source.
     /// </summary>
     public interface IWorkerService
     {
         /// <summary>
-        /// Fetches a collection of items from the specified source.
+        /// Fetches a collection of items from the configured source.
         /// </summary>
         /// <typeparam name="T">Item type to deserialize.</typeparam>
-        /// <param name="source">Endpoint containing the data.</param>
         /// <param name="ct">Optional cancellation token.</param>
         /// <returns>The fetched items wrapped in a pipeline result.</returns>
-        Task<PipelineResult<IReadOnlyList<T>>> FetchAsync<T>(Uri source, CancellationToken ct = default);
+        Task<PipelineResult<IReadOnlyList<T>>> FetchAsync<T>(CancellationToken ct = default);
     }
 
     /// <summary>
@@ -142,17 +145,18 @@ namespace MetricsPipeline.Core
     public interface IPipelineOrchestrator
     {
         /// <summary>
-        /// Runs the pipeline for the given source using the specified strategy.
+        /// Runs the pipeline using the specified strategy. The orchestrator
+        /// will invoke the named worker method on the configured worker
+        /// instance. The worker method determines which data source is used.
         /// </summary>
         /// <param name="pipelineName">Pipeline name.</param>
-        /// <param name="source">Source endpoint.</param>
         /// <param name="strategy">Summarization strategy.</param>
         /// <param name="threshold">Maximum allowed delta.</param>
         /// <param name="ct">Optional cancellation token.</param>
+        /// <param name="workerMethod">Name of the gather method to invoke.</param>
         /// <returns>The resulting pipeline state.</returns>
         Task<PipelineResult<PipelineState<T>>> ExecuteAsync<T>(
             string pipelineName,
-            Uri source,
             Func<T, double> selector,
             SummaryStrategy strategy,
             double threshold,
