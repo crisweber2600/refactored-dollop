@@ -52,6 +52,10 @@ This project demonstrates a simple yet fully testable metrics processing pipelin
 8. **Run a specific scenario**
    Use `dotnet test --filter "<name>"` to execute an individual feature when debugging.
 
+9. **Review AGENTS.md after each task**
+   Capture lessons learned and update the guidelines for next time.
+10. **Confirm environment variables**
+   Use `printenv services__demoapi__0` to verify the API address is set.
 The console host fetches a small set of metric values from an in-memory source, summarises them and either commits the result or discards it depending on validation. Each stage writes its status to the console.
 
 ## Architecture Overview
@@ -186,6 +190,9 @@ dotnet test --collect:"XPlat Code Coverage"
 ## Contributing
 
 Contributions are welcome. Please ensure that the solution builds and the tests pass before opening a pull request.
+- Keep the README updated with at least five improvements per pull request.
+- Update `AGENTS.md` with lessons learned so future runs improve.
+- Generate code coverage with `dotnet test --collect:"XPlat Code Coverage"` when possible.
 
 ## License
 
