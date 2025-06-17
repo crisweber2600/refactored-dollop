@@ -1,16 +1,23 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <Sdk Name="Aspire.AppHost.Sdk" Version="9.0.0" />
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <IsAspireHost>true</IsAspireHost>
+    <UserSecretsId>ed697f44-3467-4b81-836d-3526133e2d82</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Aspire.Hosting" Version="8.0.0-preview.3.23270.1" />
-    <ProjectReference Include="../MetricsPipeline.DemoApi/MetricsPipeline.DemoApi.csproj" />
-    <ProjectReference Include="../MetricsPipeline.Console/MetricsPipeline.Console.csproj" />
+    <PackageReference Include="Aspire.Hosting.AppHost" Version="9.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\MetricsPipeline.Console\MetricsPipeline.Console.csproj" />
+    <ProjectReference Include="..\MetricsPipeline.DemoApi\MetricsPipeline.DemoApi.csproj" />
   </ItemGroup>
 
 </Project>
