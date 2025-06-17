@@ -13,8 +13,7 @@ var host = Host.CreateDefaultBuilder(args)
         services.AddHttpClient<HttpMetricsClient>(c =>
         {
             // Changed key to reference the correct service discovery as configured in MetricsPipeline.AppHost\Program.cs.
-            var discovered = context.Configuration["services:metricspipeline-demoapi:0"] ??
-                             context.Configuration["services:metricspipeline-demoapi"];
+            var discovered = context.Configuration["services:metricspipeline-demoapi:https:0"];
             if (!string.IsNullOrEmpty(discovered))
             {
                 c.BaseAddress = new Uri(discovered);
