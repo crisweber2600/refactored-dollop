@@ -1,7 +1,7 @@
 var builder = DistributedApplication.CreateBuilder(args);
 
-builder.AddProject<Projects.MetricsPipeline_DemoApi>("metricspipeline-demoapi");
+var api = builder.AddProject<Projects.MetricsPipeline_DemoApi>("metricspipeline-demoapi");
 
-builder.AddProject<Projects.MetricsPipeline_Console>("metricspipeline-console");
+builder.AddProject<Projects.MetricsPipeline_Console>("metricspipeline-console").WithReference(api);
 
 builder.Build().Run();
