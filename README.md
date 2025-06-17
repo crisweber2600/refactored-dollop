@@ -87,6 +87,14 @@ services.AddMetricsPipeline(
     });
 ```
 The console host fetches a small set of metric values from an in-memory source, summarises them and either commits the result or discards it depending on validation. Each stage writes its status to the console.
+## Worker Registration and DI Options
+
+- **AddWorker** registers `PipelineWorker` as a hosted service so metrics run in the background.
+- **WorkerMode** selects between `InMemory` and `Http` gatherers.
+- **RegisterHttpClient** makes `HttpMetricsClient` available without changing the gather service.
+- **ConfigureClient** lets you set `HttpClient` properties such as `BaseAddress` after service discovery.
+- **Worker classes** live under `MetricsPipeline.Core/Infrastructure/Workers` for reuse across hosts.
+
 
 ## Architecture Overview
 
