@@ -10,11 +10,11 @@ public class PipelineStateTests
     {
         var ts = DateTime.UtcNow;
         var metrics = new double[] { 1.0, 2.0 };
-        var state = new PipelineState("pipe", new Uri("https://example.com"), metrics, 3.0, 2.0, 1.5, ts);
+        var state = new PipelineState<double>("pipe", new Uri("https://example.com"), metrics, 3.0, 2.0, 1.5, ts);
 
         Assert.Equal("pipe", state.PipelineName);
         Assert.Equal(new Uri("https://example.com"), state.SourceEndpoint);
-        Assert.True(metrics.SequenceEqual(state.RawMetrics));
+        Assert.True(metrics.SequenceEqual(state.RawItems));
         Assert.Equal(3.0, state.Summary);
         Assert.Equal(2.0, state.LastCommittedSummary);
         Assert.Equal(1.5, state.AcceptableDelta);

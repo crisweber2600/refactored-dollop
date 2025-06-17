@@ -9,6 +9,8 @@ using Reqnroll;
 
 namespace MetricsPipeline.Tests.Steps;
 
+internal record MetricDto { public double Value { get; set; } }
+
 // Simple orchestrator used to control success or failure in tests
 internal class FakeOrchestrator : IPipelineOrchestrator
 {
@@ -34,10 +36,21 @@ internal class FakeWorkerService : IGatherService, IWorkerService
 
     public Task<PipelineResult<IReadOnlyList<T>>> FetchAsync<T>(Uri source, CancellationToken ct = default)
     {
-        var data = new List<double>{1.0,2.0};
+        var data = new List<double> { 1.0, 2.0 };
         if (typeof(T) == typeof(double))
             return Task.FromResult(PipelineResult<IReadOnlyList<T>>.Success((IReadOnlyList<T>)(object)data));
-        return Task.FromResult(PipelineResult<IReadOnlyList<T>>.Failure("UnsupportedType"));
+
+        var prop = typeof(T).GetProperty("Value") ?? typeof(T).GetProperty("Amount");
+        if (prop == null || prop.PropertyType != typeof(double))
+            return Task.FromResult(PipelineResult<IReadOnlyList<T>>.Failure("UnsupportedType"));
+
+        var items = data.Select(v => {
+            var inst = Activator.CreateInstance(typeof(T));
+            prop.SetValue(inst, v);
+            return (T)inst!;
+        }).ToList();
+
+        return Task.FromResult(PipelineResult<IReadOnlyList<T>>.Success(items));
     }
 }
 
