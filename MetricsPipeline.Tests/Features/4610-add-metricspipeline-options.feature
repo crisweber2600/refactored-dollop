@@ -11,8 +11,8 @@ Feature: MetricsPipelineOptions
 
   Scenario: Set worker mode to Http
     When the pipeline is added with HTTP worker
-    Then IGatherService should be HttpGatherService
+    Then IWorkerService should be HttpWorkerService
 
   Scenario: Default worker mode is InMemory
     When the pipeline is added with default worker mode
-    Then IGatherService should be InMemoryGatherService
+    Then IGatherService should be ListGatherService

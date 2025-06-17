@@ -15,14 +15,12 @@ public class GatherSteps
         _ctx = ctx;
     }
 
-    [Given(@"the API endpoint ""(.*)"" is available")]
-    public void GivenEndpointAvailable(string raw)
+    [Given("the gather service contains metric data")]
+    public void GivenServiceHasData()
     {
-        var uri = new Uri(raw);
-        _ctx["endpoint"] = uri;
-        if (_gather is InMemoryGatherService mem)
+        if (_gather is ListGatherService list)
         {
-            mem.RegisterEndpoint(uri, new[] {42.0, 43.1, 41.7});
+            list.Metrics = new[] { 42.0, 43.1, 41.7 };
         }
     }
 
@@ -38,11 +36,12 @@ public class GatherSteps
         _ctx["timeout"] = seconds;
     }
 
-    [Given(@"the API endpoint ""(.*)"" is down")]
-    public void GivenEndpointDown(string raw)
-    {
-        _ctx["endpoint"] = new Uri(raw);
-    }
+[Given("the gather service has no metric data")]
+public void GivenServiceHasNoData()
+{
+    if (_gather is ListGatherService list)
+        list.Metrics = Array.Empty<double>();
+}
 
     [When(@"the system requests metric data")]
     public async Task WhenSystemRequestsMetricData()
@@ -52,7 +51,7 @@ public class GatherSteps
             _ctx["gatherResult"] = PipelineResult<IReadOnlyList<double>>.Failure("Timeout");
             return;
         }
-        var result = await _gather.FetchMetricsAsync((Uri)_ctx["endpoint"]);
+        var result = await _gather.FetchMetricsAsync();
         _ctx["gatherResult"] = result;
     }
 
@@ -101,11 +100,18 @@ public class GatherSteps
         ThenSystemRaises(error);
     }
 
-    [Then(@"the API should respond with HTTP (.*)")]
-    public void ThenApiShouldRespondWith(int status)
+    [Then("the gather request should succeed")]
+    public void ThenRequestSucceeds()
     {
         var res = (PipelineResult<IReadOnlyList<double>>)_ctx["gatherResult"];
-        (status == 200 ? res.IsSuccess : !res.IsSuccess).Should().BeTrue();
+        res.IsSuccess.Should().BeTrue();
+    }
+
+    [Then("the gather request should fail")]
+    public void ThenRequestFails()
+    {
+        var res = (PipelineResult<IReadOnlyList<double>>)_ctx["gatherResult"];
+        res.IsSuccess.Should().BeFalse();
     }
 
     [Then(@"the response should contain metric values")]

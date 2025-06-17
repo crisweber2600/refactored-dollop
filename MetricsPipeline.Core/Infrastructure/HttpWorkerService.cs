@@ -13,6 +13,7 @@ namespace MetricsPipeline.Infrastructure;
 public class HttpWorkerService : IWorkerService
 {
     private readonly HttpMetricsClient _client;
+    public Uri Source { get; set; } = new("https://api.example.com/data");
 
     public HttpWorkerService(HttpMetricsClient client)
     {
@@ -20,11 +21,11 @@ public class HttpWorkerService : IWorkerService
     }
 
     /// <inheritdoc />
-    public async Task<PipelineResult<IReadOnlyList<T>>> FetchAsync<T>(Uri source, CancellationToken ct = default)
+    public async Task<PipelineResult<IReadOnlyList<T>>> FetchAsync<T>(CancellationToken ct = default)
     {
         try
         {
-            var result = await _client.SendAsync<T>(HttpMethod.Get, source.ToString(), ct);
+            var result = await _client.SendAsync<T>(HttpMethod.Get, Source.ToString(), ct);
             return PipelineResult<IReadOnlyList<T>>.Success(result!);
         }
         catch (Exception ex)

@@ -3,7 +3,7 @@ Feature: FirstRunNoSummary
 
   Scenario: Run pipeline when no summary exists
     Given the system is configured with a delta threshold of 50.0
-    And the API at "https://api.example.com/data" returns:
+    And the gather service returns:
       | MetricValue |
       | 44.5 |
       | 45.0 |

@@ -12,14 +12,23 @@ namespace MetricsPipeline.ConsoleApp;
 /// <summary>
 /// Hosted worker that executes the demo pipeline and returns the fetched DTO list.
 /// </summary>
-public class GenericMetricsWorker : BackgroundService, IHostedWorker<GenericMetricsWorker.MetricDto>
+public class GenericMetricsWorker : BackgroundService, IHostedWorker<GenericMetricsWorker.MetricDto>, IWorkerService
 {
     private readonly IPipelineOrchestrator _orchestrator;
+    private readonly IGatherService _gather;
     private IReadOnlyList<MetricDto> _items = Array.Empty<MetricDto>();
 
-    public GenericMetricsWorker(IPipelineOrchestrator orchestrator)
+    /// <summary>
+    /// Name of the worker method used by this demo worker.
+    /// </summary>
+    public const string WorkerMethod = nameof(FetchAsync);
+
+    public Uri Source { get; set; } = new("https://api.example.com/data");
+
+    public GenericMetricsWorker(IPipelineOrchestrator orchestrator, IGatherService gather)
     {
         _orchestrator = orchestrator;
+        _gather = gather;
     }
 
     /// <summary>
@@ -27,12 +36,30 @@ public class GenericMetricsWorker : BackgroundService, IHostedWorker<GenericMetr
     /// </summary>
     public record MetricDto { public double Value { get; set; } }
 
+    /// <summary>
+    /// Fetches metric DTOs from the configured gather service.
+    /// </summary>
+    public async Task<PipelineResult<IReadOnlyList<T>>> FetchAsync<T>(CancellationToken ct = default)
+    {
+        if (typeof(T) != typeof(MetricDto))
+            return PipelineResult<IReadOnlyList<T>>.Failure("UnsupportedType");
+        var numbers = await _gather.FetchMetricsAsync(ct);
+        if (!numbers.IsSuccess)
+            return PipelineResult<IReadOnlyList<T>>.Failure(numbers.Error!);
+        var list = numbers.Value!.Select(v => new MetricDto { Value = v }).ToList();
+        return PipelineResult<IReadOnlyList<T>>.Success((IReadOnlyList<T>)list);
+    }
+
     /// <inheritdoc />
     public async Task<IReadOnlyList<MetricDto>> RunAsync(CancellationToken ct = default)
     {
-        var source = new Uri("https://api.example.com/data");
         var result = await _orchestrator.ExecuteAsync<MetricDto>(
-            "demo", source, x => x.Value, SummaryStrategy.Average, 5.0, ct);
+            "demo",
+            x => x.Value,
+            SummaryStrategy.Average,
+            5.0,
+            ct,
+            WorkerMethod);
         _items = result.IsSuccess ? result.Value.RawItems.ToList() : Array.Empty<MetricDto>();
         return _items;
     }

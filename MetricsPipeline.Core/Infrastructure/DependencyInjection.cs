@@ -61,14 +61,14 @@ public static class DependencyInjection
         if (options.WorkerMode == WorkerMode.Http)
         {
             RegisterHttpClient(services, options);
-            services.AddTransient<IGatherService, HttpGatherService>();
             services.AddTransient<IWorkerService, HttpWorkerService>();
+            services.AddTransient<IGatherService, ListGatherService>();
         }
         else
         {
-            services.AddScoped<InMemoryGatherService>();
-            services.AddScoped<IGatherService>(sp => sp.GetRequiredService<InMemoryGatherService>());
-            services.AddScoped<IWorkerService>(sp => sp.GetRequiredService<InMemoryGatherService>());
+            services.AddScoped<ListGatherService>();
+            services.AddScoped<IGatherService>(sp => sp.GetRequiredService<ListGatherService>());
+            services.AddScoped<IWorkerService>(sp => sp.GetRequiredService<ListGatherService>());
             if (options.RegisterHttpClient)
             {
                 RegisterHttpClient(services, options);

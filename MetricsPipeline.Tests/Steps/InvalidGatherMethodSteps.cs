@@ -24,7 +24,6 @@ public class InvalidGatherMethodSteps
     {
         _result = await _orchestrator.ExecuteAsync<double>(
             "default",
-            new Uri("https://api.example.com/data"),
             v => v,
             SummaryStrategy.Average,
             5.0,
