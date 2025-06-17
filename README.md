@@ -6,7 +6,7 @@ This project demonstrates a simple yet fully testable metrics processing pipelin
 
 | Project | Description |
 |---------|-------------|
-| **MetricsPipeline.Core** | Domain interfaces, pipeline orchestration logic and Entity Framework Core infrastructure. |
+| **MetricsPipeline.Core** | Domain interfaces, pipeline orchestration logic and Entity Framework Core infrastructure. Includes reusable worker implementations under `Infrastructure/Workers`. |
 | **MetricsPipeline.Console** | Console application that wires the pipeline together and runs a sample workflow. |
 | **MetricsPipeline.Tests** | xUnit/Reqnroll test suite validating each stage and the end-to-end flow. |
 | **MetricsPipeline.DemoApi** | Minimal API returning sample metrics for the worker to consume. |
@@ -18,6 +18,7 @@ This project demonstrates a simple yet fully testable metrics processing pipelin
    ```bash
    dotnet build
    ```
+   If packages were not restored previously run `dotnet restore` first.
 2. **Apply migrations if new entities have been added**
    ```bash
    dotnet ef migrations add <name> --project MetricsPipeline.Core
@@ -32,6 +33,8 @@ This project demonstrates a simple yet fully testable metrics processing pipelin
 4. **Run the sample console application alone**
    ```bash
    dotnet run --project MetricsPipeline.Console
+   # for automatic rebuilds use
+   # dotnet watch run --project MetricsPipeline.Console
    ```
    When not using the Aspire host specify the Demo API address manually:
    ```bash
@@ -40,14 +43,14 @@ This project demonstrates a simple yet fully testable metrics processing pipelin
    The console reads the `services__demoapi__0` variable to discover the API.
 5. **Execute the tests**
    ```bash
-   dotnet test
+   dotnet test --no-restore --no-build
    ```
-6. **Define custom pipelines**
+   6. **Define custom pipelines**
    Configure additional gather methods and thresholds as needed by your application.
 
 7. **Select a database provider**
    Set `DB_PROVIDER=sqlite` before running the console or tests to use an in-memory SQLite database instead of the default provider.
-   Run `dotnet clean` if you switch providers to ensure the context is rebuilt.
+   Run `git clean -xfd` after switching providers so the context is rebuilt from a clean slate.
 
 8. **Run a specific scenario**
    Use `dotnet test --filter "<name>"` to execute an individual feature when debugging.
@@ -56,6 +59,9 @@ This project demonstrates a simple yet fully testable metrics processing pipelin
    Capture lessons learned and update the guidelines for next time.
 10. **Confirm environment variables**
    Use `printenv services__demoapi__0` to verify the API address is set.
+   Set `DOTNET_CLI_TELEMETRY_OPTOUT=1` to disable telemetry during automated runs.
+11. **Add custom workers**
+   Place new worker classes in `MetricsPipeline.Core/Infrastructure/Workers` so they can be reused by multiple hosts.
 The console host fetches a small set of metric values from an in-memory source, summarises them and either commits the result or discards it depending on validation. Each stage writes its status to the console.
 
 ## Architecture Overview
@@ -115,7 +121,7 @@ When no prior summary exists the orchestrator now treats the run as valid regard
 
 ## Console Application
 
-`MetricsPipeline.Console` registers the pipeline services with a dependency injection container and runs `PipelineWorker`, a hosted service that executes the pipeline once at startup. The worker now depends on the new `IWorkerService` so it can retrieve any DTO type. The output demonstrates how each stage is called and whether the final summary is persisted or discarded.
+`MetricsPipeline.Console` registers the pipeline services with a dependency injection container and runs `PipelineWorker`, a hosted service defined in the core infrastructure. The worker now depends on the new `IWorkerService` so it can retrieve any DTO type. The output demonstrates how each stage is called and whether the final summary is persisted or discarded.
 
 ### Running Multiple Pipelines
 
