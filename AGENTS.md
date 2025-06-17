@@ -11,3 +11,4 @@
 - Keep tasks small and focused on making the tests pass.
 - Update `README.md` with improvements reflecting new functionality and guidance.
 - Each pull request must contain at least five distinct enhancements to the README.
+- After each run, refine this file with lessons learned to streamline future work.
