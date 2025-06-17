@@ -9,7 +9,7 @@ using Microsoft.Extensions.DependencyInjection;
 var host = Host.CreateDefaultBuilder(args)
     .ConfigureServices((context, services) =>
     {
-        services.AddMetricsPipeline(o => o.UseInMemoryDatabase("demo"));
+        services.AddMetricsPipeline(o => o.UseInMemoryDatabase("demo"), PipelineMode.Http);
         services.AddHttpClient<HttpMetricsClient>(c =>
         {
             // Changed key to reference the correct service discovery as configured in MetricsPipeline.AppHost\Program.cs.
@@ -19,8 +19,6 @@ var host = Host.CreateDefaultBuilder(args)
                 c.BaseAddress = new Uri(discovered);
             }
         });
-        services.AddTransient<IGatherService, HttpGatherService>();
-        services.AddTransient<IWorkerService, HttpWorkerService>();
         services.AddHostedService<PipelineWorker>();
     })
     .Build();

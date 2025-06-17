@@ -62,6 +62,8 @@ This project demonstrates a simple yet fully testable metrics processing pipelin
    Set `DOTNET_CLI_TELEMETRY_OPTOUT=1` to disable telemetry during automated runs.
 11. **Add custom workers**
    Place new worker classes in `MetricsPipeline.Core/Infrastructure/Workers` so they can be reused by multiple hosts.
+12. **Choose a pipeline mode**
+   Pass `PipelineMode.Http` to `AddMetricsPipeline` to use the HTTP worker and gather services.
 The console host fetches a small set of metric values from an in-memory source, summarises them and either commits the result or discards it depending on validation. Each stage writes its status to the console.
 
 ## Architecture Overview
@@ -88,11 +90,13 @@ The orchestrator invokes these services in order and returns a `PipelineState` o
 The default implementations live in `MetricsPipeline.Infrastructure`:
 
 - `InMemoryGatherService` – serves metric values from an in-memory dictionary and is used for both tests and the demo console.
+- `HttpGatherService` – retrieves metrics over HTTP and pairs with `HttpWorkerService` for typed DTO support.
 - Both `IGatherService` and `IWorkerService` now resolve to the same scoped instance so step definitions and the orchestrator share data.
 - `InMemorySummarizationService` – performs calculations in memory and supports the `Average`, `Sum` and `Count` strategies.
 - `ThresholdValidationService` – checks that the difference between the current and previous summaries does not exceed a supplied threshold.
 - `EfCommitService` – saves summaries to the database by calling `EfSummaryRepository`.
 - `LoggingDiscardHandler` – simply writes the discarded summary to the console.
+- Select the gather mode by passing `PipelineMode.InMemory` or `PipelineMode.Http` to `AddMetricsPipeline`.
 - Set `DB_PROVIDER=sqlite` to run the pipeline using an in-memory SQLite database for closer parity with production.
 
 Entity Framework Core is used for persistence via the `SummaryDbContext`. Summary records are stored with a timestamp and may be soft deleted.
@@ -122,6 +126,12 @@ When no prior summary exists the orchestrator now treats the run as valid regard
 ## Console Application
 
 `MetricsPipeline.Console` registers the pipeline services with a dependency injection container and runs `PipelineWorker`, a hosted service defined in the core infrastructure. The worker now depends on the new `IWorkerService` so it can retrieve any DTO type. The output demonstrates how each stage is called and whether the final summary is persisted or discarded.
+
+Configure the mode when registering the pipeline:
+
+```csharp
+services.AddMetricsPipeline(o => o.UseInMemoryDatabase("demo"), PipelineMode.Http);
+```
 
 ### Running Multiple Pipelines
 
@@ -167,6 +177,14 @@ Implement your own `IWorkerService` to pull data from alternative sources. Regis
 services.AddScoped<IWorkerService, MyWorkerService>();
 ```
 When using the built-in `InMemoryGatherService`, both interfaces resolve to the same scoped instance so registrations should follow the same pattern.
+
+### Switching Modes
+Choose between in-memory or HTTP workers by selecting a `PipelineMode`:
+
+```csharp
+services.AddMetricsPipeline(cfg, PipelineMode.InMemory); // default
+services.AddMetricsPipeline(cfg, PipelineMode.Http);     // HTTP client mode
+```
 
 You can also reuse `HttpMetricsClient` in your own services to call REST endpoints by specifying the HTTP method and target URI. The client returns a strongly typed list so it works with any DTO shape. When a `services__<name>__0` environment variable is present the client automatically sets its base address, enabling simple service discovery between projects. When hosting multiple projects together you can add them in `MetricsPipeline.AppHost` and call `.WithReference()` so Aspire configures the discovery variables for you.
 

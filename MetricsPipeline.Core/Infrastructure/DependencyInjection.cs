@@ -14,8 +14,8 @@ public static class DependencyInjection
     /// <param name="services">Service collection to configure.</param>
     /// <param name="dbCfg">Action configuring the database context.</param>
     /// <returns>The updated service collection.</returns>
-    public static IServiceCollection AddMetricsPipeline(this IServiceCollection services, Action<DbContextOptionsBuilder> dbCfg)
-        => services.AddMetricsPipeline<SummaryDbContext>(dbCfg);
+    public static IServiceCollection AddMetricsPipeline(this IServiceCollection services, Action<DbContextOptionsBuilder> dbCfg, PipelineMode mode = PipelineMode.InMemory)
+        => services.AddMetricsPipeline<SummaryDbContext>(dbCfg, mode);
 
     /// <summary>
     /// Registers the pipeline using a custom context type.
@@ -24,18 +24,24 @@ public static class DependencyInjection
     /// <param name="services">Service collection to configure.</param>
     /// <param name="dbCfg">Action configuring the database context.</param>
     /// <returns>The updated service collection.</returns>
-    public static IServiceCollection AddMetricsPipeline<TContext>(this IServiceCollection services, Action<DbContextOptionsBuilder> dbCfg)
+    public static IServiceCollection AddMetricsPipeline<TContext>(this IServiceCollection services, Action<DbContextOptionsBuilder> dbCfg, PipelineMode mode = PipelineMode.InMemory)
         where TContext : SummaryDbContext
     {
         services.AddDbContext<SummaryDbContext, TContext>(dbCfg);
-        // Use a single scoped instance of the gather service so both IGatherService
-        // and IWorkerService resolve to the same object within a scenario.
-        // Register InMemoryGatherService separately to ensure that both interfaces
-        // (IGatherService and IWorkerService) resolve to the same instance. This avoids
-        // creating multiple instances of the service within the same scope.
-        services.AddScoped<InMemoryGatherService>();
-        services.AddScoped<IGatherService>(sp => sp.GetRequiredService<InMemoryGatherService>());
-        services.AddScoped<IWorkerService>(sp => sp.GetRequiredService<InMemoryGatherService>());
+
+        if (mode == PipelineMode.Http)
+        {
+            services.AddTransient<IGatherService, HttpGatherService>();
+            services.AddTransient<IWorkerService, HttpWorkerService>();
+        }
+        else
+        {
+            // Use a single scoped instance of the gather service so both IGatherService
+            // and IWorkerService resolve to the same object within a scenario.
+            services.AddScoped<InMemoryGatherService>();
+            services.AddScoped<IGatherService>(sp => sp.GetRequiredService<InMemoryGatherService>());
+            services.AddScoped<IWorkerService>(sp => sp.GetRequiredService<InMemoryGatherService>());
+        }
         services.AddTransient<ISummarizationService, InMemorySummarizationService>();
         services.AddTransient<IValidationService, ThresholdValidationService>();
         services.AddTransient<ICommitService, EfCommitService>();
