@@ -35,10 +35,10 @@ namespace MetricsPipeline.Core
     /// <param name="LastCommittedSummary">Last committed summary value.</param>
     /// <param name="AcceptableDelta">Maximum delta allowed.</param>
     /// <param name="Timestamp">Time of the pipeline execution.</param>
-    public record PipelineState(
+    public record PipelineState<T>(
         string PipelineName,
         Uri SourceEndpoint,
-        IReadOnlyList<double> RawMetrics,
+        IReadOnlyList<T> RawItems,
         double? Summary,
         double? LastCommittedSummary,
         double AcceptableDelta,

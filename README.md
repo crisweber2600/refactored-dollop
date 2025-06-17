@@ -102,22 +102,21 @@ When no prior summary exists the orchestrator now treats the run as valid regard
 
 ## Console Application
 
-`MetricsPipeline.Console` registers the pipeline services with a dependency injection container and runs `PipelineWorker`, a hosted service that executes the pipeline once at startup. The worker output demonstrates how each stage is called and whether the final summary is persisted or discarded.
+`MetricsPipeline.Console` registers the pipeline services with a dependency injection container and runs `PipelineWorker`, a hosted service that executes the pipeline once at startup. The worker now depends on the new `IWorkerService` so it can retrieve any DTO type. The output demonstrates how each stage is called and whether the final summary is persisted or discarded.
 
 ### Running Multiple Pipelines
 
-The worker can be customised by supplying an alternative gather method name when invoking the orchestrator. A single worker can host several pipelines targeting different data types so multiple gather methods may run side by side. Each pipeline has its own threshold and summarisation strategy, making it simple to plug the library into new domains without rewriting the worker service. Below is an example showing how two pipelines can be executed sequentially using different gather methods:
+The worker can now be customised by supplying an alternative worker method when invoking the orchestrator. A single worker can host several pipelines targeting different DTOs so multiple methods may run side by side. Each pipeline has its own threshold and summarisation strategy, making it simple to plug the library into new domains without rewriting the worker service. Below is an example showing how two pipelines can be executed sequentially using different worker methods:
 
 ```csharp
 var source = new Uri("/metrics", UriKind.Relative);
-await _orchestrator.ExecuteAsync("demo", source, SummaryStrategy.Average, 5.0, ct);
-await _orchestrator.ExecuteAsync("demo-extended", source, SummaryStrategy.Sum, 10.0, ct, nameof(HttpGatherService.CustomGatherAsync));
+await _orchestrator.ExecuteAsync<MetricDto>("demo", source, x => x.Value, SummaryStrategy.Average, 5.0, ct);
+await _orchestrator.ExecuteAsync<MetricDto>("demo-alt", source, x => x.Value, SummaryStrategy.Sum, 10.0, ct, nameof(HttpWorkerService.FetchAsync));
 ```
 
-Each call to `ExecuteAsync` selects the gather method by name allowing multiple pipelines to reuse the same orchestrator instance.
+Each call to `ExecuteAsync` selects the worker method by name allowing multiple pipelines to reuse the same orchestrator instance.
 
-All HTTP calls use relative paths which combine with the discovered service base address, keeping configuration minimal.
-You can inspect `HttpMetricsClient.BaseAddress` at runtime to confirm which endpoint was resolved so you know exactly which service the worker discovered.
+All HTTP calls use relative paths which combine with the discovered service base address, keeping configuration minimal. You can inspect `HttpMetricsClient.BaseAddress` at runtime to confirm which endpoint was resolved so you know exactly which service the worker discovered. The worker service reuses `HttpMetricsClient` so any DTO can be downloaded and summarised without additional boilerplate.
 
 The `MetricsPipeline.DemoApi` project exposes a minimal `/metrics` endpoint returning sample values. A reusable `HttpMetricsClient` abstracts `HttpClient` so the worker can fetch data from any URI using any HTTP method and deserialize it into a list of typed objects. When running under `MetricsPipeline.AppHost` the console worker automatically calls the demo API through this client.
 The client now exposes a `BaseAddress` property so tests can verify which service endpoint was discovered.
@@ -142,11 +141,11 @@ Seed data files can be placed in the `MetricsPipeline.Console/Seed` folder and w
 
 The default services can be replaced with custom implementations through dependency injection. Additional summarisation strategies and validation rules may be registered in the same way to tailor the pipeline to new data sources.
 
-### Registering a Custom IGatherService
-Implement your own `IGatherService` to pull metrics from alternative sources. Register the implementation before running the worker:
+### Registering a Custom IWorkerService
+Implement your own `IWorkerService` to pull data from alternative sources. Register the implementation before running the worker:
 
 ```csharp
-services.AddScoped<IGatherService, MyGatherService>();
+services.AddScoped<IWorkerService, MyWorkerService>();
 ```
 
 You can also reuse `HttpMetricsClient` in your own services to call REST endpoints by specifying the HTTP method and target URI. The client returns a strongly typed list so it works with any DTO shape. When a `services__<name>__0` environment variable is present the client automatically sets its base address, enabling simple service discovery between projects. When hosting multiple projects together you can add them in `MetricsPipeline.AppHost` and call `.WithReference()` so Aspire configures the discovery variables for you.

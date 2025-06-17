@@ -9,7 +9,7 @@ public class IntegrationSteps
     private readonly IPipelineOrchestrator _orchestrator;
     private readonly InMemoryGatherService _gather;
     private readonly SummaryDbContext _db;
-    private PipelineResult<PipelineState>? _run;
+    private PipelineResult<PipelineState<double>>? _run;
 
     public IntegrationSteps(IPipelineOrchestrator orchestrator, IGatherService gather, SummaryDbContext db)
     {
@@ -81,7 +81,7 @@ public class IntegrationSteps
     [When(@"the pipeline is executed")]
     public async Task WhenPipelineExecuted()
     {
-        _run = await _orchestrator.ExecuteAsync(_pipeline, _source, SummaryStrategy.Average, _threshold, default, _gatherMethod);
+        _run = await _orchestrator.ExecuteAsync<double>(_pipeline, _source, v => v, SummaryStrategy.Average, _threshold, default, _gatherMethod);
     }
 
     [When(@"pipeline ""(.*)"" is executed")]

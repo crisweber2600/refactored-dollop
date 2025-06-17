@@ -1,4 +1,5 @@
 using MetricsPipeline.Core;
+using System.Linq;
 using Microsoft.Extensions.Hosting;
 
 namespace MetricsPipeline.Infrastructure;
@@ -9,7 +10,7 @@ namespace MetricsPipeline.Infrastructure;
 public class PipelineWorker : BackgroundService
 {
     private readonly IPipelineOrchestrator _orchestrator;
-    private readonly IGatherService _gather;
+    private readonly IWorkerService _worker;
     private readonly List<string> _executed = new();
     private IReadOnlyList<double>? _gathered;
 
@@ -23,10 +24,10 @@ public class PipelineWorker : BackgroundService
     /// </summary>
     /// <param name="orchestrator">Pipeline orchestrator instance.</param>
     /// <param name="gather">Gather service used by the worker.</param>
-    public PipelineWorker(IPipelineOrchestrator orchestrator, IGatherService gather)
+    public PipelineWorker(IPipelineOrchestrator orchestrator, IWorkerService worker)
     {
         _orchestrator = orchestrator;
-        _gather = gather;
+        _worker = worker;
     }
 
     /// <inheritdoc />
@@ -36,7 +37,7 @@ public class PipelineWorker : BackgroundService
         await RunStageAsync(TaskStage.Validate, stoppingToken);
 
         var source = new Uri("/metrics", UriKind.Relative);
-        var result = await _orchestrator.ExecuteAsync("demo", source, SummaryStrategy.Average, 5.0, stoppingToken);
+        var result = await _orchestrator.ExecuteAsync<MetricDto>("demo", source, x => x.Value, SummaryStrategy.Average, 5.0, stoppingToken);
 
         await RunStageAsync(result.IsSuccess ? TaskStage.Commit : TaskStage.Revert, stoppingToken);
     }
@@ -46,8 +47,8 @@ public class PipelineWorker : BackgroundService
         switch (stage)
         {
             case TaskStage.Gather:
-                var gatherResult = await _gather.FetchMetricsAsync(new Uri("/metrics", UriKind.Relative), ct);
-                _gathered = gatherResult.IsSuccess ? gatherResult.Value : Array.Empty<double>();
+                var gatherResult = await _worker.FetchAsync<MetricDto>(new Uri("/metrics", UriKind.Relative), ct);
+                _gathered = gatherResult.IsSuccess ? gatherResult.Value.Select(m => m.Value).ToList() : Array.Empty<double>();
                 _executed.Add("Gathered");
                 Console.WriteLine("Gathered");
                 break;
@@ -64,4 +65,9 @@ public class PipelineWorker : BackgroundService
                 break;
         }
     }
+}
+
+internal record MetricDto
+{
+    public double Value { get; set; }
 }

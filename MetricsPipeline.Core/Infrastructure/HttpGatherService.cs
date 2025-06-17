@@ -6,7 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using MetricsPipeline.Core;
 
-public class HttpGatherService : IGatherService
+public class HttpGatherService : IGatherService, IWorkerService
 {
     private readonly HttpMetricsClient _client;
 
@@ -30,4 +30,18 @@ public class HttpGatherService : IGatherService
 
     public Task<PipelineResult<IReadOnlyList<double>>> CustomGatherAsync(Uri source, CancellationToken ct = default)
         => FetchMetricsAsync(source, ct);
+
+    /// <inheritdoc />
+    public async Task<PipelineResult<IReadOnlyList<T>>> FetchAsync<T>(Uri source, CancellationToken ct = default)
+    {
+        try
+        {
+            var data = await _client.SendAsync<T>(HttpMethod.Get, source.ToString(), ct);
+            return PipelineResult<IReadOnlyList<T>>.Success(data!);
+        }
+        catch (Exception ex)
+        {
+            return PipelineResult<IReadOnlyList<T>>.Failure(ex.Message);
+        }
+    }
 }
