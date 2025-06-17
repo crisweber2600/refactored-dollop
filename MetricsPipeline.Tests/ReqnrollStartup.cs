@@ -21,8 +21,7 @@ public class ReqnrollStartup
                 o.UseInMemoryDatabase(Guid.NewGuid().ToString());
         }
 
-        services.AddMetricsPipeline(ConfigureDb);
-        services.AddHttpClient<HttpMetricsClient>();
+        services.AddMetricsPipeline(ConfigureDb, opts => opts.RegisterHttpClient = true);
         services.AddRepositoriesAndSagas<SummaryDbContext>(
             ConfigureDb,
             cfg => cfg.UsingInMemory((context, c) => { }));

@@ -62,6 +62,8 @@ This project demonstrates a simple yet fully testable metrics processing pipelin
    Set `DOTNET_CLI_TELEMETRY_OPTOUT=1` to disable telemetry during automated runs.
 11. **Add custom workers**
    Place new worker classes in `MetricsPipeline.Core/Infrastructure/Workers` so they can be reused by multiple hosts.
+12. **Use pipeline options**
+   `AddMetricsPipeline` can now register the hosted worker and HTTP client automatically when configured.
 The console host fetches a small set of metric values from an in-memory source, summarises them and either commits the result or discards it depending on validation. Each stage writes its status to the console.
 
 ## Architecture Overview
@@ -121,7 +123,36 @@ When no prior summary exists the orchestrator now treats the run as valid regard
 
 ## Console Application
 
-`MetricsPipeline.Console` registers the pipeline services with a dependency injection container and runs `PipelineWorker`, a hosted service defined in the core infrastructure. The worker now depends on the new `IWorkerService` so it can retrieve any DTO type. The output demonstrates how each stage is called and whether the final summary is persisted or discarded.
+`MetricsPipeline.Console` registers the pipeline services with a dependency injection container and runs `PipelineWorker`, a hosted service defined in the core infrastructure. The worker now depends on the new `IWorkerService` so it can retrieve any DTO type. The `AddMetricsPipeline` extension accepts options enabling automatic HTTP client configuration and hosted worker registration. The output demonstrates how each stage is called and whether the final summary is persisted or discarded.
+
+You can enable both behaviours in one call:
+
+```csharp
+services.AddMetricsPipeline(
+    o => o.UseInMemoryDatabase("demo"),
+    opts =>
+    {
+    opts.AddWorker = true;
+    opts.UseHttpWorker = true;
+});
+```
+To discover service addresses use the `ConfigureClient` option:
+
+```csharp
+services.AddMetricsPipeline(
+    o => o.UseInMemoryDatabase("demo"),
+    opts =>
+    {
+        opts.RegisterHttpClient = true;
+        opts.ConfigureClient = (sp, c) =>
+        {
+            var cfg = sp.GetRequiredService<IConfiguration>();
+            var addr = cfg["services:demoapi:0"];
+            if (!string.IsNullOrEmpty(addr))
+                c.BaseAddress = new Uri(addr);
+        };
+    });
+```
 
 ### Running Multiple Pipelines
 
