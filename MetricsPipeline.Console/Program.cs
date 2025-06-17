@@ -20,6 +20,7 @@ var host = Host.CreateDefaultBuilder(args)
             }
         });
         services.AddTransient<IGatherService, HttpGatherService>();
+        services.AddTransient<IWorkerService, HttpWorkerService>();
         services.AddHostedService<PipelineWorker>();
     })
     .Build();

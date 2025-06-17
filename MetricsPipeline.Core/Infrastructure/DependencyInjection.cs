@@ -32,6 +32,7 @@ public static class DependencyInjection
         // the orchestrator and step definitions share the same instance
         // within a single scenario while avoiding cross-scenario state.
         services.AddScoped<IGatherService, InMemoryGatherService>();
+        services.AddScoped<IWorkerService, InMemoryGatherService>();
         services.AddTransient<ISummarizationService, InMemorySummarizationService>();
         services.AddTransient<IValidationService, ThresholdValidationService>();
         services.AddTransient<ICommitService, EfCommitService>();

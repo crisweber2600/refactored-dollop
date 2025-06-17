@@ -20,6 +20,21 @@ namespace MetricsPipeline.Core
     }
 
     /// <summary>
+    /// Generic worker capable of retrieving typed items from a source.
+    /// </summary>
+    public interface IWorkerService
+    {
+        /// <summary>
+        /// Fetches a collection of items from the specified source.
+        /// </summary>
+        /// <typeparam name="T">Item type to deserialize.</typeparam>
+        /// <param name="source">Endpoint containing the data.</param>
+        /// <param name="ct">Optional cancellation token.</param>
+        /// <returns>The fetched items wrapped in a pipeline result.</returns>
+        Task<PipelineResult<IReadOnlyList<T>>> FetchAsync<T>(Uri source, CancellationToken ct = default);
+    }
+
+    /// <summary>
     /// Service that summarizes a set of metrics.
     /// </summary>
     public interface ISummarizationService
@@ -130,12 +145,13 @@ namespace MetricsPipeline.Core
         /// <param name="threshold">Maximum allowed delta.</param>
         /// <param name="ct">Optional cancellation token.</param>
         /// <returns>The resulting pipeline state.</returns>
-        Task<PipelineResult<PipelineState>> ExecuteAsync(
+        Task<PipelineResult<PipelineState<T>>> ExecuteAsync<T>(
             string pipelineName,
             Uri source,
+            Func<T, double> selector,
             SummaryStrategy strategy,
             double threshold,
             CancellationToken ct = default,
-            string gatherMethodName = nameof(IGatherService.FetchMetricsAsync));
+            string workerMethod = nameof(IWorkerService.FetchAsync));
     }
 }

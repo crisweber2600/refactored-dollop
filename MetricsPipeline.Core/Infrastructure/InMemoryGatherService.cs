@@ -4,7 +4,7 @@ using MetricsPipeline.Core;
 /// <summary>
 /// Simple gather service that serves metrics from an in-memory dictionary.
 /// </summary>
-public class InMemoryGatherService : IGatherService
+public class InMemoryGatherService : IGatherService, IWorkerService
 {
     private readonly IDictionary<Uri, IReadOnlyList<double>> _dataMap =
         new Dictionary<Uri, IReadOnlyList<double>>
@@ -38,4 +38,33 @@ public class InMemoryGatherService : IGatherService
     /// </summary>
     public Task<PipelineResult<IReadOnlyList<double>>> CustomGatherAsync(Uri source, CancellationToken ct = default)
         => FetchMetricsAsync(source, ct);
+
+    /// <inheritdoc />
+    public Task<PipelineResult<IReadOnlyList<T>>> FetchAsync<T>(Uri source, CancellationToken ct = default)
+    {
+        if (typeof(T) == typeof(double))
+        {
+            var task = FetchMetricsAsync(source, ct);
+            return task.ContinueWith(t =>
+                t.Result.IsSuccess
+                    ? PipelineResult<IReadOnlyList<T>>.Success((IReadOnlyList<T>)(object)t.Result.Value!)
+                    : PipelineResult<IReadOnlyList<T>>.Failure(t.Result.Error!), ct);
+        }
+
+        if (!_dataMap.TryGetValue(source, out var set))
+            return Task.FromResult(PipelineResult<IReadOnlyList<T>>.Failure("DataUnavailable"));
+
+        var prop = typeof(T).GetProperty("Value") ?? typeof(T).GetProperty("Amount");
+        if (prop == null || prop.PropertyType != typeof(double))
+            return Task.FromResult(PipelineResult<IReadOnlyList<T>>.Failure("UnsupportedType"));
+
+        var list = set.Select(v =>
+        {
+            var inst = Activator.CreateInstance(typeof(T));
+            prop.SetValue(inst, v);
+            return (T)inst!;
+        }).ToList();
+
+        return Task.FromResult(PipelineResult<IReadOnlyList<T>>.Success(list));
+    }
 }
