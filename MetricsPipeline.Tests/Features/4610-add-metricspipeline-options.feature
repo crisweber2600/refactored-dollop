@@ -9,6 +9,10 @@ Feature: MetricsPipelineOptions
     When the pipeline is added with HttpClient
     Then the service provider should contain HttpMetricsClient
 
-  Scenario: Register HTTP worker services
+  Scenario: Set worker mode to Http
     When the pipeline is added with HTTP worker
     Then IGatherService should be HttpGatherService
+
+  Scenario: Default worker mode is InMemory
+    When the pipeline is added with default worker mode
+    Then IGatherService should be InMemoryGatherService

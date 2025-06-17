@@ -1,6 +1,7 @@
 namespace MetricsPipeline.Infrastructure;
 using System;
 using System.Net.Http;
+using MetricsPipeline.Core;
 
 /// <summary>
 /// Options controlling additional registrations when calling <see cref="DependencyInjection.AddMetricsPipeline"/>.
@@ -13,9 +14,10 @@ public class MetricsPipelineOptions
     public bool AddWorker { get; set; }
 
     /// <summary>
-    /// Registers <see cref="HttpMetricsClient"/>, <see cref="HttpGatherService"/>, and <see cref="HttpWorkerService"/> when true.
+    /// Determines which gather and worker services are registered.
+    /// Defaults to <see cref="WorkerMode.InMemory"/>.
     /// </summary>
-    public bool UseHttpWorker { get; set; }
+    public WorkerMode WorkerMode { get; set; } = WorkerMode.InMemory;
 
     /// <summary>
     /// Registers <see cref="HttpMetricsClient"/> without altering the gather service.

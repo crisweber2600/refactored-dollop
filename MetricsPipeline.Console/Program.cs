@@ -2,6 +2,7 @@
 using System;
 using Microsoft.Extensions.Configuration;
 using MetricsPipeline.Infrastructure;
+using MetricsPipeline.Core;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.DependencyInjection;
@@ -14,7 +15,7 @@ var host = Host.CreateDefaultBuilder(args)
             opts =>
             {
                 opts.AddWorker = true;
-                opts.UseHttpWorker = true;
+                opts.WorkerMode = WorkerMode.Http;
                 opts.ConfigureClient = (sp, c) =>
                 {
                     var cfg = sp.GetRequiredService<IConfiguration>();

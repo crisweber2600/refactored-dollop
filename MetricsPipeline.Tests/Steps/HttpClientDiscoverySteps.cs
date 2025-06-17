@@ -2,6 +2,8 @@ using System;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Configuration;
+using Microsoft.EntityFrameworkCore;
 using MetricsPipeline.Infrastructure;
 using Reqnroll;
 
