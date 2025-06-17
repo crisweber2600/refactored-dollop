@@ -42,7 +42,16 @@ public class MetricsPipelineOptionsSteps
         var services = new ServiceCollection();
         services.AddMetricsPipeline(
             o => o.UseInMemoryDatabase(Guid.NewGuid().ToString()),
-            opts => opts.UseHttpWorker = true);
+            opts => opts.WorkerMode = WorkerMode.Http);
+        _provider = services.BuildServiceProvider();
+    }
+
+    [When("the pipeline is added with default worker mode")]
+    public void WhenAddedDefaultWorker()
+    {
+        var services = new ServiceCollection();
+        services.AddMetricsPipeline(
+            o => o.UseInMemoryDatabase(Guid.NewGuid().ToString()));
         _provider = services.BuildServiceProvider();
     }
 
@@ -64,5 +73,12 @@ public class MetricsPipelineOptionsSteps
     {
         _provider.GetService<IGatherService>().Should().BeOfType<HttpGatherService>();
         _provider.GetService<IWorkerService>().Should().BeOfType<HttpWorkerService>();
+    }
+
+    [Then("IGatherService should be InMemoryGatherService")]
+    public void ThenGatherServiceMemory()
+    {
+        _provider.GetService<IGatherService>().Should().BeOfType<InMemoryGatherService>();
+        _provider.GetService<IWorkerService>().Should().BeOfType<InMemoryGatherService>();
     }
 }

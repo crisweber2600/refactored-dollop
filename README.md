@@ -66,12 +66,26 @@ This project demonstrates a simple yet fully testable metrics processing pipelin
    `AddMetricsPipeline` can now register the hosted worker and HTTP client automatically when configured.
 13. **Enable the worker via options**
    Pass `opts.AddWorker = true` when calling `AddMetricsPipeline` to run `PipelineWorker` as a background service.
-14. **Register the HTTP client**
+14. **Choose a worker mode**
+   Set `opts.WorkerMode = WorkerMode.Http` to enable the HTTP gatherer or leave it as the default `InMemory` mode.
+15. **Register the HTTP client**
    Set `opts.RegisterHttpClient = true` to make `HttpMetricsClient` available for custom services.
-15. **Customise the HTTP client**
+16. **Customise the HTTP client**
    Use `opts.ConfigureClient` to set `BaseAddress` or other settings after service discovery.
-16. **Run tests without restore**
+17. **Run tests without restore**
    Invoke `dotnet test --no-restore --no-build` for faster execution once packages are restored.
+
+Example configuration enabling the HTTP worker:
+
+```csharp
+services.AddMetricsPipeline(
+    o => o.UseInMemoryDatabase("demo"),
+    opts =>
+    {
+        opts.WorkerMode = WorkerMode.Http;
+        opts.RegisterHttpClient = true;
+    });
+```
 The console host fetches a small set of metric values from an in-memory source, summarises them and either commits the result or discards it depending on validation. Each stage writes its status to the console.
 
 ## Architecture Overview
@@ -147,7 +161,7 @@ Additional notes:
 * You can tweak the summarisation strategy and threshold on each call without modifying the worker code.
 * `PipelineResult.IsSuccess` indicates whether the summary was committed (`true`) or reverted (`false`).
 * Custom discard handlers can observe failed results for auditing or alerting purposes.
-* `MetricsPipelineOptions` exposes flags to register the worker and HTTP client so configuration remains minimal.
+* `MetricsPipelineOptions` exposes flags to register the worker and HTTP client so configuration remains minimal. A `WorkerMode` property controls whether metrics are gathered from memory or via HTTP.
 
 
 ### Running Multiple Pipelines

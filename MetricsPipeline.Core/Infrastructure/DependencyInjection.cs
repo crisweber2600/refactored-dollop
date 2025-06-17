@@ -35,7 +35,7 @@ public static class DependencyInjection
 
         services.AddDbContext<SummaryDbContext, TContext>(dbCfg);
 
-        if (options.UseHttpWorker)
+        if (options.WorkerMode == WorkerMode.Http)
         {
             RegisterHttpClient(services, options);
             services.AddTransient<IGatherService, HttpGatherService>();

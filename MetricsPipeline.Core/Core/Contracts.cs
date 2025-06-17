@@ -6,6 +6,11 @@ namespace MetricsPipeline.Core
     public enum SummaryStrategy { Average, Sum, Count }
 
     /// <summary>
+    /// Mode controlling how metrics are gathered and processed.
+    /// </summary>
+    public enum WorkerMode { InMemory, Http }
+
+    /// <summary>
     /// Service responsible for retrieving raw metric values.
     /// </summary>
     public interface IGatherService
