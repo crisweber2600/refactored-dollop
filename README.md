@@ -123,36 +123,17 @@ When no prior summary exists the orchestrator now treats the run as valid regard
 
 ## Console Application
 
-`MetricsPipeline.Console` registers the pipeline services with a dependency injection container and runs `PipelineWorker`, a hosted service defined in the core infrastructure. The worker now depends on the new `IWorkerService` so it can retrieve any DTO type. The `AddMetricsPipeline` extension accepts options enabling automatic HTTP client configuration and hosted worker registration. The output demonstrates how each stage is called and whether the final summary is persisted or discarded.
-
-You can enable both behaviours in one call:
+`MetricsPipeline.Console` registers the pipeline services with a dependency injection container and runs `PipelineWorker`, a hosted service defined in the core infrastructure. The worker no longer injects `IWorkerService`; it simply calls the orchestrator and writes whether the run was committed or reverted. This keeps the background task lightweight while retaining full reuse of the orchestrator.
 
 ```csharp
-services.AddMetricsPipeline(
-    o => o.UseInMemoryDatabase("demo"),
-    opts =>
-    {
-    opts.AddWorker = true;
-    opts.UseHttpWorker = true;
-});
+var source = new Uri("/metrics", UriKind.Relative);
+var result = await _orchestrator.ExecuteAsync<MetricDto>(
+    "demo", source, x => x.Value, SummaryStrategy.Average, 5.0, ct);
+Console.WriteLine(result.IsSuccess ? "Committed" : "Reverted");
 ```
-To discover service addresses use the `ConfigureClient` option:
 
-```csharp
-services.AddMetricsPipeline(
-    o => o.UseInMemoryDatabase("demo"),
-    opts =>
-    {
-        opts.RegisterHttpClient = true;
-        opts.ConfigureClient = (sp, c) =>
-        {
-            var cfg = sp.GetRequiredService<IConfiguration>();
-            var addr = cfg["services:demoapi:0"];
-            if (!string.IsNullOrEmpty(addr))
-                c.BaseAddress = new Uri(addr);
-        };
-    });
-```
+The worker exposes an `ExecutedStages` list which now contains a single entry representing the final outcome. Success adds `Committed` while failure adds `Reverted`.
+
 
 ### Running Multiple Pipelines
 
@@ -165,6 +146,7 @@ await _orchestrator.ExecuteAsync<MetricDto>("demo-alt", source, x => x.Value, Su
 ```
 
 Each call to `ExecuteAsync` selects the worker method by name allowing multiple pipelines to reuse the same orchestrator instance.
+Different thresholds and strategies can be applied per pipeline so the same worker can handle diverse datasets.
 
 All HTTP calls use relative paths which combine with the discovered service base address, keeping configuration minimal. You can inspect `HttpMetricsClient.BaseAddress` at runtime to confirm which endpoint was resolved so you know exactly which service the worker discovered. The worker service reuses `HttpMetricsClient` so any DTO can be downloaded and summarised without additional boilerplate.
 
@@ -197,7 +179,7 @@ Implement your own `IWorkerService` to pull data from alternative sources. Regis
 ```csharp
 services.AddScoped<IWorkerService, MyWorkerService>();
 ```
-When using the built-in `InMemoryGatherService`, both interfaces resolve to the same scoped instance so registrations should follow the same pattern.
+When using the built-in `InMemoryGatherService`, both interfaces resolve to the same scoped instance so registrations should follow the same pattern. Because the worker now delegates entirely to the orchestrator you can swap gather services without modifying the hosted service.
 
 You can also reuse `HttpMetricsClient` in your own services to call REST endpoints by specifying the HTTP method and target URI. The client returns a strongly typed list so it works with any DTO shape. When a `services__<name>__0` environment variable is present the client automatically sets its base address, enabling simple service discovery between projects. When hosting multiple projects together you can add them in `MetricsPipeline.AppHost` and call `.WithReference()` so Aspire configures the discovery variables for you.
 
@@ -217,6 +199,7 @@ Register your custom service before running the worker to apply alternative vali
 - Committing or discarding based on validation outcome
 - Repository and unit-of-work behaviour
 - Service discovery of the demo API via environment variables
+- Interpreting the final worker message to confirm the pipeline outcome
 
 Running `dotnet test` executes all scenarios and the supporting unit tests. Database migrations only need to be applied when entity models change:
 

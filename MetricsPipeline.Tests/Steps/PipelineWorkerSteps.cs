@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
@@ -28,36 +27,10 @@ internal class FakeOrchestrator : IPipelineOrchestrator
     }
 }
 
-// Exposes the protected ExecuteAsync method for testing
-internal class FakeWorkerService : IGatherService, IWorkerService
-{
-    public Task<PipelineResult<IReadOnlyList<double>>> FetchMetricsAsync(Uri source, CancellationToken ct = default)
-        => Task.FromResult(PipelineResult<IReadOnlyList<double>>.Success(new List<double>{1.0,2.0}));
-
-    public Task<PipelineResult<IReadOnlyList<T>>> FetchAsync<T>(Uri source, CancellationToken ct = default)
-    {
-        var data = new List<double> { 1.0, 2.0 };
-        if (typeof(T) == typeof(double))
-            return Task.FromResult(PipelineResult<IReadOnlyList<T>>.Success((IReadOnlyList<T>)(object)data));
-
-        var prop = typeof(T).GetProperty("Value") ?? typeof(T).GetProperty("Amount");
-        if (prop == null || prop.PropertyType != typeof(double))
-            return Task.FromResult(PipelineResult<IReadOnlyList<T>>.Failure("UnsupportedType"));
-
-        var items = data.Select(v => {
-            var inst = Activator.CreateInstance(typeof(T));
-            prop.SetValue(inst, v);
-            return (T)inst!;
-        }).ToList();
-
-        return Task.FromResult(PipelineResult<IReadOnlyList<T>>.Success(items));
-    }
-}
-
 internal class TestWorker : PipelineWorker
 {
     public TestWorker(IPipelineOrchestrator orchestrator)
-        : base(orchestrator, new FakeWorkerService()) { }
+        : base(orchestrator) { }
     public Task RunAsync() => base.ExecuteAsync(CancellationToken.None);
 }
 
