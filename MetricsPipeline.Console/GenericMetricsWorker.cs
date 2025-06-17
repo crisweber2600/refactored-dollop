@@ -60,6 +60,8 @@ public class GenericMetricsWorker : BackgroundService, IHostedWorker<GenericMetr
             5.0,
             ct,
             WorkerMethod);
+        var message = result.IsSuccess ? "Committed" : "Reverted";
+        System.Console.WriteLine(message);
         _items = result.IsSuccess ? result.Value.RawItems.ToList() : Array.Empty<MetricDto>();
         return _items;
     }

@@ -20,7 +20,7 @@ var host = Host.CreateDefaultBuilder(args)
                 opts.ConfigureClient = (sp, c) =>
                 {
                     var cfg = sp.GetRequiredService<IConfiguration>();
-                    var discovered = cfg["services:metricspipeline-demoapi:https:0"];
+                    var discovered = cfg["services:demoapi:0"];
                     if (!string.IsNullOrEmpty(discovered))
                     {
                         c.BaseAddress = new Uri(discovered);

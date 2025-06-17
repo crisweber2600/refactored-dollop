@@ -29,7 +29,8 @@ This project demonstrates a simple yet fully testable metrics processing pipelin
    dotnet run --project MetricsPipeline.AppHost
    ```
    This host links the console project to the demo API using `.WithReference`,
-   so the API address is discovered automatically.
+   so the API address is discovered automatically. The service name `demoapi`
+   is used when generating discovery environment variables.
 4. **Run the sample console application alone**
    ```bash
    dotnet run --project MetricsPipeline.Console
@@ -41,6 +42,31 @@ This project demonstrates a simple yet fully testable metrics processing pipelin
    services__demoapi__0="https://localhost:5050" dotnet run --project MetricsPipeline.Console
    ```
    The console reads the `services__demoapi__0` variable to discover the API.
+   Service discovery now uses the simple name `demoapi` which matches the
+   project reference defined in `MetricsPipeline.AppHost`.
+   Verify the binding with:
+   ```bash
+   printenv services__demoapi__0
+   ```
+   This should output the base address used by `HttpMetricsClient`.
+   Start the Demo API in another shell using:
+   ```bash
+   dotnet run --project MetricsPipeline.DemoApi
+   ```
+   With the API running the console will fetch `/metrics` and print `Committed`
+   or `Reverted` when finished.
+   The API exposes `/metrics` so the worker uses a relative `Source` value and
+   combines it with this base address. If the API isn't available you can set
+   `WorkerMode.InMemory` in `Program.cs` to run the pipeline without HTTP calls.
+   The demo worker writes `Committed` or `Reverted` after it finishes so you
+   know the execution completed.
+   You can inspect `HttpMetricsClient.BaseAddress` at runtime to confirm which
+   endpoint was discovered.
+   Once the project has built you can skip the restore and build steps by
+   running:
+   ```bash
+   dotnet run --no-restore --no-build --project MetricsPipeline.Console
+   ```
 5. **Execute the tests**
    ```bash
    dotnet test --no-restore --no-build
@@ -57,9 +83,10 @@ This project demonstrates a simple yet fully testable metrics processing pipelin
 
 9. **Review AGENTS.md after each task**
    Capture lessons learned and update the guidelines for next time.
-10. **Confirm environment variables**
-   Use `printenv services__demoapi__0` to verify the API address is set.
-   Set `DOTNET_CLI_TELEMETRY_OPTOUT=1` to disable telemetry during automated runs.
+ 10. **Confirm environment variables**
+     Use `printenv services__demoapi__0` to verify the API address is set.
+     Set `DOTNET_CLI_TELEMETRY_OPTOUT=1` to disable telemetry during automated runs.
+     If the variable is empty the worker falls back to `HttpWorkerService.Source`.
 11. **Add custom workers**
    Place new worker classes in `MetricsPipeline.Core/Infrastructure/Workers` so they can be reused by multiple hosts.
 12. **Use pipeline options**
@@ -84,7 +111,13 @@ This project demonstrates a simple yet fully testable metrics processing pipelin
 21. **Flexible worker signatures**
    `ExecuteAsync` now invokes worker methods without supplying a source value.
 22. **Configure the source**
-   Set `GenericMetricsWorker.Source` to control where metrics are retrieved from.
+   Set `GenericMetricsWorker.Source` or `HttpWorkerService.Source` to control
+   where metrics are retrieved from. The HTTP worker now defaults to the relative
+   path `/metrics` so the discovered base address is always used. Override this
+   property to target another endpoint before starting the host.
+23. **Automatic worker execution**
+   The configured worker type is registered as an `IHostedService` so it runs
+   automatically when the host starts.
 
 Example configuration enabling the HTTP worker:
 
@@ -202,6 +235,9 @@ Additional notes:
 * `PipelineResult.IsSuccess` indicates whether the summary was committed (`true`) or reverted (`false`).
 * Custom discard handlers can observe failed results for auditing or alerting purposes.
 * `MetricsPipelineOptions` exposes flags to register the worker and HTTP client so configuration remains minimal. A `WorkerMode` property controls whether metrics are gathered from memory or via HTTP.
+* Run `dotnet run --project MetricsPipeline.Console` to observe a single
+  execution. The worker logs "Committed" or "Reverted" once complete so you
+  know the pipeline finished.
 
 
 ### Running Multiple Pipelines
