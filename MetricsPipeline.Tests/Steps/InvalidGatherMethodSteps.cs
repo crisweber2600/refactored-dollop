@@ -12,7 +12,7 @@ namespace MetricsPipeline.Tests.Steps;
 public class InvalidGatherMethodSteps
 {
     private readonly IPipelineOrchestrator _orchestrator;
-    private PipelineResult<PipelineState>? _result;
+    private PipelineResult<PipelineState<double>>? _result;
 
     public InvalidGatherMethodSteps(IPipelineOrchestrator orchestrator)
     {
@@ -22,9 +22,10 @@ public class InvalidGatherMethodSteps
     [When("the orchestrator executes with an invalid gather method")]
     public async Task WhenOrchestratorExecutesInvalid()
     {
-        _result = await _orchestrator.ExecuteAsync(
+        _result = await _orchestrator.ExecuteAsync<double>(
             "default",
             new Uri("https://api.example.com/data"),
+            v => v,
             SummaryStrategy.Average,
             5.0,
             CancellationToken.None,

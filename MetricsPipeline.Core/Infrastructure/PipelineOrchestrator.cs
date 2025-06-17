@@ -41,10 +41,12 @@ public class PipelineOrchestrator : IPipelineOrchestrator
 
         var method = _worker.GetType().GetMethod(workerMethod);
         if (method == null)
-            return PipelineResult<PipelineState<T>>.Failure("InvalidWorkerMethod");
+            return PipelineResult<PipelineState<T>>.Failure("InvalidGatherMethod");
+        if (method.IsGenericMethodDefinition)
+            method = method.MakeGenericMethod(typeof(T));
         var fetchTask = method.Invoke(_worker, new object[] { source, ct }) as Task<PipelineResult<IReadOnlyList<T>>>;
         if (fetchTask == null)
-            return PipelineResult<PipelineState<T>>.Failure("InvalidWorkerMethod");
+            return PipelineResult<PipelineState<T>>.Failure("InvalidGatherMethod");
         var fetch = await fetchTask;
         if (!fetch.IsSuccess) return PipelineResult<PipelineState<T>>.Failure(fetch.Error!);
         var values = fetch.Value!.Select(selector).ToList();

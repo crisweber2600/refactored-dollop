@@ -23,7 +23,7 @@ public class GenericWorkerServiceSteps
         _worker = (InMemoryGatherService)worker;
     }
 
-    [Given(@"the API at \"(.*)\" returns:")]
+    [Given(@"the API at ""(.*)"" returns:")]
     public void GivenApiReturns(string endpoint, Table table)
     {
         _source = new Uri(endpoint);

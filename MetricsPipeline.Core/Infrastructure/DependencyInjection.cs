@@ -28,11 +28,11 @@ public static class DependencyInjection
         where TContext : SummaryDbContext
     {
         services.AddDbContext<SummaryDbContext, TContext>(dbCfg);
-        // Use a scoped lifetime for the in-memory gather service so that
-        // the orchestrator and step definitions share the same instance
-        // within a single scenario while avoiding cross-scenario state.
-        services.AddScoped<IGatherService, InMemoryGatherService>();
-        services.AddScoped<IWorkerService, InMemoryGatherService>();
+        // Use a single scoped instance of the gather service so both IGatherService
+        // and IWorkerService resolve to the same object within a scenario.
+        services.AddScoped<InMemoryGatherService>();
+        services.AddScoped<IGatherService>(sp => sp.GetRequiredService<InMemoryGatherService>());
+        services.AddScoped<IWorkerService>(sp => sp.GetRequiredService<InMemoryGatherService>());
         services.AddTransient<ISummarizationService, InMemorySummarizationService>();
         services.AddTransient<IValidationService, ThresholdValidationService>();
         services.AddTransient<ICommitService, EfCommitService>();
