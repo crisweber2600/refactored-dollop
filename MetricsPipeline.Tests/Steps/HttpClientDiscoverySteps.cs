@@ -23,14 +23,21 @@ public class HttpClientDiscoverySteps
         var host = Host.CreateDefaultBuilder()
             .ConfigureServices((context, services) =>
             {
-                services.AddHttpClient<HttpMetricsClient>(c =>
-                {
-                    var baseAddress = context.Configuration["services:demoapi:0"];
-                    if (!string.IsNullOrEmpty(baseAddress))
+                services.AddMetricsPipeline(
+                    o => o.UseInMemoryDatabase(Guid.NewGuid().ToString()),
+                    opts =>
                     {
-                        c.BaseAddress = new Uri(baseAddress);
-                    }
-                });
+                        opts.RegisterHttpClient = true;
+                        opts.ConfigureClient = (sp, c) =>
+                        {
+                            var cfg = sp.GetRequiredService<IConfiguration>();
+                            var baseAddress = cfg["services:demoapi:0"];
+                            if (!string.IsNullOrEmpty(baseAddress))
+                            {
+                                c.BaseAddress = new Uri(baseAddress);
+                            }
+                        };
+                    });
             })
             .Build();
         _client = host.Services.GetRequiredService<HttpMetricsClient>();
