@@ -133,6 +133,13 @@ Console.WriteLine(result.IsSuccess ? "Committed" : "Reverted");
 ```
 
 The worker exposes an `ExecutedStages` list which now contains a single entry representing the final outcome. Success adds `Committed` while failure adds `Reverted`.
+Additional notes:
+
+* The previous `RunStageAsync` helper was removed. `ExecuteAsync` simply delegates to the orchestrator and logs the final state.
+* You can tweak the summarisation strategy and threshold on each call without modifying the worker code.
+* `PipelineResult.IsSuccess` indicates whether the summary was committed (`true`) or reverted (`false`).
+* Custom discard handlers can observe failed results for auditing or alerting purposes.
+* `MetricsPipelineOptions` exposes flags to register the worker and HTTP client so configuration remains minimal.
 
 
 ### Running Multiple Pipelines
