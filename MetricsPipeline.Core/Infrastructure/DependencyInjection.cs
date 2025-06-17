@@ -30,6 +30,9 @@ public static class DependencyInjection
         services.AddDbContext<SummaryDbContext, TContext>(dbCfg);
         // Use a single scoped instance of the gather service so both IGatherService
         // and IWorkerService resolve to the same object within a scenario.
+        // Register InMemoryGatherService separately to ensure that both interfaces
+        // (IGatherService and IWorkerService) resolve to the same instance. This avoids
+        // creating multiple instances of the service within the same scope.
         services.AddScoped<InMemoryGatherService>();
         services.AddScoped<IGatherService>(sp => sp.GetRequiredService<InMemoryGatherService>());
         services.AddScoped<IWorkerService>(sp => sp.GetRequiredService<InMemoryGatherService>());
