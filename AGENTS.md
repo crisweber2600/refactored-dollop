@@ -12,3 +12,5 @@
 - Update `README.md` with improvements reflecting new functionality and guidance.
 - Each pull request must contain at least five distinct enhancements to the README.
 - After each run, refine this file with lessons learned to streamline future work.
+- Place worker classes under `MetricsPipeline.Core/Infrastructure/Workers` for reuse across projects.
+- Do not add `<Compile Remove="..." />` or `<Compile Include="..." />` elements when moving files; rely on the SDK's default globbing.
