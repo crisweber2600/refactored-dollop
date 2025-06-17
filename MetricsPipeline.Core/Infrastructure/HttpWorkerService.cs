@@ -13,7 +13,10 @@ namespace MetricsPipeline.Infrastructure;
 public class HttpWorkerService : IWorkerService
 {
     private readonly HttpMetricsClient _client;
-    public Uri Source { get; set; } = new("https://api.example.com/data");
+    /// <summary>
+    /// Relative path fetched from the discovered API base address.
+    /// </summary>
+    public Uri Source { get; set; } = new("/metrics", UriKind.Relative);
 
     public HttpWorkerService(HttpMetricsClient client)
     {
