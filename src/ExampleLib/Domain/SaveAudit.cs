@@ -10,5 +10,5 @@ public class SaveAudit
     public string EntityId { get; set; } = string.Empty;
     public decimal MetricValue { get; set; }
     public bool Validated { get; set; }
-    public DateTime Timestamp { get; set; }
+    public DateTimeOffset Timestamp { get; set; }
 }
