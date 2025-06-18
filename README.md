@@ -34,3 +34,8 @@ This repository demonstrates a simple .NET setup with unit and BDD tests.
 - Registered validator and repositories for BDD scenarios.
 - Created BDD feature demonstrating summarisation validation rules.
 - Documented how to configure plans and audit storage for tests.
+- Implemented SaveValidationConsumer<T> using MassTransit to validate SaveRequested events.
+- Added MassTransit packages and in-memory test harness for consumer tests.
+- Created unit tests verifying audits and published events when a save occurs.
+- Updated build instructions to restore new dependencies before running tests.
+- Expanded documentation with steps to configure summarisation plans and audits for the consumer.
