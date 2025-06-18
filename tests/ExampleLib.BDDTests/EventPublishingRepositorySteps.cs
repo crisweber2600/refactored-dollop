@@ -26,7 +26,7 @@ public class EventPublishingRepositorySteps
     {
         var entity = new YourEntity { Id = 1, Name = "Test" };
         if (_repo != null)
-            await _repo.SaveAsync("App", entity);
+            await _repo.SaveAsync(entity);
     }
 
     [Then("a SaveRequested event should be published")]

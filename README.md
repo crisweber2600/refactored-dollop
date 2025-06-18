@@ -55,17 +55,21 @@ This repository demonstrates a simple .NET setup with unit and BDD tests.
 ## Using the Validation Workflow
 
 1. Reference the **ExampleLib** project from your application.
-2. Call `services.AddSaveValidation<T>()` during startup to register the in-memory repositories, validator and MassTransit consumer.
+2. Call `services.AddExampleDataSqlServer(connectionString)` to register `YourDbContext` with SQL Server and a unit of work implementation.
+3. Call `services.AddSaveValidation<T>()` during startup to register the in-memory repositories, validator and MassTransit consumer.
    ```csharp
+   services.AddExampleDataSqlServer("Server=(localdb)\\mssqllocaldb;Database=Orders;");
    services.AddSaveValidation<Order>(o => o.LineAmounts.Sum(), ThresholdType.PercentChange, 0.5m);
    ```
    The extension configures a default `SummarisationPlan` for `Order` entities. The metric selector, threshold type and value can be overridden.
-3. Resolve `IEntityRepository<T>` and save entities as usual:
+4. Resolve `IEntityRepository<T>` and save entities as usual. The repository will automatically derive the application name using reflection:
    ```csharp
    var repo = provider.GetRequiredService<IEntityRepository<Order>>();
-   await repo.SaveAsync("MyApp", order);
+   await repo.SaveAsync(order);
    ```
-4. Previous results are tracked in `ISaveAuditRepository` so each save is compared against the last audit.
-5. To customize thresholds later, retrieve `ISummarisationPlanStore` and call `AddPlan()` with new values before saving.
+5. Previous results are tracked in `ISaveAuditRepository` so each save is compared against the last audit.
+6. To customize thresholds later, retrieve `ISummarisationPlanStore` and call `AddPlan()` with new values before saving.
 
 See `src/ExampleRunner` for a runnable sample demonstrating these steps.
+
+The projects include XML documentation and are structured so **ExampleLib** can be packed as a NuGet package when needed.
