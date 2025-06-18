@@ -24,3 +24,8 @@ This repository demonstrates a simple .NET setup with unit and BDD tests.
 - Added ISaveAuditRepository abstraction for storing SaveAudit records.
 - Added ISummarisationPlanStore for retrieving plans by entity type.
 - Documented how these interfaces improve testability of summarisation workflows.
+- Implemented InMemorySummarisationPlanStore for registering plans in memory.
+- Added InMemorySaveAuditRepository to track the latest audit per entity.
+- Introduced Infrastructure namespace to organize testing helpers.
+- Created unit tests verifying the new in-memory components.
+- Explained thread-safe dictionaries to allow concurrent event handling.
