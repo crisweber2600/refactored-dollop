@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using ExampleLib.Domain;
 using ExampleLib.Infrastructure;
 using MassTransit;
+using Microsoft.Extensions.DependencyInjection;
 
 // Sample entity class
 public class Order
@@ -16,30 +17,22 @@ public class Program
 {
     public static async Task Main(string[] args)
     {
-        var planStore = new InMemorySummarisationPlanStore();
-        var auditRepo = new InMemorySaveAuditRepository();
+        var services = new ServiceCollection();
+        services.AddSaveValidation<Order>(o => o.LineAmounts.Sum(), ThresholdType.PercentChange, 0.50m);
+        var provider = services.BuildServiceProvider();
 
-        // summarise order total and allow 50% increase between saves
-        planStore.AddPlan(new SummarisationPlan<Order>(o => o.LineAmounts.Sum(), ThresholdType.PercentChange, 0.50m));
-
-        var busControl = Bus.Factory.CreateUsingInMemory(cfg =>
-        {
-            cfg.ReceiveEndpoint("save_requests_queue", e =>
-            {
-                e.Consumer(() => new SaveValidationConsumer<Order>(planStore, auditRepo, new SummarisationValidator<Order>()));
-            });
-        });
-
+        var busControl = provider.GetRequiredService<IBusControl>();
         await busControl.StartAsync();
         try
         {
-            var repository = new EventPublishingRepository<Order>(busControl);
-
+            var repository = provider.GetRequiredService<IEntityRepository<Order>>();
+            
             var order = new Order { Id = "ORDER123", LineAmounts = new decimal[] { 100m, 50m } };
             Console.WriteLine($"Saving Order {order.Id} with total = {order.LineAmounts.Sum()}");
             await repository.SaveAsync("MyApp", order);
             await Task.Delay(500);
 
+            var auditRepo = provider.GetRequiredService<ISaveAuditRepository>();
             var audit = auditRepo.GetLastAudit(nameof(Order), "ORDER123");
             if (audit != null)
                 Console.WriteLine($"Last audit for Order {audit.EntityId}: MetricValue={audit.MetricValue}, Validated={audit.Validated}");
