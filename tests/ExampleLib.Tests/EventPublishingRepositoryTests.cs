@@ -18,7 +18,7 @@ public class EventPublishingRepositoryTests
         try
         {
             var entity = new YourEntity { Id = 1, Name = "One" };
-            await repo.SaveAsync("App", entity);
+            await repo.SaveAsync(entity);
 
             Assert.True(await harness.Published.Any<SaveRequested<YourEntity>>());
         }
@@ -43,7 +43,7 @@ public class EventPublishingRepositoryTests
         try
         {
             var entity = new NoIdEntity { Name = "Test" };
-            await repo.SaveAsync("App", entity);
+            await repo.SaveAsync(entity);
 
             Assert.True(await harness.Published.Any<SaveRequested<NoIdEntity>>());
         }

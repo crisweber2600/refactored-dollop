@@ -17,8 +17,9 @@ public class EventPublishingRepository<T> : IEntityRepository<T>
     }
 
     /// <inheritdoc />
-    public Task SaveAsync(string appName, T entity)
+    public Task SaveAsync(T entity, string? appName = null)
     {
+        appName ??= Assembly.GetEntryAssembly()?.GetName().Name ?? "UnknownApp";
         var entityId = GetEntityId(entity);
         var saveEvent = new SaveRequested<T>
         {

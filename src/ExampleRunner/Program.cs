@@ -29,7 +29,7 @@ public class Program
             
             var order = new Order { Id = "ORDER123", LineAmounts = new decimal[] { 100m, 50m } };
             Console.WriteLine($"Saving Order {order.Id} with total = {order.LineAmounts.Sum()}");
-            await repository.SaveAsync("MyApp", order);
+            await repository.SaveAsync(order);
             await Task.Delay(500);
 
             var auditRepo = provider.GetRequiredService<ISaveAuditRepository>();
@@ -39,7 +39,7 @@ public class Program
 
             order.LineAmounts = new decimal[] { 300m, 100m };
             Console.WriteLine($"Saving Order {order.Id} with new total = {order.LineAmounts.Sum()}");
-            await repository.SaveAsync("MyApp", order);
+            await repository.SaveAsync(order);
             await Task.Delay(500);
 
             audit = auditRepo.GetLastAudit(nameof(Order), "ORDER123");

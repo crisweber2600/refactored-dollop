@@ -19,7 +19,7 @@ public class ServiceCollectionExtensionsTests
         try
         {
             var repo = provider.GetRequiredService<IEntityRepository<YourEntity>>();
-            await repo.SaveAsync("App", new YourEntity { Id = 1 });
+            await repo.SaveAsync(new YourEntity { Id = 1 });
             await Task.Delay(200);
             var audits = provider.GetRequiredService<ISaveAuditRepository>();
             var audit = audits.GetLastAudit(nameof(YourEntity), "1");
