@@ -44,3 +44,9 @@ This repository demonstrates a simple .NET setup with unit and BDD tests.
 - Created xUnit tests covering event publication scenarios.
 - Added BDD feature exercising the event publishing repository.
 - Documented how to wire up MassTransit and use the new repository.
+- Introduced ExampleRunner console app showing the complete validation workflow.
+- Registered SaveValidationConsumer on an in-memory MassTransit bus.
+- Demonstrated configuring a summarisation plan for an Order entity.
+- Showed how EventPublishingRepository publishes SaveRequested events.
+- Logged audit outcomes to verify SaveValidated results.
+- Added instructions for running the example program to observe the flow.
