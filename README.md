@@ -29,3 +29,8 @@ This repository demonstrates a simple .NET setup with unit and BDD tests.
 - Introduced Infrastructure namespace to organize testing helpers.
 - Created unit tests verifying the new in-memory components.
 - Explained thread-safe dictionaries to allow concurrent event handling.
+- Implemented SummarisationValidator<T> to enforce metric thresholds.
+- Added xUnit tests covering raw difference and percent change checks.
+- Registered validator and repositories for BDD scenarios.
+- Created BDD feature demonstrating summarisation validation rules.
+- Documented how to configure plans and audit storage for tests.

@@ -1,5 +1,7 @@
 using ExampleData;
 using ExampleLib;
+using ExampleLib.Domain;
+using ExampleLib.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Reqnroll;
@@ -19,6 +21,9 @@ public static class Dependencies
         services.AddScoped(typeof(IGenericRepository<>), typeof(EfGenericRepository<>));
         services.AddScoped<IValidationService, ValidationService>();
         services.AddScoped<IUnitOfWork, UnitOfWork<YourDbContext>>();
+        services.AddSingleton(typeof(ISummarisationValidator<>), typeof(SummarisationValidator<>));
+        services.AddSingleton<ISummarisationPlanStore, InMemorySummarisationPlanStore>();
+        services.AddSingleton<ISaveAuditRepository, InMemorySaveAuditRepository>();
         return services;
     }
 }
