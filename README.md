@@ -19,3 +19,8 @@ This repository demonstrates a simple .NET setup with unit and BDD tests.
 - Created SummarisationPlan<T> for computing numeric metrics with threshold rules.
 - Documented ThresholdType enum for raw difference versus percent change checks.
 - Added examples explaining how these domain events support auditing workflows.
+- Created IEntityRepository<T> to publish SaveRequested events when entities are saved.
+- Introduced ISummarisationValidator<T> interface for encapsulating change validation logic.
+- Added ISaveAuditRepository abstraction for storing SaveAudit records.
+- Added ISummarisationPlanStore for retrieving plans by entity type.
+- Documented how these interfaces improve testability of summarisation workflows.
