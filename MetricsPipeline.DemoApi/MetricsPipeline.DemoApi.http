@@ -1,6 +1,0 @@
-@MetricsPipeline.DemoApi_HostAddress = http://localhost:5019
-
-GET {{MetricsPipeline.DemoApi_HostAddress}}/weatherforecast/
-Accept: application/json
-
-###
