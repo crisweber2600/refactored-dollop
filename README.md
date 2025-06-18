@@ -12,4 +12,10 @@ This repository demonstrates a simple .NET setup with unit and BDD tests.
 - Added validation strategies and SaveChanges validation on 2025-06-21.
 - Clarified DeleteAsync docs for Validated flag on 2025-06-21.
 - Added mock-based validation tests and DI step definitions on 2025-06-22.
+
 - Verified all docs use the Validated property instead of IsDeleted on 2025-06-22.
+- Introduced generic SaveRequested<T> and SaveValidated<T> events for persisting entities.
+- Added SaveAudit records to track metric values and validation results.
+- Created SummarisationPlan<T> for computing numeric metrics with threshold rules.
+- Documented ThresholdType enum for raw difference versus percent change checks.
+- Added examples explaining how these domain events support auditing workflows.
