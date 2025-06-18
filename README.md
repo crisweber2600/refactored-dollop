@@ -39,3 +39,8 @@ This repository demonstrates a simple .NET setup with unit and BDD tests.
 - Created unit tests verifying audits and published events when a save occurs.
 - Updated build instructions to restore new dependencies before running tests.
 - Expanded documentation with steps to configure summarisation plans and audits for the consumer.
+- Added EventPublishingRepository<T> to publish SaveRequested events on save.
+- Implemented reflection-based ID detection with GUID fallback.
+- Created xUnit tests covering event publication scenarios.
+- Added BDD feature exercising the event publishing repository.
+- Documented how to wire up MassTransit and use the new repository.
