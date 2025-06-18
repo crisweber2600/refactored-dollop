@@ -56,10 +56,51 @@ store.AddPlan(new SummarisationPlan<Order>(o => o.LineAmounts.Sum(), ThresholdTy
 
 The `ExampleRunner` project wires the dependencies and shows the workflow end‑to‑end. Run the project and observe the console output for validation results. Inspect `ISaveAuditRepository` to review the stored audits.
 
+### Example Worker Runner
+
+`ExampleWorkerRunner` builds on the library with a dedicated worker. The worker
+saves an entity three times: once with the initial values, again with values
+within the threshold and finally with values that exceed the threshold.
+
+```
+Project setup
+-------------
+[Program] --> [ServiceCollection] --> [MassTransit Bus]
+                        |
+                        v
+                  [ExampleWorker]
+                        |
+                        v
+                  [Repository] --> [Validator] --> [AuditStore]
+```
+
+Run the example with:
+
+```bash
+dotnet run --project src/ExampleWorkerRunner
+```
+
+During execution the console prints the latest validation state after each save.
+The process flow is illustrated below:
+
+```
+Worker run
+----------
+  SetInitial -> Save -> Valid
+      |
+      v
+  SetWithin  -> Save -> Valid
+      |
+      v
+  SetOutside -> Save -> Invalid
+```
+
 ## Project Structure
 
 - `src/ExampleLib` – reusable domain classes and infrastructure
 - `src/ExampleRunner` – console sample using the library
+- `src/MetricsPipeline.Core` – worker components used across samples
+- `src/ExampleWorkerRunner` – runs the example worker end to end
 - `tests/ExampleLib.Tests` – unit and BDD tests verifying the workflow
 - `docs` – guides such as the EF Core replication how‑to
 
