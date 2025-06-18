@@ -1,18 +1,29 @@
-- Agents may run `dotnet` commands, including adding NuGet packages with `dotnet add package`.
-- When introducing new functionality, first add BDD feature files and step definitions to cover the behavior.
-- Only add new EF Core migrations when entity models change. Do not run `dotnet ef database update` automatically.
-- Always run `dotnet test` and ensure tests pass after modifications.
-- Focus development efforts on implementing missing functionality and fixing tests.
-- If required information is missing, request clarification.
+# Agent Guidelines
 
+## General Workflow
+- Agents may run `dotnet` commands, including adding NuGet packages with `dotnet add package`.
+- When introducing new functionality, first create BDD feature files and step definitions.
+- Only add EF Core migrations when entity models change; avoid running `dotnet ef database update` automatically.
+- Focus on implementing missing functionality and fixing tests. Keep tasks small.
+- Ask for clarification whenever information is missing.
+
+## Testing
 - Run `dotnet test` on a clean clone to establish the baseline.
-- Make code changes and add missing packages with `dotnet add package` when needed.
-- Re-run `dotnet test`; only commit when all tests succeed.
-- Keep tasks small and focused on making the tests pass.
-- Update `README.md` with improvements reflecting new functionality and guidance.
-- Each pull request must contain at least five distinct enhancements to the README.
-- After each run, refine this file with lessons learned to streamline future work.
-- Running `dotnet test --no-restore --no-build` avoids lengthy restore steps and
-  reduces build log noise.
+- Re-run `dotnet test` after modifications and commit only when tests succeed.
+- Use `dotnet test --no-restore --no-build` to reduce build log noise.
+- Treat warnings as errors and ensure coverage is above 80% by running `dotnet test --collect:"XPlat Code Coverage"`.
+
+## Development Conventions
+- Add missing packages with `dotnet add package` when needed.
 - Place worker classes under `MetricsPipeline.Core/Infrastructure/Workers` for reuse across projects.
 - Do not add `<Compile Remove="..." />` or `<Compile Include="..." />` elements when moving files; rely on the SDK's default globbing.
+- Write new requirements in `.feature` files using Reqnroll and implement step definitions with dependency injection.
+- Provide unit tests with mocks using Moq.
+
+## Documentation
+- Update `README.md` with improvements reflecting new functionality and guidance.
+- Each pull request must include at least five distinct enhancements to the README.
+
+## Lessons Learned
+- Record lessons here to streamline future work (e.g., don't escape quotes in BDD step definition files).
+- Running `dotnet test --collect:"XPlat Code Coverage"` produces coverage reports for compliance.
