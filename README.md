@@ -105,3 +105,28 @@ Worker run
 - `docs` – guides such as the EF Core replication how‑to
 
 For additional details on replicating the EF Core setup, read `docs/EFCoreReplicationGuide.md`.
+
+## Database Setup
+
+Applications can register their DbContext and repositories in one line:
+
+```csharp
+services.SetupDatabase<YourDbContext>("Server=.;Database=example;Trusted_Connection=True");
+```
+
+`SetupDatabase` configures the DbContext, validation service and generic repositories. Every repository works with the `Validated` soft delete filter enabled by default.
+
+## Validation Helpers
+
+`SetupValidation` is an alias of `AddSaveValidation` for configuring summarisation plans. Multiple entities can be registered:
+
+```csharp
+services.SetupValidation<TasMetrics>(m => m.Value.Average(), ThresholdType.PercentChange, 0.25m);
+services.SetupValidation<TasAvailability>(a => a.Value.Average(), ThresholdType.Average, 1);
+```
+
+The latest summarised metric is stored in the `Nanny` table whenever entities are saved through the unit of work.
+
+### Nanny Records
+
+`Nanny` rows capture the last computed metric for each save along with the program name and a runtime identifier. This history can be inspected for audit or troubleshooting purposes.

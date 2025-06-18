@@ -68,4 +68,22 @@ public class UnitOfWorkTests
         var entity = await context.YourEntities.IgnoreQueryFilters().FirstAsync();
         Assert.False(entity.Validated);
     }
+
+    [Fact]
+    public async Task SaveChangesAsync_WritesNannyRecord()
+    {
+        var options = new DbContextOptionsBuilder<YourDbContext>()
+            .UseInMemoryDatabase("nanny-test")
+            .Options;
+        using var context = new YourDbContext(options);
+        var service = new ValidationService(context);
+        var uow = new UnitOfWork<YourDbContext>(context, service);
+        var repo = uow.Repository<YourEntity>();
+
+        await repo.AddAsync(new YourEntity { Name = "Nanny" });
+        await uow.SaveChangesAsync<YourEntity>(e => e.Id, ValidationStrategy.Count, 0);
+
+        var nanny = await context.Nannies.FirstAsync();
+        Assert.Equal("YourEntity", nanny.Entity);
+    }
 }

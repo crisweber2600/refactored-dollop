@@ -30,4 +30,22 @@ public class ServiceCollectionExtensionsTests
             await bus.StopAsync();
         }
     }
+
+    [Fact]
+    public void SetupValidation_IsAlias()
+    {
+        var services = new ServiceCollection();
+        services.SetupValidation<YourEntity>(e => e.Id);
+        var provider = services.BuildServiceProvider();
+        Assert.NotNull(provider.GetService<IEntityRepository<YourEntity>>());
+    }
+
+    [Fact]
+    public void SetupDatabase_RegistersDbContext()
+    {
+        var services = new ServiceCollection();
+        services.SetupDatabase<YourDbContext>("DataSource=:memory:");
+        var provider = services.BuildServiceProvider();
+        Assert.NotNull(provider.GetService<IUnitOfWork>());
+    }
 }
