@@ -8,6 +8,7 @@ public class YourDbContext : DbContext
     public YourDbContext(DbContextOptions<YourDbContext> options) : base(options) { }
 
     public DbSet<YourEntity> YourEntities => Set<YourEntity>();
+    public DbSet<Nanny> Nannies => Set<Nanny>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

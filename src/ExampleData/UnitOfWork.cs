@@ -44,6 +44,18 @@ public class UnitOfWork<TContext> : IUnitOfWork where TContext : DbContext
             entry.Entity.Validated = summary >= threshold;
         }
 
+        if (_context is YourDbContext db)
+        {
+            db.Nannies.Add(new Nanny
+            {
+                ProgramName = System.Reflection.Assembly.GetEntryAssembly()?.GetName().Name ?? "Unknown",
+                Entity = typeof(TEntity).Name,
+                SummarizedValue = summary,
+                DateTime = DateTime.UtcNow,
+                RuntimeID = Guid.NewGuid()
+            });
+        }
+
         return await _context.SaveChangesAsync(cancellationToken);
     }
 }

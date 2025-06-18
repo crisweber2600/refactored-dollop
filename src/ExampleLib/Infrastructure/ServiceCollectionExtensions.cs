@@ -49,6 +49,18 @@ public static class ServiceCollectionExtensions
         return services;
     }
 
+    /// <summary>
+    /// Alias for <see cref="AddSaveValidation{T}"/> to match production setup examples.
+    /// </summary>
+    public static IServiceCollection SetupValidation<T>(
+        this IServiceCollection services,
+        Func<T, decimal>? metricSelector = null,
+        ThresholdType thresholdType = ThresholdType.PercentChange,
+        decimal thresholdValue = 0.1m)
+    {
+        return services.AddSaveValidation<T>(metricSelector, thresholdType, thresholdValue);
+    }
+
     private static decimal DefaultSelector<T>(T entity)
     {
         var prop = typeof(T).GetProperty("Id");

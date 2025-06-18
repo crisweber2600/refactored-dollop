@@ -24,4 +24,20 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IUnitOfWork, UnitOfWork<YourDbContext>>();
         return services;
     }
+
+    /// <summary>
+    /// Generic database setup used by production examples.
+    /// Registers the DbContext, validation service and unit of work.
+    /// </summary>
+    public static IServiceCollection SetupDatabase<TContext>(
+        this IServiceCollection services,
+        string connectionString)
+        where TContext : YourDbContext
+    {
+        services.AddDbContext<TContext>(o => o.UseSqlServer(connectionString));
+        services.AddScoped<IValidationService, ValidationService>();
+        services.AddScoped<IUnitOfWork, UnitOfWork<TContext>>();
+        services.AddScoped(typeof(IGenericRepository<>), typeof(EfGenericRepository<>));
+        return services;
+    }
 }
