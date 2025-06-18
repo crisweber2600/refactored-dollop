@@ -50,3 +50,22 @@ This repository demonstrates a simple .NET setup with unit and BDD tests.
 - Showed how EventPublishingRepository publishes SaveRequested events.
 - Logged audit outcomes to verify SaveValidated results.
 - Added instructions for running the example program to observe the flow.
+- Introduced AddSaveValidation extension for simple DI registration on 2025-06-23.
+
+## Using the Validation Workflow
+
+1. Reference the **ExampleLib** project from your application.
+2. Call `services.AddSaveValidation<T>()` during startup to register the in-memory repositories, validator and MassTransit consumer.
+   ```csharp
+   services.AddSaveValidation<Order>(o => o.LineAmounts.Sum(), ThresholdType.PercentChange, 0.5m);
+   ```
+   The extension configures a default `SummarisationPlan` for `Order` entities. The metric selector, threshold type and value can be overridden.
+3. Resolve `IEntityRepository<T>` and save entities as usual:
+   ```csharp
+   var repo = provider.GetRequiredService<IEntityRepository<Order>>();
+   await repo.SaveAsync("MyApp", order);
+   ```
+4. Previous results are tracked in `ISaveAuditRepository` so each save is compared against the last audit.
+5. To customize thresholds later, retrieve `ISummarisationPlanStore` and call `AddPlan()` with new values before saving.
+
+See `src/ExampleRunner` for a runnable sample demonstrating these steps.
