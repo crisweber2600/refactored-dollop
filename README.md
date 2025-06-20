@@ -130,3 +130,26 @@ The latest summarised metric is stored in the `Nanny` table whenever entities ar
 ### Nanny Records
 
 `Nanny` rows capture the last computed metric for each save along with the program name and a runtime identifier. This history can be inspected for audit or troubleshooting purposes.
+
+## Generating Validation Plans
+
+A `ValidationPlan` describes how to validate an entity using a metric strategy. The default
+implementation relies on the count of records.
+
+Use `ValidationPlanFactory.CreatePlans<T, V>(connectionString)` to instantiate the
+`DbContext` of type `V` and build a plan for each property type on `T`.
+
+```csharp
+var plans = ValidationPlanFactory.CreatePlans<MyComposite, YourDbContext>(
+    "DataSource=:memory:");
+```
+
+If `MyComposite` has properties `Foo`, `Bar` and `Car`, three count based plans
+are returned. The plans can be fed into `IValidationService` to compute counts
+across tables.
+
+### Codex Tasks
+
+Running `dotnet test` now also exercises the validation plan factory scenario.
+Convenient VS Code tasks are provided under `.vscode/tasks.json` for quick
+execution from the Codex interface.

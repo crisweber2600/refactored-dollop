@@ -1,0 +1,15 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "run tests",
+            "type": "shell",
+            "command": "dotnet test --no-restore --no-build"
+        },
+        {
+            "label": "validation plan scenario",
+            "type": "shell",
+            "command": "dotnet test --filter ValidationPlanFactory"
+        }
+    ]
+}
