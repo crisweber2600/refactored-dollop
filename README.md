@@ -155,6 +155,17 @@ The helpers `AddExampleDataMongo` and `SetupMongoDatabase` register `MongoClient
 
 `SetupDatabase` configures the DbContext, validation service and generic repositories. Every repository works with the `Validated` soft delete filter enabled by default.
 
+### SetupValidationBuilder
+Use this fluent helper to collect configuration steps before applying them:
+
+```csharp
+var builder = new SetupValidationBuilder()
+    .UseSqlServer<YourDbContext>("DataSource=:memory:");
+builder.Apply(services);
+```
+
+`UseMongo` can be substituted to register MongoDB instead. Chaining these calls keeps startup code tidy when switching providers.
+
 ## Validation Helpers
 
 `SetupValidation` is an alias of `AddSaveValidation` for configuring summarisation plans. Multiple entities can be registered:
