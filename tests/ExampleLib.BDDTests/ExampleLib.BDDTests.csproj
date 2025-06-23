@@ -5,6 +5,7 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="Mongo2Go" Version="3.1.6" />
     <PackageReference Include="Moq" Version="4.20.72" />
     <PackageReference Include="Reqnroll" Version="2.4.1" />
     <PackageReference Include="Reqnroll.Microsoft.Extensions.DependencyInjection" Version="2.4.1" />

@@ -178,6 +178,18 @@ repository operates on an `IMongoCollection<T>` and respects the `Validated`
 flag for soft deletes. The unit of work records `Nanny` documents just like the
 EF variant.
 
+### Testing MongoDB Code
+
+- Unit tests run against an in‑memory server provided by **Mongo2Go** so no
+  external database is required.
+- `MongoRepositoryTests` verifies CRUD operations using this lightweight server.
+- BDD scenarios in `MongoRepository.feature` and `MongoSoftDelete.feature`
+  exercise the same behavior through Reqnroll steps.
+- To explore the in‑memory server yourself, inspect the `MongoRepoSteps`
+  definition under `tests/ExampleLib.BDDTests`.
+- The MongoDB driver API is documented at
+  [mongodb.github.io/mongo-csharp-driver](https://mongodb.github.io/mongo-csharp-driver/).
+
 ## Generating Validation Plans
 
 A `ValidationPlan` describes how to validate an entity using a metric strategy. The default
