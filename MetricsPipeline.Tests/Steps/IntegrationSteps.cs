@@ -57,25 +57,16 @@ public class IntegrationSteps
     }
 
     [Given("the gather service returns:")]
-    public void GivenApiReturns(string endpoint, Table table)
+    public void GivenApiReturns(Table table)
     {
         var data = table.Rows.Select(r => double.Parse(r[0])).ToArray();
         _gather.Metrics = data;
-        _source = new Uri(endpoint);
     }
 
     [Given("the gather service returns no metric values")]
-    public void GivenApiOffline(string endpoint)
+    public void GivenApiOffline()
     {
         _gather.Metrics = Array.Empty<double>();
-        _source = new Uri(endpoint);
-    }
-
-    [Given("the gather service returns no metric values")]
-    public void GivenApiEmpty(string endpoint)
-    {
-        _gather.Metrics = Array.Empty<double>();
-        _source = new Uri(endpoint);
     }
 
     [When(@"the pipeline is executed")]

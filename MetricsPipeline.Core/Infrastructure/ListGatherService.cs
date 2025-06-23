@@ -55,4 +55,10 @@ public class ListGatherService : IGatherService, IWorkerService
             ? Task.FromResult(PipelineResult<IReadOnlyList<T>>.Failure("NoData"))
             : Task.FromResult(PipelineResult<IReadOnlyList<T>>.Success(list));
     }
+
+    /// <summary>
+    /// Alternate gather method used for testing custom worker methods.
+    /// </summary>
+    public Task<PipelineResult<IReadOnlyList<double>>> CustomGatherAsync(CancellationToken ct = default)
+        => FetchMetricsAsync(ct);
 }

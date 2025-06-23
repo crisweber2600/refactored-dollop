@@ -160,6 +160,26 @@ The console host fetches a small set of metric values from an in-memory source, 
 - **Worker classes** live under `MetricsPipeline.Core/Infrastructure/Workers` for reuse across hosts.
 - **WorkerType** lets you specify an alternative hosted worker. Set `opts.WorkerType = typeof(MyWorker)` or use the overload `AddMetricsPipeline(typeof(MyWorker), ...)`.
 
+## Setup Validation
+
+`SetupValidation` performs a three phase configuration that mirrors the production startup. It adds basic framework services, registers the selected EF Core provider and optionally configures an `HttpClient` for validation routines.
+
+```csharp
+services.SetupValidation(o =>
+{
+    o.ConfigureDb = b => b.UseInMemoryDatabase("check");
+    o.ConfigureClient = (_, c) => c.Timeout = TimeSpan.FromSeconds(5);
+});
+```
+
+Custom validators can then be registered via `AddSetupValidation<T>` and resolve any configured clients or contexts:
+
+```csharp
+services.AddSetupValidation<MyStartupValidator>();
+```
+
+Validators derived from `SetupValidator` execute against the service provider so common setup logic is reusable across projects.
+
 
 ## Architecture Overview
 
