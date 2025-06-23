@@ -12,6 +12,8 @@ RAGStart showcases an event‑driven validation workflow using .NET and MassTran
    dotnet run --project src/ExampleRunner
    ```
    The console logs show save events, validations and stored audits.
+5. Execute the `run tests` task in VS Code to verify everything locally.
+6. Use `AddSetupValidation` to configure the data layer and a default plan in a single statement.
 
 ## Validation Workflow
 
@@ -43,7 +45,7 @@ services.AddSaveValidation<Order>(o => o.LineAmounts.Sum(), ThresholdType.Percen
 ```
 * `MetricSelector` computes the metric value (order total in this case).
 * `ThresholdType` can be `RawDifference` or `PercentChange`.
-* `ThresholdValue` sets the allowable change.
+* `ThresholdValue` sets the allowable change and is easily tuned per entity.
 
 Override the plan later via `ISummarisationPlanStore`:
 
@@ -188,6 +190,13 @@ Both helpers return the service collection, so configuration can be chained flue
 services.SetupValidation(b => b.UseMongo("mongodb://localhost:27017", "demo"))
         .AddSaveValidation<Order>(o => o.LineAmounts.Sum());
 ```
+You can also perform both steps in one call using `AddSetupValidation`:
+
+```csharp
+services.AddSetupValidation<Order>(
+    b => b.UseSqlServer<YourDbContext>("DataSource=:memory:"),
+    o => o.LineAmounts.Sum());
+```
 
 The latest summarised metric is stored in the `Nanny` table whenever entities are saved through the unit of work.
 
@@ -236,4 +245,5 @@ across tables.
 
 Running `dotnet test` now also exercises the validation plan factory scenario.
 Convenient VS Code tasks are provided under `.vscode/tasks.json` for quick
-execution from the Codex interface.
+execution from the Codex interface. Tasks exist for running all tests,
+validating the plan factory and the new setup validation scenario.

@@ -50,6 +50,29 @@ public static class ServiceCollectionExtensions
     }
 
     /// <summary>
+    /// Convenience helper combining <see cref="SetupValidation"/> and
+    /// <see cref="AddSaveValidation{T}"/>. The builder action configures the
+    /// data layer while a default summarisation plan is registered for
+    /// <typeparamref name="T"/>.
+    /// </summary>
+    /// <param name="services">The service collection.</param>
+    /// <param name="configure">Action configuring the setup builder.</param>
+    /// <param name="metricSelector">Metric selector for the plan.</param>
+    /// <param name="thresholdType">Threshold comparison type.</param>
+    /// <param name="thresholdValue">Allowed threshold value.</param>
+    public static IServiceCollection AddSetupValidation<T>(
+        this IServiceCollection services,
+        Action<SetupValidationBuilder> configure,
+        Func<T, decimal>? metricSelector = null,
+        ThresholdType thresholdType = ThresholdType.PercentChange,
+        decimal thresholdValue = 0.1m)
+    {
+        services.SetupValidation(configure);
+        services.AddSaveValidation<T>(metricSelector, thresholdType, thresholdValue);
+        return services;
+    }
+
+    /// <summary>
     /// Configure validation services using a fluent <see cref="SetupValidationBuilder"/>.
     /// Recorded steps are applied to the service collection after <paramref name="configure"/> executes.
     /// </summary>
