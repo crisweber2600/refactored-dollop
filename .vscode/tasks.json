@@ -10,6 +10,16 @@
             "label": "validation plan scenario",
             "type": "shell",
             "command": "dotnet test --filter ValidationPlanFactory"
+        },
+        {
+            "label": "mongo tests",
+            "type": "shell",
+            "command": "dotnet test --filter Mongo --no-restore --no-build"
+        },
+        {
+            "label": "mongo bdd scenarios",
+            "type": "shell",
+            "command": "dotnet test tests/ExampleLib.BDDTests/ExampleLib.BDDTests.csproj --no-restore --no-build --filter Mongo"
         }
     ]
 }

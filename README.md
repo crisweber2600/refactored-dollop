@@ -178,6 +178,18 @@ repository operates on an `IMongoCollection<T>` and respects the `Validated`
 flag for soft deletes. The unit of work records `Nanny` documents just like the
 EF variant.
 
+### Running Mongo Tests
+
+- Execute only the Mongo related tests with:
+
+  ```bash
+  dotnet test --filter Mongo
+  ```
+- The **mongo tests** task in VS Code runs this command for you.
+- Another task called **mongo bdd scenarios** executes the BDD features from
+  `ExampleLib.BDDTests`.
+- Ensure a local MongoDB instance is available before running these tasks.
+
 ## Generating Validation Plans
 
 A `ValidationPlan` describes how to validate an entity using a metric strategy. The default
