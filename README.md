@@ -5,9 +5,10 @@ RAGStart showcases an event‑driven validation workflow using .NET and MassTran
 ## Quick Start
 
 1. Install the [.NET 9 SDK](https://dotnet.microsoft.com/en-us/download).
-2. Run `dotnet test` to build and execute all tests.
+2. Run `dotnet test` once to restore packages and execute all tests.
 3. Optionally run `dotnet test --collect:"XPlat Code Coverage"` to verify coverage (should exceed 80%).
-4. Launch the sample console app:
+4. Trust the development certificate with `dotnet dev-certs https --trust` if running the web sample.
+5. Launch the sample console app:
    ```bash
    dotnet run --project src/ExampleRunner
    ```
@@ -115,10 +116,25 @@ Applications can register their DbContext and repositories in one line:
 services.SetupDatabase<YourDbContext>("Server=.;Database=example;Trusted_Connection=True");
 ```
 
+The connection string can come from configuration or an environment variable:
+
+```csharp
+var conn = Environment.GetEnvironmentVariable("EXAMPLE_SQL")!;
+services.SetupDatabase<YourDbContext>(conn);
+```
+
 When using MongoDB you can initialize everything in a similar fashion:
 
 ```csharp
 services.AddExampleDataMongo("mongodb://localhost:27017", "exampledb");
+```
+
+For a replica set or Atlas cluster supply the entire URI including credentials:
+
+```csharp
+services.AddExampleDataMongo(
+    "mongodb://user:pass@host1,host2/?replicaSet=mySet",
+    "sampledb");
 ```
 
 Alternatively register MongoDB with:
@@ -127,10 +143,20 @@ Alternatively register MongoDB with:
 services.SetupMongoDatabase("mongodb://localhost:27017", "exampledb");
 ```
 
+`SetupMongoDatabase` mirrors `SetupDatabase` but for MongoDB. It registers
+`MongoClient`, `IMongoDatabase`, the validation service, unit of work and the
+generic repository in one call.
+
 MongoDB is supported through a parallel set of classes. Install the driver with:
 
 ```bash
 dotnet add src/ExampleData package MongoDB.Driver
+```
+
+If you don't have MongoDB locally run one quickly via Docker:
+
+```bash
+docker run --rm -p 27017:27017 mongo
 ```
 
 Create a MongoDB database and wire up the generic repository like so:
@@ -177,6 +203,11 @@ provide an alternative to Entity Framework when working with MongoDB. Each
 repository operates on an `IMongoCollection<T>` and respects the `Validated`
 flag for soft deletes. The unit of work records `Nanny` documents just like the
 EF variant.
+
+The repository APIs mirror the EF Core versions so existing business logic can
+swap between databases with minimal changes. Validation events are triggered in
+exactly the same way and the `Validated` flag replaces the old `IsDeleted`
+column for soft delete semantics.
 
 ## Generating Validation Plans
 
