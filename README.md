@@ -101,6 +101,7 @@ Worker run
 - `src/ExampleRunner` – console sample using the library
 - `src/MetricsPipeline.Core` – worker components used across samples
 - `src/ExampleWorkerRunner` – runs the example worker end to end
+- `src/ExampleData` – Entity Framework and MongoDB data layer
 - `tests/ExampleLib.Tests` – unit and BDD tests verifying the workflow
 - `docs` – guides such as the EF Core replication how‑to
 
@@ -112,6 +113,21 @@ Applications can register their DbContext and repositories in one line:
 
 ```csharp
 services.SetupDatabase<YourDbContext>("Server=.;Database=example;Trusted_Connection=True");
+```
+
+MongoDB is supported through a parallel set of classes. Install the driver with:
+
+```bash
+dotnet add src/ExampleData package MongoDB.Driver
+```
+
+Create a MongoDB database and wire up the generic repository like so:
+
+```csharp
+var client = new MongoClient("mongodb://localhost:27017");
+var database = client.GetDatabase("exampledb");
+var uow = new MongoUnitOfWork(database, new MongoValidationService(database));
+var repo = uow.Repository<YourEntity>();
 ```
 
 `SetupDatabase` configures the DbContext, validation service and generic repositories. Every repository works with the `Validated` soft delete filter enabled by default.
@@ -130,6 +146,14 @@ The latest summarised metric is stored in the `Nanny` table whenever entities ar
 ### Nanny Records
 
 `Nanny` rows capture the last computed metric for each save along with the program name and a runtime identifier. This history can be inspected for audit or troubleshooting purposes.
+
+## MongoDB Support
+
+The `MongoGenericRepository`, `MongoUnitOfWork` and `MongoValidationService`
+provide an alternative to Entity Framework when working with MongoDB. Each
+repository operates on an `IMongoCollection<T>` and respects the `Validated`
+flag for soft deletes. The unit of work records `Nanny` documents just like the
+EF variant.
 
 ## Generating Validation Plans
 
