@@ -156,7 +156,8 @@ The helpers `AddExampleDataMongo` and `SetupMongoDatabase` register `MongoClient
 `SetupDatabase` configures the DbContext, validation service and generic repositories. Every repository works with the `Validated` soft delete filter enabled by default.
 
 ### SetupValidationBuilder
-Use this fluent helper to collect configuration steps before applying them:
+Use this fluent helper to collect configuration steps before applying them.
+It keeps your setup code compact and environment agnostic.
 
 ```csharp
 var builder = new SetupValidationBuilder()
@@ -168,11 +169,24 @@ builder.Apply(services);
 
 ## Validation Helpers
 
-`SetupValidation` is an alias of `AddSaveValidation` for configuring summarisation plans. Multiple entities can be registered:
+`SetupValidation` now accepts a lambda to configure the `SetupValidationBuilder`.
+Call it once during startup to set up the data layer:
 
 ```csharp
-services.SetupValidation<TasMetrics>(m => m.Value.Average(), ThresholdType.PercentChange, 0.25m);
-services.SetupValidation<TasAvailability>(a => a.Value.Average(), ThresholdType.Average, 1);
+services.SetupValidation(b => b.UseSqlServer<YourDbContext>("DataSource=:memory:"));
+```
+
+After configuring the infrastructure you can register multiple plans using `AddSaveValidation`:
+
+```csharp
+services.AddSaveValidation<TasMetrics>(m => m.Value.Average(), ThresholdType.PercentChange, 0.25m);
+services.AddSaveValidation<TasAvailability>(a => a.Value.Average(), ThresholdType.Average, 1);
+```
+Both helpers return the service collection, so configuration can be chained fluently:
+
+```csharp
+services.SetupValidation(b => b.UseMongo("mongodb://localhost:27017", "demo"))
+        .AddSaveValidation<Order>(o => o.LineAmounts.Sum());
 ```
 
 The latest summarised metric is stored in the `Nanny` table whenever entities are saved through the unit of work.

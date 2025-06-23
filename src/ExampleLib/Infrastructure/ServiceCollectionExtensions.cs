@@ -50,15 +50,18 @@ public static class ServiceCollectionExtensions
     }
 
     /// <summary>
-    /// Alias for <see cref="AddSaveValidation{T}"/> to match production setup examples.
+    /// Configure validation services using a fluent <see cref="SetupValidationBuilder"/>.
+    /// Recorded steps are applied to the service collection after <paramref name="configure"/> executes.
     /// </summary>
-    public static IServiceCollection SetupValidation<T>(
+    /// <param name="services">The service collection.</param>
+    /// <param name="configure">Action configuring the <see cref="SetupValidationBuilder"/>.</param>
+    public static IServiceCollection SetupValidation(
         this IServiceCollection services,
-        Func<T, decimal>? metricSelector = null,
-        ThresholdType thresholdType = ThresholdType.PercentChange,
-        decimal thresholdValue = 0.1m)
+        Action<SetupValidationBuilder> configure)
     {
-        return services.AddSaveValidation<T>(metricSelector, thresholdType, thresholdValue);
+        var builder = new SetupValidationBuilder();
+        configure(builder);
+        return builder.Apply(services);
     }
 
     private static decimal DefaultSelector<T>(T entity)

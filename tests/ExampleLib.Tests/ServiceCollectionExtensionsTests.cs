@@ -33,12 +33,12 @@ public class ServiceCollectionExtensionsTests
     }
 
     [Fact]
-    public void SetupValidation_IsAlias()
+    public void SetupValidation_ExecutesBuilder()
     {
         var services = new ServiceCollection();
-        services.SetupValidation<YourEntity>(e => e.Id);
+        services.SetupValidation(b => b.UseSqlServer<YourDbContext>("DataSource=:memory:"));
         var provider = services.BuildServiceProvider();
-        Assert.NotNull(provider.GetService<IEntityRepository<YourEntity>>());
+        Assert.NotNull(provider.GetService<IUnitOfWork>());
     }
 
     [Fact]
