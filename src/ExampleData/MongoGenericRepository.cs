@@ -7,9 +7,9 @@ public class MongoGenericRepository<T> : IGenericRepository<T>
 {
     private readonly IMongoCollection<T> _collection;
 
-    public MongoGenericRepository(IMongoCollection<T> collection)
+    public MongoGenericRepository(IMongoDatabase database)
     {
-        _collection = collection;
+        _collection = database.GetCollection<T>(typeof(T).Name);
     }
 
     public async Task<T?> GetByIdAsync(int id, bool includeDeleted = false)

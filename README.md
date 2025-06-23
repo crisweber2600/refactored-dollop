@@ -115,6 +115,18 @@ Applications can register their DbContext and repositories in one line:
 services.SetupDatabase<YourDbContext>("Server=.;Database=example;Trusted_Connection=True");
 ```
 
+When using MongoDB you can initialize everything in a similar fashion:
+
+```csharp
+services.AddExampleDataMongo("mongodb://localhost:27017", "exampledb");
+```
+
+Alternatively register MongoDB with:
+
+```csharp
+services.SetupMongoDatabase("mongodb://localhost:27017", "exampledb");
+```
+
 MongoDB is supported through a parallel set of classes. Install the driver with:
 
 ```bash
@@ -129,6 +141,17 @@ var database = client.GetDatabase("exampledb");
 var uow = new MongoUnitOfWork(database, new MongoValidationService(database));
 var repo = uow.Repository<YourEntity>();
 ```
+
+The `SetupMongoDatabase` helper returns the same services ready for use:
+
+```csharp
+services.SetupMongoDatabase("mongodb://localhost:27017", "exampledb");
+var repo = services.BuildServiceProvider()
+    .GetRequiredService<IGenericRepository<YourEntity>>();
+```
+
+The helpers `AddExampleDataMongo` and `SetupMongoDatabase` register `MongoClient`,
+`IMongoDatabase`, the validation service and unit of work automatically.
 
 `SetupDatabase` configures the DbContext, validation service and generic repositories. Every repository works with the `Validated` soft delete filter enabled by default.
 

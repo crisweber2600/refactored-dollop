@@ -16,8 +16,7 @@ public class MongoUnitOfWork : IUnitOfWork
 
     public IGenericRepository<T> Repository<T>() where T : class, IValidatable, IBaseEntity, IRootEntity
     {
-        var collection = _database.GetCollection<T>(typeof(T).Name);
-        return new MongoGenericRepository<T>(collection);
+        return new MongoGenericRepository<T>(_database);
     }
 
     public Task<int> SaveChangesAsync() => Task.FromResult(0);
