@@ -29,6 +29,8 @@ public class HostedWorkerTypeSteps
             o => o.UseInMemoryDatabase(Guid.NewGuid().ToString()),
             opts => opts.AddWorker = true);
         var provider = services.BuildServiceProvider();
+        var gather = provider.GetRequiredService<ListGatherService>();
+        gather.Metrics = new double[] { 1, 2, 3 };
         _worker = (GenericMetricsWorker)provider.GetServices<IHostedService>().Single(h => h is GenericMetricsWorker);
     }
 
