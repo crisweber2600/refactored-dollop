@@ -19,7 +19,7 @@ public class Composite
 [Binding]
 public class ValidationPlanFactorySteps
 {
-    private List<ValidationPlan>? _plans;
+    private IReadOnlyList<ValidationPlan>? _plans;
 
     [When("creating validation plans for a composite type")]
     public void WhenCreatingPlans()
