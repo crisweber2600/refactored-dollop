@@ -86,4 +86,27 @@ public class UnitOfWorkTests
         var nanny = await context.Nannies.FirstAsync();
         Assert.Equal("YourEntity", nanny.Entity);
     }
+
+    [Fact]
+    public async Task SaveChangesAsync_RuleSet_AllRulesMustPass()
+    {
+        var options = new DbContextOptionsBuilder<YourDbContext>()
+            .UseInMemoryDatabase("ruleset-test")
+            .Options;
+        using var context = new YourDbContext(options);
+        var mock = new Mock<IValidationService>();
+        mock.Setup(s => s.ComputeAsync<YourEntity>(It.IsAny<Expression<Func<YourEntity, double>>>(), It.IsAny<ValidationStrategy>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(1);
+        var uow = new UnitOfWork<YourDbContext>(context, mock.Object);
+        var repo = uow.Repository<YourEntity>();
+
+        await repo.AddAsync(new YourEntity { Name = "Rule" });
+        var rules = new ValidationRuleSet<YourEntity>(e => e.Id,
+            new ValidationRule(ValidationStrategy.Count, 1),
+            new ValidationRule(ValidationStrategy.Sum, 1));
+        await uow.SaveChangesAsync(rules);
+
+        var entity = await context.YourEntities.FirstAsync();
+        Assert.True(entity.Validated);
+    }
 }
