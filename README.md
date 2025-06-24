@@ -198,6 +198,21 @@ services.AddSetupValidation<Order>(
     o => o.LineAmounts.Sum());
 ```
 
+### ValidationRuleSet
+
+`ValidationRuleSet` groups multiple `ValidationRule` instances using a shared metric selector.
+Pass a rule set to `UnitOfWork.SaveChangesAsync` when several thresholds must be
+checked at once:
+
+```csharp
+var rules = new ValidationRuleSet<YourEntity>(e => e.Id,
+    new ValidationRule(ValidationStrategy.Count, 1),
+    new ValidationRule(ValidationStrategy.Sum, 1));
+await uow.SaveChangesAsync(rules);
+```
+This overload validates the entity only when **all** rules are satisfied. The
+last computed metric is still recorded in the `Nanny` table for auditing.
+
 The latest summarised metric is stored in the `Nanny` table whenever entities are saved through the unit of work.
 
 ### Nanny Records

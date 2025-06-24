@@ -15,6 +15,11 @@
             "label": "add setup validation scenario",
             "type": "shell",
             "command": "dotnet test --filter AddSetupValidation"
+        },
+        {
+            "label": "validation rule set scenario",
+            "type": "shell",
+            "command": "dotnet test --filter ValidationRuleSet"
         }
     ]
 }

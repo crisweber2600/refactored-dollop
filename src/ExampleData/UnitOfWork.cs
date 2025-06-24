@@ -58,4 +58,47 @@ public class UnitOfWork<TContext> : IUnitOfWork where TContext : DbContext
 
         return await _context.SaveChangesAsync(cancellationToken);
     }
+
+    /// <summary>
+    /// Validate and save changes using a set of rules. All rules must be satisfied
+    /// for the entity to be marked as validated.
+    /// </summary>
+    public async Task<int> SaveChangesAsync<TEntity>(ValidationRuleSet<TEntity> ruleSet,
+        CancellationToken cancellationToken = default)
+        where TEntity : class, IValidatable, IBaseEntity, IRootEntity
+    {
+        if (ruleSet == null) throw new ArgumentNullException(nameof(ruleSet));
+
+        double summary = 0;
+        var isValid = true;
+
+        foreach (var rule in ruleSet.Rules)
+        {
+            summary = await _validationService.ComputeAsync(ruleSet.Selector, rule.Strategy, cancellationToken);
+            if (summary < rule.Threshold)
+            {
+                isValid = false;
+            }
+        }
+
+        foreach (var entry in _context.ChangeTracker.Entries<TEntity>()
+                     .Where(e => e.State == EntityState.Added || e.State == EntityState.Modified))
+        {
+            entry.Entity.Validated = isValid;
+        }
+
+        if (_context is YourDbContext db)
+        {
+            db.Nannies.Add(new Nanny
+            {
+                ProgramName = System.Reflection.Assembly.GetEntryAssembly()?.GetName().Name ?? "Unknown",
+                Entity = typeof(TEntity).Name,
+                SummarizedValue = summary,
+                DateTime = DateTime.UtcNow,
+                RuntimeID = Guid.NewGuid()
+            });
+        }
+
+        return await _context.SaveChangesAsync(cancellationToken);
+    }
 }
