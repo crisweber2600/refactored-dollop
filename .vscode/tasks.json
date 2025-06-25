@@ -20,6 +20,11 @@
             "label": "validation rule set scenario",
             "type": "shell",
             "command": "dotnet test --filter ValidationRuleSet"
+        },
+        {
+            "label": "manual validator service scenario",
+            "type": "shell",
+            "command": "dotnet test --filter AddValidatorService"
         }
     ]
 }

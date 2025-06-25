@@ -4,6 +4,8 @@ using ExampleLib.Infrastructure;
 using MassTransit;
 using Microsoft.Extensions.DependencyInjection;
 using MongoDB.Driver;
+using System;
+using System.Collections.Generic;
 
 namespace ExampleLib.Tests;
 
@@ -84,5 +86,27 @@ public class ServiceCollectionExtensionsTests
         Assert.NotNull(provider.GetService<IMongoDatabase>());
         Assert.IsType<MongoUnitOfWork>(provider.GetRequiredService<IUnitOfWork>());
         Assert.NotNull(provider.GetService(typeof(IGenericRepository<YourEntity>)));
+    }
+
+    [Fact]
+    public void AddValidatorService_RegistersManualValidator()
+    {
+        var services = new ServiceCollection();
+        services.AddValidatorService();
+        var provider = services.BuildServiceProvider();
+        Assert.NotNull(provider.GetService<IManualValidatorService>());
+        Assert.NotNull(provider.GetService<IDictionary<Type, List<Func<object, bool>>>>());
+    }
+
+    [Fact]
+    public void AddValidatorRule_StoresRule()
+    {
+        var services = new ServiceCollection();
+        services.AddValidatorService();
+        services.AddValidatorRule<YourEntity>(_ => true);
+        var provider = services.BuildServiceProvider();
+        var dict = provider.GetRequiredService<IDictionary<Type, List<Func<object, bool>>>>();
+        Assert.True(dict.ContainsKey(typeof(YourEntity)));
+        Assert.Single(dict[typeof(YourEntity)]);
     }
 }

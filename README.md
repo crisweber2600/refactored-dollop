@@ -14,6 +14,7 @@ RAGStart showcases an event‑driven validation workflow using .NET and MassTran
    The console logs show save events, validations and stored audits.
 5. Execute the `run tests` task in VS Code to verify everything locally.
 6. Use `AddSetupValidation` to configure the data layer and a default plan in a single statement.
+7. Call `AddValidatorService` to enable manual rule checks during startup.
 
 ## Validation Workflow
 
@@ -218,14 +219,16 @@ The latest summarised metric is stored in the `Nanny` table whenever entities ar
 ### Manual Validation Service
 
 `ManualValidatorService` runs simple predicates registered per type. Use it when
-summarisation plans are overkill or you want quick checks:
+summarisation plans are overkill or you want quick checks. Call
+`AddValidatorService` during startup and register predicates with
+`AddValidatorRule`:
 
 ```csharp
-var rules = new Dictionary<Type, List<Func<object, bool>>>
-{
-    { typeof(Order), [o => ((Order)o).Total > 0] }
-};
-var validator = new ManualValidatorService(rules);
+var services = new ServiceCollection();
+services.AddValidatorService()
+        .AddValidatorRule<Order>(o => o.Total > 0);
+var validator = services.BuildServiceProvider()
+    .GetRequiredService<IManualValidatorService>();
 bool ok = validator.Validate(new Order());
 ```
 
@@ -233,6 +236,9 @@ bool ok = validator.Validate(new Order());
 - When no rules exist validation succeeds by default.
 - Every rule for the type must return `true` for the instance to be valid.
 - Inject the rule dictionary via the constructor for testability.
+- Register rules easily with `AddValidatorRule`.
+- Retrieve the rule dictionary from DI for inspection or updates.
+- The extension methods keep startup code concise.
 - BDD tests under `ManualValidatorService.feature` cover these scenarios.
 
 ### Nanny Records
@@ -282,3 +288,4 @@ Running `dotnet test` now also exercises the validation plan factory scenario.
 Convenient VS Code tasks are provided under `.vscode/tasks.json` for quick
 execution from the Codex interface. Tasks exist for running all tests,
 validating the plan factory and the new setup validation scenario.
+An additional task runs the `AddValidatorService` feature to verify manual rules.
