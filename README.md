@@ -215,6 +215,26 @@ last computed metric is still recorded in the `Nanny` table for auditing.
 
 The latest summarised metric is stored in the `Nanny` table whenever entities are saved through the unit of work.
 
+### Manual Validation Service
+
+`ManualValidatorService` runs simple predicates registered per type. Use it when
+summarisation plans are overkill or you want quick checks:
+
+```csharp
+var rules = new Dictionary<Type, List<Func<object, bool>>>
+{
+    { typeof(Order), [o => ((Order)o).Total > 0] }
+};
+var validator = new ManualValidatorService(rules);
+bool ok = validator.Validate(new Order());
+```
+
+- Rules are stored in a dictionary keyed by runtime type.
+- When no rules exist validation succeeds by default.
+- Every rule for the type must return `true` for the instance to be valid.
+- Inject the rule dictionary via the constructor for testability.
+- BDD tests under `ManualValidatorService.feature` cover these scenarios.
+
 ### Nanny Records
 
 `Nanny` rows capture the last computed metric for each save along with the program name and a runtime identifier. This history can be inspected for audit or troubleshooting purposes.
