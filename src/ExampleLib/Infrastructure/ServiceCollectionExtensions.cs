@@ -1,4 +1,5 @@
 using ExampleLib.Domain;
+using System.Collections.Generic;
 using MassTransit;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -96,5 +97,31 @@ public static class ServiceCollectionExtensions
             return result;
         }
         return 0m;
+    }
+
+    private static readonly IDictionary<Type, List<Func<object, bool>>> _validatorRules = new Dictionary<Type, List<Func<object, bool>>>();
+
+    /// <summary>
+    /// Register <see cref="ManualValidatorService"/> and the rule dictionary as singletons.
+    /// </summary>
+    public static IServiceCollection AddValidatorService(this IServiceCollection services)
+    {
+        services.AddSingleton(_validatorRules);
+        services.AddSingleton<IManualValidatorService>(new ManualValidatorService(_validatorRules));
+        return services;
+    }
+
+    /// <summary>
+    /// Add a manual validation rule for the specified type.
+    /// </summary>
+    public static IServiceCollection AddValidatorRule<T>(this IServiceCollection services, Func<T, bool> rule)
+    {
+        if (!_validatorRules.TryGetValue(typeof(T), out var list))
+        {
+            list = new List<Func<object, bool>>();
+            _validatorRules[typeof(T)] = list;
+        }
+        list.Add(o => rule((T)o));
+        return services;
     }
 }
