@@ -14,6 +14,7 @@ RAGStart showcases an event‑driven validation workflow using .NET and MassTran
    The console logs show save events, validations and stored audits.
 5. Execute the `run tests` task in VS Code to verify everything locally.
 6. Use `AddSetupValidation` to configure the data layer and a default plan in a single statement.
+7. Call `AddValidatorService` and add rules with `AddValidatorRule` for quick predicate checks.
 
 ## Validation Workflow
 
@@ -234,6 +235,24 @@ bool ok = validator.Validate(new Order());
 - Every rule for the type must return `true` for the instance to be valid.
 - Inject the rule dictionary via the constructor for testability.
 - BDD tests under `ManualValidatorService.feature` cover these scenarios.
+
+To wire the validator through dependency injection:
+
+```csharp
+services.AddValidatorService()
+        .AddValidatorRule<Order>(o => o.Total > 0);
+var provider = services.BuildServiceProvider();
+var manual = provider.GetRequiredService<IManualValidatorService>();
+```
+
+You can fetch the rule dictionary from the provider to adjust rules at runtime:
+
+```csharp
+var dict = provider.GetRequiredService<IDictionary<Type, List<Func<object, bool>>>>();
+dict[typeof(Order)].Add(o => ((Order)o).Lines.Any());
+```
+
+BDD tests under `AddValidatorService.feature` confirm this registration path.
 
 ### Nanny Records
 
