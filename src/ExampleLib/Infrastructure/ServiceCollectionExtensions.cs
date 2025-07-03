@@ -1,6 +1,9 @@
 using ExampleLib.Domain;
 using System.Collections.Generic;
 using MassTransit;
+using OpenTelemetry.Extensions.Hosting;
+using OpenTelemetry.Trace;
+using Serilog;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace ExampleLib.Infrastructure;
@@ -34,13 +37,20 @@ public static class ServiceCollectionExtensions
             return store;
         });
 
+        services.AddLogging(b => b.AddSerilog());
+        services.AddOpenTelemetry().WithTracing(b => b.AddSource("MassTransit"));
+
         services.AddMassTransit(x =>
         {
             x.AddConsumer<SaveValidationConsumer<T>>();
             x.UsingInMemory((ctx, cfg) =>
             {
+                cfg.UseMessageRetry(r => r.Interval(3, TimeSpan.FromMilliseconds(200)));
+                cfg.ConnectReceiveObserver(new SerilogReceiveObserver(Log.Logger));
+
                 cfg.ReceiveEndpoint("save_requests_queue", e =>
                 {
+                    e.UseInMemoryOutbox();
                     e.ConfigureConsumer<SaveValidationConsumer<T>>(ctx);
                 });
             });
@@ -69,6 +79,38 @@ public static class ServiceCollectionExtensions
                 cfg.ReceiveEndpoint("save_commits_queue", e =>
                 {
                     e.ConfigureConsumer<SaveCommitConsumer<T>>(ctx);
+    /// Register the services required to validate delete requests for <typeparamref name="T"/>.
+    /// </summary>
+    public static IServiceCollection AddDeleteValidation<T>(this IServiceCollection services)
+    {
+        services.AddValidatorService();
+        services.AddMassTransit(x =>
+        {
+            x.AddConsumer<DeleteValidationConsumer<T>>();
+            x.UsingInMemory((ctx, cfg) =>
+            {
+                cfg.ReceiveEndpoint("delete_requests_queue", e =>
+                {
+                    e.ConfigureConsumer<DeleteValidationConsumer<T>>(ctx);
+                });
+            });
+        });
+        return services;
+    }
+
+    /// <summary>
+    /// Register the services required to commit deletes for <typeparamref name="T"/>.
+    /// </summary>
+    public static IServiceCollection AddDeleteCommit<T>(this IServiceCollection services)
+    {
+        services.AddMassTransit(x =>
+        {
+            x.AddConsumer<DeleteCommitConsumer<T>>();
+            x.UsingInMemory((ctx, cfg) =>
+            {
+                cfg.ReceiveEndpoint("delete_commit_queue", e =>
+                {
+                    e.ConfigureConsumer<DeleteCommitConsumer<T>>(ctx);
                 });
             });
         });
@@ -95,6 +137,7 @@ public static class ServiceCollectionExtensions
     {
         services.SetupValidation(configure);
         services.AddSaveValidation<T>(metricSelector, thresholdType, thresholdValue);
+        services.AddScoped<ISaveAuditRepository, EfSaveAuditRepository>();
         return services;
     }
 

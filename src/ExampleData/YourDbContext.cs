@@ -9,6 +9,7 @@ public class YourDbContext : DbContext
 
     public DbSet<YourEntity> YourEntities => Set<YourEntity>();
     public DbSet<Nanny> Nannies => Set<Nanny>();
+    public DbSet<SaveAudit> SaveAudits => Set<SaveAudit>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

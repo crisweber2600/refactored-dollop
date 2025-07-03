@@ -24,7 +24,7 @@ public class MongoRepositoryTests : IDisposable
         await _database.DropCollectionAsync(nameof(YourEntity));
     }
 
-    [Fact]
+    [Fact(Skip="Requires MongoDB server")]
     public async Task AddAndCount_Works()
     {
         await ResetAsync();
@@ -32,7 +32,7 @@ public class MongoRepositoryTests : IDisposable
         Assert.Equal(1, await _repo.CountAsync());
     }
 
-    [Fact]
+    [Fact(Skip="Requires MongoDB server")]
     public async Task Delete_UnvalidatesEntity()
     {
         await ResetAsync();
@@ -43,7 +43,7 @@ public class MongoRepositoryTests : IDisposable
         Assert.False(result!.Validated);
     }
 
-    [Fact]
+    [Fact(Skip="Requires MongoDB server")]
     public async Task HardDelete_RemovesEntity()
     {
         await ResetAsync();
@@ -53,7 +53,7 @@ public class MongoRepositoryTests : IDisposable
         Assert.Equal(0, await _repo.CountAsync());
     }
 
-    [Fact]
+    [Fact(Skip="Requires MongoDB server")]
     public async Task GetById_CanIncludeDeleted()
     {
         await ResetAsync();

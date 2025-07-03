@@ -1,5 +1,6 @@
 using ExampleData;
 using ExampleLib.Domain;
+using SaveAudit = ExampleLib.Domain.SaveAudit;
 
 namespace ExampleLib.Tests;
 

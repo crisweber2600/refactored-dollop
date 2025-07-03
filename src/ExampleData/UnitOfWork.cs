@@ -13,17 +13,27 @@ public interface IUnitOfWork
         double threshold,
         CancellationToken cancellationToken = default)
         where TEntity : class, IValidatable, IBaseEntity, IRootEntity;
+
+    /// <summary>
+    /// Validate and save changes using the summarisation plan registered for
+    /// <typeparamref name="TEntity"/>.
+    /// </summary>
+    Task<int> SaveChangesWithPlanAsync<TEntity>(CancellationToken cancellationToken = default)
+        where TEntity : class, IValidatable, IBaseEntity, IRootEntity;
 }
 
 public class UnitOfWork<TContext> : IUnitOfWork where TContext : DbContext
 {
     private readonly TContext _context;
     private readonly IValidationService _validationService;
+    private readonly ExampleLib.Domain.ISummarisationPlanStore _planStore;
 
-    public UnitOfWork(TContext context, IValidationService validationService)
+    public UnitOfWork(TContext context, IValidationService validationService,
+        ExampleLib.Domain.ISummarisationPlanStore planStore)
     {
         _context = context;
         _validationService = validationService;
+        _planStore = planStore;
     }
 
     public IGenericRepository<T> Repository<T>() where T : class, IValidatable, IBaseEntity, IRootEntity => new EfGenericRepository<T>((YourDbContext)(DbContext)_context);
@@ -100,5 +110,13 @@ public class UnitOfWork<TContext> : IUnitOfWork where TContext : DbContext
         }
 
         return await _context.SaveChangesAsync(cancellationToken);
+    }
+
+    public Task<int> SaveChangesWithPlanAsync<TEntity>(CancellationToken cancellationToken = default)
+        where TEntity : class, IValidatable, IBaseEntity, IRootEntity
+    {
+        var plan = _planStore.GetPlan<TEntity>();
+        Expression<Func<TEntity, double>> selector = e => (double)plan.MetricSelector(e);
+        return SaveChangesAsync(selector, ValidationStrategy.Sum, (double)plan.ThresholdValue, cancellationToken);
     }
 }

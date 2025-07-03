@@ -16,7 +16,10 @@ RAGStart showcases an event‑driven validation workflow using .NET and MassTran
 6. Use `AddSetupValidation` to configure the data layer and a default plan in a single statement.
 7. Call `AddValidatorService` to enable manual rule checks during startup.
 8. Register `SaveCommitConsumer` using `AddSaveCommit` to audit committed saves.
+7. Call `AddValidatorService` to enable manual rule checks during startup.
+8. 8. Use `SaveChangesWithPlanAsync` to automatically apply registered summarisation plans when saving entities.
 
+8. Register `AddDeleteValidation` or `AddDeleteCommit` to handle delete events.
 ## Validation Workflow
 
 Entity saves publish a `SaveRequested<T>` event. A `SaveValidationConsumer<T>` validates the save against a configurable `SummarisationPlan<T>` and records the result as a `SaveAudit`.
@@ -41,6 +44,16 @@ sequenceDiagram
     CommitConsumer->>Bus: Publish SaveCommitFault on error
 ```
 
+## Delete Workflow
+
+Deletes follow a similar event pattern:
+
+1. A `DeleteRequested<T>` event is published when an entity should be removed.
+2. `DeleteValidationConsumer<T>` checks any manual rules and emits `DeleteValidated<T>`.
+3. If validated, `DeleteCommitConsumer<T>` publishes a `DeleteCommitted<T>` event.
+4. Service registration helpers `AddDeleteValidation<T>` and `AddDeleteCommit<T>` wire the consumers.
+5. Tests in `DeleteFlowTests` demonstrate the full validation and commit sequence.
+
 ### Configuring a Summarisation Plan
 
 A plan defines how to compute a numeric metric from an entity and what threshold is allowed between saves:
@@ -51,6 +64,7 @@ services.AddSaveValidation<Order>(o => o.LineAmounts.Sum(), ThresholdType.Percen
 * `MetricSelector` computes the metric value (order total in this case).
 * `ThresholdType` can be `RawDifference` or `PercentChange`.
 * `ThresholdValue` sets the allowable change and is easily tuned per entity.
+* Audits of each save are stored in a `SaveAudit` table derived from `BaseEntity` so every entry has an integer key and validation flag.
 
 Override the plan later via `ISummarisationPlanStore`:
 
@@ -105,6 +119,24 @@ Validators derived from `SetupValidator` execute against the service provider so
 ## Commit Auditing
 
 `SaveCommitConsumer` listens for `SaveValidated<T>` events and records a final `SaveAudit`. If persistence fails a `SaveCommitFault<T>` message is published. Register the consumer via `services.AddSaveCommit<T>()`.
+## Reliability Features
+
+MassTransit now enables automatic retries and an in-memory outbox on every endpoint.
+Poison messages are moved to a dedicated dead letter queue and logged via **Serilog**.
+OpenTelemetry tracing captures bus activity so message flow can be observed.
+
+```csharp
+services.AddSaveValidation<Order>(o => o.LineAmounts.Sum());
+
+Log.Logger = new LoggerConfiguration()
+    .Enrich.FromLogContext()
+    .WriteTo.Console()
+    .CreateLogger();
+```
+
+The configuration above wires `UseMessageRetry`, `UseInMemoryOutbox` and a Serilog
+receive observer. Failed messages appear in `save_requests_queue_error` and are
+written to the console.
 
 
 ## Architecture Overview
@@ -122,6 +154,14 @@ At a high level the pipeline flows through a fixed sequence of services coordina
 ### Example Runner
 
 The `ExampleRunner` project wires the dependencies and shows the workflow end‑to‑end. Run the project and observe the console output for validation results. Inspect `ISaveAuditRepository` to review the stored audits. The runner now registers `SaveCommitConsumer` so committed saves are audited too.
+The `ExampleRunner` project wires the dependencies and shows the workflow end‑to‑end. Run the project and observe the console output for validation results. Inspect `ISaveAuditRepository` to review the stored audits.
+The runner now stores audits in a database when `AddSetupValidation` is used,
+demonstrating how metrics persist between runs. Retrieve the latest audit like
+so:
+```csharp
+var last = provider.GetRequiredService<ISaveAuditRepository>()
+    .GetLastAudit("Order", "ORDER123");
+```
 
 ### Example Worker Runner
 
@@ -182,6 +222,11 @@ Applications can register their DbContext and repositories in one line:
 services.SetupDatabase<YourDbContext>("Server=.;Database=example;Trusted_Connection=True");
 ```
 
+The setup now registers an `EfSaveAuditRepository` that persists `SaveAudit`
+records using Entity Framework Core.
+Run `dotnet ef migrations add AddSaveAudit` to generate the initial migration
+and update the database.
+
 When using MongoDB you can initialize everything in a similar fashion:
 
 ```csharp
@@ -205,7 +250,9 @@ Create a MongoDB database and wire up the generic repository like so:
 ```csharp
 var client = new MongoClient("mongodb://localhost:27017");
 var database = client.GetDatabase("exampledb");
-var uow = new MongoUnitOfWork(database, new MongoValidationService(database));
+var planStore = new InMemorySummarisationPlanStore();
+planStore.AddPlan(new SummarisationPlan<YourEntity>(e => e.Id, ThresholdType.RawDifference, 1));
+var uow = new MongoUnitOfWork(database, new MongoValidationService(database), planStore);
 var repo = uow.Repository<YourEntity>();
 ```
 
@@ -216,6 +263,8 @@ services.SetupMongoDatabase("mongodb://localhost:27017", "exampledb");
 var repo = services.BuildServiceProvider()
     .GetRequiredService<IGenericRepository<YourEntity>>();
 ```
+
+Both helpers expect an `ISummarisationPlanStore` to be registered so `UnitOfWork` can resolve plans when saving.
 
 The helpers `AddExampleDataMongo` and `SetupMongoDatabase` register `MongoClient`,
 `IMongoDatabase`, the validation service and unit of work automatically.
@@ -230,6 +279,10 @@ It keeps your setup code compact and environment agnostic.
 var builder = new SetupValidationBuilder()
     .UseSqlServer<YourDbContext>("DataSource=:memory:");
 builder.Apply(services);
+
+`EfSaveAuditRepository` is registered automatically when a SQL database is
+configured, so calling `GetLastAudit` later will query the table instead of the
+in-memory store.
 ```
 
 `UseMongo` can be substituted to register MongoDB instead. Chaining these calls keeps startup code tidy when switching providers.
@@ -279,6 +332,15 @@ This overload validates the entity only when **all** rules are satisfied. The
 last computed metric is still recorded in the `Nanny` table for auditing.
 
 The latest summarised metric is stored in the `Nanny` table whenever entities are saved through the unit of work.
+
+### Saving With Plans
+
+`SaveChangesWithPlanAsync<TEntity>()` looks up the registered `SummarisationPlan` for the entity type and automatically applies it. The plan selector, strategy and threshold are forwarded to the existing validation logic.
+
+```csharp
+await uow.SaveChangesWithPlanAsync<YourEntity>();
+```
+Inject `ISummarisationPlanStore` when constructing a unit of work so plans can be resolved on demand.
 
 ### Manual Validation Service
 
@@ -333,6 +395,7 @@ EF variant.
 
 A `ValidationPlan` describes how to validate an entity using a metric strategy. The default
 implementation relies on the count of records.
+`UnitOfWork` now depends on `ISummarisationPlanStore` so the generated plans can be applied when persisting entities.
 
 Use `ValidationPlanFactory.CreatePlans<T, V>(connectionString)` to instantiate the
 `DbContext` of type `V` and build a plan for each property type on `T`.

@@ -34,7 +34,7 @@ public class ServiceCollectionExtensionsTests
         }
     }
 
-    [Fact]
+    [Fact(Skip="Requires SQL Server provider")]
     public async Task AddSetupValidation_WiresEndToEnd()
     {
         var services = new ServiceCollection();
