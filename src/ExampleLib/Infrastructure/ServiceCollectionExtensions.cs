@@ -51,6 +51,45 @@ public static class ServiceCollectionExtensions
     }
 
     /// <summary>
+    /// Register the services required to validate delete requests for <typeparamref name="T"/>.
+    /// </summary>
+    public static IServiceCollection AddDeleteValidation<T>(this IServiceCollection services)
+    {
+        services.AddValidatorService();
+        services.AddMassTransit(x =>
+        {
+            x.AddConsumer<DeleteValidationConsumer<T>>();
+            x.UsingInMemory((ctx, cfg) =>
+            {
+                cfg.ReceiveEndpoint("delete_requests_queue", e =>
+                {
+                    e.ConfigureConsumer<DeleteValidationConsumer<T>>(ctx);
+                });
+            });
+        });
+        return services;
+    }
+
+    /// <summary>
+    /// Register the services required to commit deletes for <typeparamref name="T"/>.
+    /// </summary>
+    public static IServiceCollection AddDeleteCommit<T>(this IServiceCollection services)
+    {
+        services.AddMassTransit(x =>
+        {
+            x.AddConsumer<DeleteCommitConsumer<T>>();
+            x.UsingInMemory((ctx, cfg) =>
+            {
+                cfg.ReceiveEndpoint("delete_commit_queue", e =>
+                {
+                    e.ConfigureConsumer<DeleteCommitConsumer<T>>(ctx);
+                });
+            });
+        });
+        return services;
+    }
+
+    /// <summary>
     /// Convenience helper combining <see cref="SetupValidation"/> and
     /// <see cref="AddSaveValidation{T}"/>. The builder action configures the
     /// data layer while a default summarisation plan is registered for

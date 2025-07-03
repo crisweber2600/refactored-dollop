@@ -15,6 +15,7 @@ RAGStart showcases an event‑driven validation workflow using .NET and MassTran
 5. Execute the `run tests` task in VS Code to verify everything locally.
 6. Use `AddSetupValidation` to configure the data layer and a default plan in a single statement.
 7. Call `AddValidatorService` to enable manual rule checks during startup.
+8. Register `AddDeleteValidation` or `AddDeleteCommit` to handle delete events.
 
 ## Validation Workflow
 
@@ -36,6 +37,16 @@ sequenceDiagram
     Consumer->>AuditRepo: AddAudit
     Consumer->>Bus: Publish SaveValidated
 ```
+
+## Delete Workflow
+
+Deletes follow a similar event pattern:
+
+1. A `DeleteRequested<T>` event is published when an entity should be removed.
+2. `DeleteValidationConsumer<T>` checks any manual rules and emits `DeleteValidated<T>`.
+3. If validated, `DeleteCommitConsumer<T>` publishes a `DeleteCommitted<T>` event.
+4. Service registration helpers `AddDeleteValidation<T>` and `AddDeleteCommit<T>` wire the consumers.
+5. Tests in `DeleteFlowTests` demonstrate the full validation and commit sequence.
 
 ### Configuring a Summarisation Plan
 
