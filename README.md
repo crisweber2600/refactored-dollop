@@ -14,8 +14,10 @@ RAGStart showcases an event‑driven validation workflow using .NET and MassTran
    The console logs show save events, validations and stored audits.
 5. Execute the `run tests` task in VS Code to verify everything locally.
 6. Use `AddSetupValidation` to configure the data layer and a default plan in a single statement.
-7. Call `AddValidatorService` to enable manual rule checks during startup.
+7. Call `AddValidatorService` to enable manual rule checks during startup.<<<<<<< codex/add-savechangeswithplanasync-to-iunitofwork
 8. Use `SaveChangesWithPlanAsync` to automatically apply registered summarisation plans when saving entities.
+
+8. Register `AddDeleteValidation` or `AddDeleteCommit` to handle delete events.
 
 ## Validation Workflow
 
@@ -37,6 +39,16 @@ sequenceDiagram
     Consumer->>AuditRepo: AddAudit
     Consumer->>Bus: Publish SaveValidated
 ```
+
+## Delete Workflow
+
+Deletes follow a similar event pattern:
+
+1. A `DeleteRequested<T>` event is published when an entity should be removed.
+2. `DeleteValidationConsumer<T>` checks any manual rules and emits `DeleteValidated<T>`.
+3. If validated, `DeleteCommitConsumer<T>` publishes a `DeleteCommitted<T>` event.
+4. Service registration helpers `AddDeleteValidation<T>` and `AddDeleteCommit<T>` wire the consumers.
+5. Tests in `DeleteFlowTests` demonstrate the full validation and commit sequence.
 
 ### Configuring a Summarisation Plan
 
@@ -98,6 +110,25 @@ services.AddSetupValidation<MyStartupValidator>();
 ```
 
 Validators derived from `SetupValidator` execute against the service provider so common setup logic is reusable across projects.
+
+## Reliability Features
+
+MassTransit now enables automatic retries and an in-memory outbox on every endpoint.
+Poison messages are moved to a dedicated dead letter queue and logged via **Serilog**.
+OpenTelemetry tracing captures bus activity so message flow can be observed.
+
+```csharp
+services.AddSaveValidation<Order>(o => o.LineAmounts.Sum());
+
+Log.Logger = new LoggerConfiguration()
+    .Enrich.FromLogContext()
+    .WriteTo.Console()
+    .CreateLogger();
+```
+
+The configuration above wires `UseMessageRetry`, `UseInMemoryOutbox` and a Serilog
+receive observer. Failed messages appear in `save_requests_queue_error` and are
+written to the console.
 
 
 ## Architecture Overview
