@@ -1,6 +1,9 @@
 using ExampleLib.Domain;
 using System.Collections.Generic;
 using MassTransit;
+using OpenTelemetry.Extensions.Hosting;
+using OpenTelemetry.Trace;
+using Serilog;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace ExampleLib.Infrastructure;
@@ -34,13 +37,20 @@ public static class ServiceCollectionExtensions
             return store;
         });
 
+        services.AddLogging(b => b.AddSerilog());
+        services.AddOpenTelemetry().WithTracing(b => b.AddSource("MassTransit"));
+
         services.AddMassTransit(x =>
         {
             x.AddConsumer<SaveValidationConsumer<T>>();
             x.UsingInMemory((ctx, cfg) =>
             {
+                cfg.UseMessageRetry(r => r.Interval(3, TimeSpan.FromMilliseconds(200)));
+                cfg.ConnectReceiveObserver(new SerilogReceiveObserver(Log.Logger));
+
                 cfg.ReceiveEndpoint("save_requests_queue", e =>
                 {
+                    e.UseInMemoryOutbox();
                     e.ConfigureConsumer<SaveValidationConsumer<T>>(ctx);
                 });
             });
