@@ -47,6 +47,7 @@ services.AddSaveValidation<Order>(o => o.LineAmounts.Sum(), ThresholdType.Percen
 * `MetricSelector` computes the metric value (order total in this case).
 * `ThresholdType` can be `RawDifference` or `PercentChange`.
 * `ThresholdValue` sets the allowable change and is easily tuned per entity.
+* Audits of each save are stored in a `SaveAudit` table derived from `BaseEntity` so every entry has an integer key and validation flag.
 
 Override the plan later via `ISummarisationPlanStore`:
 
@@ -114,6 +115,13 @@ At a high level the pipeline flows through a fixed sequence of services coordina
 ### Example Runner
 
 The `ExampleRunner` project wires the dependencies and shows the workflow end‑to‑end. Run the project and observe the console output for validation results. Inspect `ISaveAuditRepository` to review the stored audits.
+The runner now stores audits in a database when `AddSetupValidation` is used,
+demonstrating how metrics persist between runs. Retrieve the latest audit like
+so:
+```csharp
+var last = provider.GetRequiredService<ISaveAuditRepository>()
+    .GetLastAudit("Order", "ORDER123");
+```
 
 ### Example Worker Runner
 
@@ -174,6 +182,11 @@ Applications can register their DbContext and repositories in one line:
 services.SetupDatabase<YourDbContext>("Server=.;Database=example;Trusted_Connection=True");
 ```
 
+The setup now registers an `EfSaveAuditRepository` that persists `SaveAudit`
+records using Entity Framework Core.
+Run `dotnet ef migrations add AddSaveAudit` to generate the initial migration
+and update the database.
+
 When using MongoDB you can initialize everything in a similar fashion:
 
 ```csharp
@@ -222,6 +235,10 @@ It keeps your setup code compact and environment agnostic.
 var builder = new SetupValidationBuilder()
     .UseSqlServer<YourDbContext>("DataSource=:memory:");
 builder.Apply(services);
+
+`EfSaveAuditRepository` is registered automatically when a SQL database is
+configured, so calling `GetLastAudit` later will query the table instead of the
+in-memory store.
 ```
 
 `UseMongo` can be substituted to register MongoDB instead. Chaining these calls keeps startup code tidy when switching providers.
