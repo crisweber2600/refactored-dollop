@@ -14,7 +14,9 @@ RAGStart showcases an event‑driven validation workflow using .NET and MassTran
    The console logs show save events, validations and stored audits.
 5. Execute the `run tests` task in VS Code to verify everything locally.
 6. Use `AddSetupValidation` to configure the data layer and a default plan in a single statement.
-7. Call `AddValidatorService` to enable manual rule checks during startup.
+7. Call `AddValidatorService` to enable manual rule checks during startup.<<<<<<< codex/add-savechangeswithplanasync-to-iunitofwork
+8. Use `SaveChangesWithPlanAsync` to automatically apply registered summarisation plans when saving entities.
+
 8. Register `AddDeleteValidation` or `AddDeleteCommit` to handle delete events.
 
 ## Validation Workflow
@@ -227,7 +229,9 @@ Create a MongoDB database and wire up the generic repository like so:
 ```csharp
 var client = new MongoClient("mongodb://localhost:27017");
 var database = client.GetDatabase("exampledb");
-var uow = new MongoUnitOfWork(database, new MongoValidationService(database));
+var planStore = new InMemorySummarisationPlanStore();
+planStore.AddPlan(new SummarisationPlan<YourEntity>(e => e.Id, ThresholdType.RawDifference, 1));
+var uow = new MongoUnitOfWork(database, new MongoValidationService(database), planStore);
 var repo = uow.Repository<YourEntity>();
 ```
 
@@ -238,6 +242,8 @@ services.SetupMongoDatabase("mongodb://localhost:27017", "exampledb");
 var repo = services.BuildServiceProvider()
     .GetRequiredService<IGenericRepository<YourEntity>>();
 ```
+
+Both helpers expect an `ISummarisationPlanStore` to be registered so `UnitOfWork` can resolve plans when saving.
 
 The helpers `AddExampleDataMongo` and `SetupMongoDatabase` register `MongoClient`,
 `IMongoDatabase`, the validation service and unit of work automatically.
@@ -302,6 +308,15 @@ last computed metric is still recorded in the `Nanny` table for auditing.
 
 The latest summarised metric is stored in the `Nanny` table whenever entities are saved through the unit of work.
 
+### Saving With Plans
+
+`SaveChangesWithPlanAsync<TEntity>()` looks up the registered `SummarisationPlan` for the entity type and automatically applies it. The plan selector, strategy and threshold are forwarded to the existing validation logic.
+
+```csharp
+await uow.SaveChangesWithPlanAsync<YourEntity>();
+```
+Inject `ISummarisationPlanStore` when constructing a unit of work so plans can be resolved on demand.
+
 ### Manual Validation Service
 
 `ManualValidatorService` runs simple predicates registered per type. Use it when
@@ -355,6 +370,7 @@ EF variant.
 
 A `ValidationPlan` describes how to validate an entity using a metric strategy. The default
 implementation relies on the count of records.
+`UnitOfWork` now depends on `ISummarisationPlanStore` so the generated plans can be applied when persisting entities.
 
 Use `ValidationPlanFactory.CreatePlans<T, V>(connectionString)` to instantiate the
 `DbContext` of type `V` and build a plan for each property type on `T`.

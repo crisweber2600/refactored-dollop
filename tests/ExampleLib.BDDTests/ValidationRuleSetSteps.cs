@@ -24,7 +24,7 @@ public class ValidationRuleSetSteps
         var ruleSet = new ValidationRuleSet<YourEntity>(e => e.Id,
             new ValidationRule(ValidationStrategy.Count, countThreshold),
             new ValidationRule(ValidationStrategy.Sum, sumThreshold));
-        await _uow.SaveChangesAsync(ruleSet);
+        await ((UnitOfWork<YourDbContext>)_uow).SaveChangesAsync(ruleSet);
     }
 
     [Then("the rule set entity should be validated")]
