@@ -51,6 +51,31 @@ public static class ServiceCollectionExtensions
     }
 
     /// <summary>
+    /// Register the <see cref="SaveCommitConsumer{T}"/> to record commit audits.
+    /// MassTransit is configured with a dedicated receive endpoint.
+    /// </summary>
+    public static IServiceCollection AddSaveCommit<T>(this IServiceCollection services)
+    {
+        services.AddMassTransit(x =>
+        {
+            x.AddConsumer<SaveValidationConsumer<T>>();
+            x.AddConsumer<SaveCommitConsumer<T>>();
+            x.UsingInMemory((ctx, cfg) =>
+            {
+                cfg.ReceiveEndpoint("save_requests_queue", e =>
+                {
+                    e.ConfigureConsumer<SaveValidationConsumer<T>>(ctx);
+                });
+                cfg.ReceiveEndpoint("save_commits_queue", e =>
+                {
+                    e.ConfigureConsumer<SaveCommitConsumer<T>>(ctx);
+                });
+            });
+        });
+        return services;
+    }
+
+    /// <summary>
     /// Convenience helper combining <see cref="SetupValidation"/> and
     /// <see cref="AddSaveValidation{T}"/>. The builder action configures the
     /// data layer while a default summarisation plan is registered for

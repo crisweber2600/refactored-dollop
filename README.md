@@ -15,6 +15,7 @@ RAGStart showcases an event‑driven validation workflow using .NET and MassTran
 5. Execute the `run tests` task in VS Code to verify everything locally.
 6. Use `AddSetupValidation` to configure the data layer and a default plan in a single statement.
 7. Call `AddValidatorService` to enable manual rule checks during startup.
+8. Register `SaveCommitConsumer` using `AddSaveCommit` to audit committed saves.
 
 ## Validation Workflow
 
@@ -35,6 +36,9 @@ sequenceDiagram
     Validator-->>Consumer: bool result
     Consumer->>AuditRepo: AddAudit
     Consumer->>Bus: Publish SaveValidated
+    Bus->>CommitConsumer: Deliver validated event
+    CommitConsumer->>AuditRepo: Record commit
+    CommitConsumer->>Bus: Publish SaveCommitFault on error
 ```
 
 ### Configuring a Summarisation Plan
@@ -98,6 +102,10 @@ services.AddSetupValidation<MyStartupValidator>();
 
 Validators derived from `SetupValidator` execute against the service provider so common setup logic is reusable across projects.
 
+## Commit Auditing
+
+`SaveCommitConsumer` listens for `SaveValidated<T>` events and records a final `SaveAudit`. If persistence fails a `SaveCommitFault<T>` message is published. Register the consumer via `services.AddSaveCommit<T>()`.
+
 
 ## Architecture Overview
 
@@ -113,7 +121,7 @@ At a high level the pipeline flows through a fixed sequence of services coordina
 
 ### Example Runner
 
-The `ExampleRunner` project wires the dependencies and shows the workflow end‑to‑end. Run the project and observe the console output for validation results. Inspect `ISaveAuditRepository` to review the stored audits.
+The `ExampleRunner` project wires the dependencies and shows the workflow end‑to‑end. Run the project and observe the console output for validation results. Inspect `ISaveAuditRepository` to review the stored audits. The runner now registers `SaveCommitConsumer` so committed saves are audited too.
 
 ### Example Worker Runner
 
