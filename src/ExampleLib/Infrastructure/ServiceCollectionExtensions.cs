@@ -119,6 +119,7 @@ public static class ServiceCollectionExtensions
     {
         services.SetupValidation(configure);
         services.AddSaveValidation<T>(metricSelector, thresholdType, thresholdValue);
+        services.AddScoped<ISaveAuditRepository, EfSaveAuditRepository>();
         return services;
     }
 
