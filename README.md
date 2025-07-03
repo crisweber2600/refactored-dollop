@@ -51,8 +51,64 @@ services.AddSaveValidation<Order>(o => o.LineAmounts.Sum(), ThresholdType.Percen
 Override the plan later via `ISummarisationPlanStore`:
 
 ```csharp
-var store = provider.GetRequiredService<ISummarisationPlanStore>();
-store.AddPlan(new SummarisationPlan<Order>(o => o.LineAmounts.Sum(), ThresholdType.RawDifference, 100m));
+services.AddMetricsPipeline(
+    typeof(GenericMetricsWorker),
+    o => o.UseInMemoryDatabase("demo"),
+    opts => opts.AddWorker = true);
+```
+Calling the orchestrator directly requires the worker method name:
+
+```csharp
+var result = await orchestrator.ExecuteAsync<MyDto>(
+    "demo",
+    x => x.Value,
+    SummaryStrategy.Average,
+    5.0,
+    CancellationToken.None,
+    GenericMetricsWorker.WorkerMethod);
+```
+The worker selects its own `Source` value so callers no longer supply one.
+The console host fetches a small set of metric values from an in-memory source, summarises them and either commits the result or discards it depending on validation. Each stage writes its status to the console.
+## Worker Registration and DI Options
+
+- **AddWorker** registers `PipelineWorker` as a hosted service so metrics run in the background.
+- **WorkerMode** selects between `InMemory` and `Http` gatherers.
+- **RegisterHttpClient** makes `HttpMetricsClient` available without changing the gather service.
+- **ConfigureClient** lets you set `HttpClient` properties such as `BaseAddress` after service discovery.
+- **Worker classes** live under `MetricsPipeline.Core/Infrastructure/Workers` for reuse across hosts.
+- **WorkerType** lets you specify an alternative hosted worker. Set `opts.WorkerType = typeof(MyWorker)` or use the overload `AddMetricsPipeline(typeof(MyWorker), ...)`.
+
+## Setup Validation
+
+`SetupValidation` performs a three phase configuration that mirrors the production startup. It adds basic framework services, registers the selected EF Core provider and optionally configures an `HttpClient` for validation routines.
+
+```csharp
+services.SetupValidation(o =>
+{
+    o.ConfigureDb = b => b.UseInMemoryDatabase("check");
+    o.ConfigureClient = (_, c) => c.Timeout = TimeSpan.FromSeconds(5);
+});
+```
+
+Custom validators can then be registered via `AddSetupValidation<T>` and resolve any configured clients or contexts:
+
+```csharp
+services.AddSetupValidation<MyStartupValidator>();
+```
+
+Validators derived from `SetupValidator` execute against the service provider so common setup logic is reusable across projects.
+
+
+## Architecture Overview
+
+At a high level the pipeline flows through a fixed sequence of services coordinated by the `PipelineOrchestrator`:
+
+```
+ [GatherService] -> [SummarizationService] -> [ValidationService] -> [CommitService]
+                                                          |
+                                                          v
+                                                  [DiscardHandler]
+```
 ```
 
 ### Example Runner
