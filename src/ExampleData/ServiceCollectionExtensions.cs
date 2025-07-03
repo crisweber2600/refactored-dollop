@@ -55,6 +55,7 @@ public static class ServiceCollectionExtensions
         services.AddDbContext<TContext>(o => o.UseSqlServer(connectionString));
         services.AddScoped<IValidationService, ValidationService>();
         services.AddScoped<IUnitOfWork, UnitOfWork<TContext>>();
+        services.AddSingleton<ExampleLib.Domain.ISummarisationPlanStore, ExampleData.Infrastructure.DataInMemorySummarisationPlanStore>();
         services.AddScoped(typeof(IGenericRepository<>), typeof(EfGenericRepository<>));
         return services;
     }
@@ -73,6 +74,7 @@ public static class ServiceCollectionExtensions
             sp.GetRequiredService<MongoClient>().GetDatabase(databaseName));
         services.AddScoped<IValidationService, MongoValidationService>();
         services.AddScoped<IUnitOfWork, MongoUnitOfWork>();
+        services.AddSingleton<ExampleLib.Domain.ISummarisationPlanStore, ExampleData.Infrastructure.DataInMemorySummarisationPlanStore>();
         services.AddScoped(typeof(IGenericRepository<>), typeof(MongoGenericRepository<>));
         return services;
     }

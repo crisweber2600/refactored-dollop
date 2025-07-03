@@ -79,6 +79,13 @@ public static class ServiceCollectionExtensions
                 cfg.ReceiveEndpoint("save_commits_queue", e =>
                 {
                     e.ConfigureConsumer<SaveCommitConsumer<T>>(ctx);
+                });
+            });
+        });
+        return services;
+    }
+
+    /// <summary>
     /// Register the services required to validate delete requests for <typeparamref name="T"/>.
     /// </summary>
     public static IServiceCollection AddDeleteValidation<T>(this IServiceCollection services)
