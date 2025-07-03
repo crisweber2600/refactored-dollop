@@ -19,6 +19,7 @@ public class Program
     {
         var services = new ServiceCollection();
         services.AddSaveValidation<Order>(o => o.LineAmounts.Sum(), ThresholdType.PercentChange, 0.50m);
+        services.AddSaveCommit<Order>();
         var provider = services.BuildServiceProvider();
 
         var busControl = provider.GetRequiredService<IBusControl>();

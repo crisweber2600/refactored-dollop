@@ -14,11 +14,12 @@ RAGStart showcases an event‑driven validation workflow using .NET and MassTran
    The console logs show save events, validations and stored audits.
 5. Execute the `run tests` task in VS Code to verify everything locally.
 6. Use `AddSetupValidation` to configure the data layer and a default plan in a single statement.
-7. Call `AddValidatorService` to enable manual rule checks during startup.<<<<<<< codex/add-savechangeswithplanasync-to-iunitofwork
-8. Use `SaveChangesWithPlanAsync` to automatically apply registered summarisation plans when saving entities.
+7. Call `AddValidatorService` to enable manual rule checks during startup.
+8. Register `SaveCommitConsumer` using `AddSaveCommit` to audit committed saves.
+7. Call `AddValidatorService` to enable manual rule checks during startup.
+8. 8. Use `SaveChangesWithPlanAsync` to automatically apply registered summarisation plans when saving entities.
 
 8. Register `AddDeleteValidation` or `AddDeleteCommit` to handle delete events.
-
 ## Validation Workflow
 
 Entity saves publish a `SaveRequested<T>` event. A `SaveValidationConsumer<T>` validates the save against a configurable `SummarisationPlan<T>` and records the result as a `SaveAudit`.
@@ -38,6 +39,9 @@ sequenceDiagram
     Validator-->>Consumer: bool result
     Consumer->>AuditRepo: AddAudit
     Consumer->>Bus: Publish SaveValidated
+    Bus->>CommitConsumer: Deliver validated event
+    CommitConsumer->>AuditRepo: Record commit
+    CommitConsumer->>Bus: Publish SaveCommitFault on error
 ```
 
 ## Delete Workflow
@@ -112,6 +116,9 @@ services.AddSetupValidation<MyStartupValidator>();
 
 Validators derived from `SetupValidator` execute against the service provider so common setup logic is reusable across projects.
 
+## Commit Auditing
+
+`SaveCommitConsumer` listens for `SaveValidated<T>` events and records a final `SaveAudit`. If persistence fails a `SaveCommitFault<T>` message is published. Register the consumer via `services.AddSaveCommit<T>()`.
 ## Reliability Features
 
 MassTransit now enables automatic retries and an in-memory outbox on every endpoint.
@@ -146,6 +153,7 @@ At a high level the pipeline flows through a fixed sequence of services coordina
 
 ### Example Runner
 
+The `ExampleRunner` project wires the dependencies and shows the workflow end‑to‑end. Run the project and observe the console output for validation results. Inspect `ISaveAuditRepository` to review the stored audits. The runner now registers `SaveCommitConsumer` so committed saves are audited too.
 The `ExampleRunner` project wires the dependencies and shows the workflow end‑to‑end. Run the project and observe the console output for validation results. Inspect `ISaveAuditRepository` to review the stored audits.
 The runner now stores audits in a database when `AddSetupValidation` is used,
 demonstrating how metrics persist between runs. Retrieve the latest audit like
