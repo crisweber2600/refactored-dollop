@@ -98,6 +98,25 @@ services.AddSetupValidation<MyStartupValidator>();
 
 Validators derived from `SetupValidator` execute against the service provider so common setup logic is reusable across projects.
 
+## Reliability Features
+
+MassTransit now enables automatic retries and an in-memory outbox on every endpoint.
+Poison messages are moved to a dedicated dead letter queue and logged via **Serilog**.
+OpenTelemetry tracing captures bus activity so message flow can be observed.
+
+```csharp
+services.AddSaveValidation<Order>(o => o.LineAmounts.Sum());
+
+Log.Logger = new LoggerConfiguration()
+    .Enrich.FromLogContext()
+    .WriteTo.Console()
+    .CreateLogger();
+```
+
+The configuration above wires `UseMessageRetry`, `UseInMemoryOutbox` and a Serilog
+receive observer. Failed messages appear in `save_requests_queue_error` and are
+written to the console.
+
 
 ## Architecture Overview
 
