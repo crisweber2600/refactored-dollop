@@ -4,20 +4,39 @@ RAGStart showcases an event‑driven validation workflow using .NET and MassTran
 
 ## Quick Start
 
-1. Install the [.NET 9 SDK](https://dotnet.microsoft.com/en-us/download).
-2. Run `dotnet test` to build and execute all tests.
-3. Optionally run `dotnet test --collect:"XPlat Code Coverage"` to verify coverage (should exceed 80%).
-4. Launch the sample console app:
+1. Install the [.NET 8 SDK](https://dotnet.microsoft.com/en-us/download).
+2. Run `dotnet build` to compile all projects.
+3. Run `dotnet test` to execute the unit and BDD tests.
+4. Optionally run `dotnet test --collect:"XPlat Code Coverage"` to verify coverage (should exceed 80%).
+5. Launch the original example app:
    ```bash
    dotnet run --project src/ExampleRunner
    ```
    The console logs show save events, validations and stored audits.
-5. Execute the `run tests` task in VS Code to verify everything locally.
-6. Use `AddSetupValidation` to configure the data layer and a default plan in a single statement.
-7. Call `AddValidatorService` to enable manual rule checks during startup.
-8. Register `SaveCommitConsumer` using `AddSaveCommit` to audit committed saves.
-7. Call `AddValidatorService` to enable manual rule checks during startup.
-8. 8. Use `SaveChangesWithPlanAsync` to automatically apply registered summarisation plans when saving entities.
+6. Execute the `run tests` task in VS Code to verify everything locally.
+7. Use `AddSetupValidation` to configure the data layer and a default plan in a single statement.
+8. Call `AddValidatorService` to enable manual rule checks during startup.
+9. Register `SaveCommitConsumer` using `AddSaveCommit` to audit committed saves.
+10. Use `SaveChangesWithPlanAsync` to automatically apply registered summarisation plans when saving entities.
+
+## Event-Driven Demo
+
+The `Sample.EventDrivenDemo` project runs two services together:
+
+```bash
+dotnet run --project Sample.EventDrivenDemo
+```
+
+`ServiceA` randomly inflates order totals before sending save requests.
+`ServiceB` validates each request and records an audit. When the optional commit
+consumer is enabled only valid orders are persisted.
+
+### Sequence
+
+```text
+ServiceA -> Bus -> ValidationConsumer -> AuditRepo
+                              `-> CommitConsumer (optional) -> DbContext
+```
 
 8. Register `AddDeleteValidation` or `AddDeleteCommit` to handle delete events.
 ## Validation Workflow
