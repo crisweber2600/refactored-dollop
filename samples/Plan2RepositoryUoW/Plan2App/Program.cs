@@ -11,7 +11,8 @@ var svc = scope.ServiceProvider.GetRequiredService<IEntityCrudService>();
 
 for (int i = 0; i < 5; i++)
 {
-    await svc.CreateAsync($"demo-{i}", RandomScore());
+    var id = await svc.CreateAsync($"demo-{i}", RandomScore());
+    Console.WriteLine($"Created entity with ID: {id}");
     await Task.Delay(10);
 }
 
