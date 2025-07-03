@@ -416,3 +416,19 @@ Convenient VS Code tasks are provided under `.vscode/tasks.json` for quick
 execution from the Codex interface. Tasks exist for running all tests,
 validating the plan factory and the new setup validation scenario.
 An additional task runs the `AddValidatorService` feature to verify manual rules.
+
+## Plan 2 Repository + Unit of Work Sample
+
+The `samples/Plan2RepositoryUoW` folder demonstrates CRUD operations using
+`GenericRepository` and `UnitOfWork` with metric-based validation. Run the app:
+
+```bash
+ dotnet run --project samples/Plan2RepositoryUoW/Plan2App
+```
+
+Unit tests live in `Plan2Tests` and cover create success and failure cases.
+Invalid or soft deleted records are hidden by the EF Core query filter.
+
+The service registration helper `AddPlan2Services` wires up the in-memory
+`DbContext`, generic repository and logging via Serilog.
+Inspect the `Nanny` table using the EF in-memory API to see audit entries.
