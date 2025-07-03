@@ -1,136 +1,54 @@
-# Metrics Pipeline Demo
+# RAGStart
 
-This project demonstrates a simple yet fully testable metrics processing pipeline written in **.NET 9**. The code is split across a core library, infrastructure layer and a console host used to showcase the pipeline in action. Behaviour driven tests cover the main scenarios and act as living documentation. Components communicate through Aspire's built-in service discovery.
+RAGStart showcases an event‑driven validation workflow using .NET and MassTransit. The libraries are designed for reuse in other projects and come with unit and BDD tests.
 
-## Projects
+## Quick Start
 
-| Project | Description |
-|---------|-------------|
-| **MetricsPipeline.Core** | Domain interfaces, pipeline orchestration logic and Entity Framework Core infrastructure. Includes reusable worker implementations under `Infrastructure/Workers`. |
-| **MetricsPipeline.Console** | Console application that wires the pipeline together and runs a sample workflow. |
-| **MetricsPipeline.Tests** | xUnit/Reqnroll test suite validating each stage and the end-to-end flow. |
-| **MetricsPipeline.DemoApi** | Minimal API returning sample metrics for the worker to consume. |
-| **MetricsPipeline.AppHost** | Dotnet Aspire host that runs the demo API and worker together using service discovery. |
+1. Install the [.NET 9 SDK](https://dotnet.microsoft.com/en-us/download).
+2. Run `dotnet test` to build and execute all tests.
+3. Optionally run `dotnet test --collect:"XPlat Code Coverage"` to verify coverage (should exceed 80%).
+4. Launch the sample console app:
+   ```bash
+   dotnet run --project src/ExampleRunner
+   ```
+   The console logs show save events, validations and stored audits.
+5. Execute the `run tests` task in VS Code to verify everything locally.
+6. Use `AddSetupValidation` to configure the data layer and a default plan in a single statement.
+7. Call `AddValidatorService` to enable manual rule checks during startup.
 
-## Getting Started
+## Validation Workflow
 
-1. **Build the solution**
-   ```bash
-   dotnet build
-   ```
-   If packages were not restored previously run `dotnet restore` first.
-2. **Apply migrations if new entities have been added**
-   ```bash
-   dotnet ef migrations add <name> --project MetricsPipeline.Core
-   ```
-   Updating the database can then be performed manually when required.
-3. **Run the Aspire host**
-   ```bash
-   dotnet run --project MetricsPipeline.AppHost
-   ```
-   This host links the console project to the demo API using `.WithReference`,
-   so the API address is discovered automatically. The service name `demoapi`
-   is used when generating discovery environment variables.
-4. **Run the sample console application alone**
-   ```bash
-   dotnet run --project MetricsPipeline.Console
-   # for automatic rebuilds use
-   # dotnet watch run --project MetricsPipeline.Console
-   ```
-   When not using the Aspire host specify the Demo API address manually:
-   ```bash
-   services__demoapi__0="https://localhost:5050" dotnet run --project MetricsPipeline.Console
-   ```
-   The console reads the `services__demoapi__0` variable to discover the API.
-   Service discovery now uses the simple name `demoapi` which matches the
-   project reference defined in `MetricsPipeline.AppHost`.
-   Verify the binding with:
-   ```bash
-   printenv services__demoapi__0
-   ```
-   This should output the base address used by `HttpMetricsClient`.
-   Start the Demo API in another shell using:
-   ```bash
-   dotnet run --project MetricsPipeline.DemoApi
-   ```
-   With the API running the console will fetch `/metrics` and print `Committed`
-   or `Reverted` when finished.
-   The API exposes `/metrics` so the worker uses a relative `Source` value and
-   combines it with this base address. If the API isn't available you can set
-   `WorkerMode.InMemory` in `Program.cs` to run the pipeline without HTTP calls.
-   The demo worker writes `Committed` or `Reverted` after it finishes so you
-   know the execution completed.
-   You can inspect `HttpMetricsClient.BaseAddress` at runtime to confirm which
-   endpoint was discovered.
-   Once the project has built you can skip the restore and build steps by
-   running:
-   ```bash
-   dotnet run --no-restore --no-build --project MetricsPipeline.Console
-   ```
-5. **Execute the tests**
-   ```bash
-   dotnet test --no-restore --no-build
-   ```
-   6. **Define custom pipelines**
-   Configure additional gather methods and thresholds as needed by your application.
+Entity saves publish a `SaveRequested<T>` event. A `SaveValidationConsumer<T>` validates the save against a configurable `SummarisationPlan<T>` and records the result as a `SaveAudit`.
 
-7. **Select a database provider**
-   Set `DB_PROVIDER=sqlite` before running the console or tests to use an in-memory SQLite database instead of the default provider.
-   Run `git clean -xfd` after switching providers so the context is rebuilt from a clean slate.
+```mermaid
+sequenceDiagram
+    participant Client
+    participant Repository
+    participant Bus
+    participant Consumer
+    participant Validator
+    participant AuditRepo
+    Client->>Repository: SaveAsync(entity)
+    Repository->>Bus: Publish SaveRequested
+    Bus->>Consumer: Deliver event
+    Consumer->>Validator: Validate(entity, lastAudit, plan)
+    Validator-->>Consumer: bool result
+    Consumer->>AuditRepo: AddAudit
+    Consumer->>Bus: Publish SaveValidated
+```
 
-8. **Run a specific scenario**
-   Use `dotnet test --filter "<name>"` to execute an individual feature when debugging.
+### Configuring a Summarisation Plan
 
-9. **Review AGENTS.md after each task**
-   Capture lessons learned and update the guidelines for next time.
- 10. **Confirm environment variables**
-     Use `printenv services__demoapi__0` to verify the API address is set.
-     Set `DOTNET_CLI_TELEMETRY_OPTOUT=1` to disable telemetry during automated runs.
-     If the variable is empty the worker falls back to `HttpWorkerService.Source`.
-11. **Add custom workers**
-   Place new worker classes in `MetricsPipeline.Core/Infrastructure/Workers` so they can be reused by multiple hosts.
-12. **Use pipeline options**
-   `AddMetricsPipeline` can now register the hosted worker and HTTP client automatically when configured.
-13. **Enable the worker via options**
-   Pass `opts.AddWorker = true` when calling `AddMetricsPipeline` to run `PipelineWorker` as a background service.
-14. **Specify a worker type**
-   Use `opts.WorkerType = typeof(GenericMetricsWorker)` or call `AddMetricsPipeline(typeof(GenericMetricsWorker), ...)` to register a custom hosted worker.
-15. **Choose a worker mode**
-    Set `opts.WorkerMode = WorkerMode.Http` to use the HTTP worker or leave it as the default mode which relies on `ListGatherService`.
-16. **Register the HTTP client**
-   Set `opts.RegisterHttpClient = true` to make `HttpMetricsClient` available for custom services.
-17. **Customise the HTTP client**
-   Use `opts.ConfigureClient` to set `BaseAddress` or other settings after service discovery.
-18. **Specify a worker method**
-   Pass the `workerMethod` name to `ExecuteAsync` when calling the orchestrator.
-   The demo worker exposes `GenericMetricsWorker.WorkerMethod` for this purpose.
-19. **Run tests without restore**
-   Invoke `dotnet test --no-restore --no-build` for faster execution once packages are restored.
-20. **Demo worker properties**
-   `GenericMetricsWorker` exposes a `Source` URI and constant `WorkerMethod` so hosts need minimal setup.
-21. **Flexible worker signatures**
-   `ExecuteAsync` now invokes worker methods without supplying a source value.
-22. **Configure the source**
-   Set `GenericMetricsWorker.Source` or `HttpWorkerService.Source` to control
-   where metrics are retrieved from. The HTTP worker now defaults to the relative
-   path `/metrics` so the discovered base address is always used. Override this
-   property to target another endpoint before starting the host.
-23. **Automatic worker execution**
-   The configured worker type is registered as an `IHostedService` so it runs
-   automatically when the host starts.
-
-Example configuration enabling the HTTP worker:
+A plan defines how to compute a numeric metric from an entity and what threshold is allowed between saves:
 
 ```csharp
-services.AddMetricsPipeline(
-    o => o.UseInMemoryDatabase("demo"),
-    opts =>
-    {
-        opts.WorkerMode = WorkerMode.Http;
-        opts.RegisterHttpClient = true;
-    });
+services.AddSaveValidation<Order>(o => o.LineAmounts.Sum(), ThresholdType.PercentChange, 0.5m);
 ```
-You can also specify the worker type:
+* `MetricSelector` computes the metric value (order total in this case).
+* `ThresholdType` can be `RawDifference` or `PercentChange`.
+* `ThresholdValue` sets the allowable change and is easily tuned per entity.
+
+Override the plan later via `ISummarisationPlanStore`:
 
 ```csharp
 services.AddMetricsPipeline(
@@ -191,156 +109,239 @@ At a high level the pipeline flows through a fixed sequence of services coordina
                                                           v
                                                   [DiscardHandler]
 ```
-
-1. **GatherService** – retrieves the raw metrics from a configured endpoint.
-2. **SummarizationService** – aggregates the metrics using a chosen strategy (average, sum or count).
-3. **ValidationService** – compares the new summary to the last committed value and checks the delta against an acceptable threshold.
-4. **CommitService** – persists valid summaries through the repository and database context.
-5. **DiscardHandler** – invoked when validation fails so the summary can be logged or otherwise handled.
-6. **Worker method flexibility** – the orchestrator now calls any worker method that returns a list of items, even if it doesn't take the source parameter.
-
-The orchestrator invokes these services in order and returns a `PipelineState` object describing the entire run.
-
-### Service Implementations
-
-- The default implementations live in `MetricsPipeline.Infrastructure`:
-
-- `ListGatherService` – provides metric values from an in-memory collection and is used for both tests and the demo console.
-- Both `IGatherService` and `IWorkerService` now resolve to the same scoped instance so step definitions and the orchestrator share data.
-- `InMemorySummarizationService` – performs calculations in memory and supports the `Average`, `Sum` and `Count` strategies.
-- `ThresholdValidationService` – checks that the difference between the current and previous summaries does not exceed a supplied threshold.
-- `EfCommitService` – saves summaries to the database by calling `EfSummaryRepository`.
-- `LoggingDiscardHandler` – simply writes the discarded summary to the console.
-- Set `DB_PROVIDER=sqlite` to run the pipeline using an in-memory SQLite database for closer parity with production.
-
-Entity Framework Core is used for persistence via the `SummaryDbContext`. Summary records are stored with a timestamp and may be soft deleted.
-
-### Orchestrator Flow
-
-```
-+--------------+     +--------------------+     +-------------------+
-| Gather       | --> | Summarize Metrics  | --> | Validate Threshold |
-+--------------+     +--------------------+     +----------+--------+
-                                                   |  yes
-                                                   v
-                                           +-------+-------+
-                                           | Commit Result |
-                                           +---------------+
-                                                   ^  no
-                                                   |
-                                           +-------+-------+
-                                           |  Discard Log  |
-                                           +---------------+
 ```
 
-The orchestrator collects metrics, summarises them, retrieves the last committed value from `EfSummaryRepository` and validates the delta. If validation passes it commits the new summary. Otherwise the discard handler is triggered.
+### Example Runner
 
-When no prior summary exists the orchestrator now treats the run as valid regardless of the delta, ensuring that the first execution of a new pipeline always commits its results.
+The `ExampleRunner` project wires the dependencies and shows the workflow end‑to‑end. Run the project and observe the console output for validation results. Inspect `ISaveAuditRepository` to review the stored audits.
 
-## Console Application
+### Example Worker Runner
 
-`MetricsPipeline.Console` registers the pipeline services with a dependency injection container and runs `PipelineWorker`, a hosted service defined in the core infrastructure. The worker no longer injects `IWorkerService`; it simply calls the orchestrator and writes whether the run was committed or reverted. This keeps the background task lightweight while retaining full reuse of the orchestrator.
+`ExampleWorkerRunner` builds on the library with a dedicated worker. The worker
+saves an entity three times: once with the initial values, again with values
+within the threshold and finally with values that exceed the threshold.
 
-```csharp
-var result = await _orchestrator.ExecuteAsync<MetricDto>(
-    "demo", x => x.Value, SummaryStrategy.Average, 5.0, ct);
-Console.WriteLine(result.IsSuccess ? "Committed" : "Reverted");
+```
+Project setup
+-------------
+[Program] --> [ServiceCollection] --> [MassTransit Bus]
+                        |
+                        v
+                  [ExampleWorker]
+                        |
+                        v
+                  [Repository] --> [Validator] --> [AuditStore]
 ```
 
-The worker exposes an `ExecutedStages` list which now contains a single entry representing the final outcome. Success adds `Committed` while failure adds `Reverted`.
-Additional notes:
-
-* The previous `RunStageAsync` helper was removed. `ExecuteAsync` simply delegates to the orchestrator and logs the final state.
-* You can tweak the summarisation strategy and threshold on each call without modifying the worker code.
-* `PipelineResult.IsSuccess` indicates whether the summary was committed (`true`) or reverted (`false`).
-* Custom discard handlers can observe failed results for auditing or alerting purposes.
-* `MetricsPipelineOptions` exposes flags to register the worker and HTTP client so configuration remains minimal. A `WorkerMode` property controls whether metrics are gathered from memory or via HTTP.
-* Run `dotnet run --project MetricsPipeline.Console` to observe a single
-  execution. The worker logs "Committed" or "Reverted" once complete so you
-  know the pipeline finished.
-
-
-### Running Multiple Pipelines
-
-The worker can now be customised by supplying an alternative worker method when invoking the orchestrator. A single worker can host several pipelines targeting different DTOs so multiple methods may run side by side. Each pipeline has its own threshold and summarisation strategy, making it simple to plug the library into new domains without rewriting the worker service. Below is an example showing how two pipelines can be executed sequentially using different worker methods:
-
-```csharp
-await _orchestrator.ExecuteAsync<MetricDto>("demo", x => x.Value, SummaryStrategy.Average, 5.0, ct);
-await _orchestrator.ExecuteAsync<MetricDto>("demo-alt", x => x.Value, SummaryStrategy.Sum, 10.0, ct, nameof(HttpWorkerService.FetchAsync));
-```
-
-Each call to `ExecuteAsync` selects the worker method by name allowing multiple pipelines to reuse the same orchestrator instance.
-Different thresholds and strategies can be applied per pipeline so the same worker can handle diverse datasets.
-
-All HTTP calls use relative paths which combine with the discovered service base address, keeping configuration minimal. You can inspect `HttpMetricsClient.BaseAddress` at runtime to confirm which endpoint was resolved so you know exactly which service the worker discovered. The worker service reuses `HttpMetricsClient` so any DTO can be downloaded and summarised without additional boilerplate.
-
-The `MetricsPipeline.DemoApi` project exposes a minimal `/metrics` endpoint returning sample values. A reusable `HttpMetricsClient` abstracts `HttpClient` so the worker can fetch data from any URI using any HTTP method and deserialize it into a list of typed objects. When running under `MetricsPipeline.AppHost` the console worker automatically calls the demo API through this client.
-The client now exposes a `BaseAddress` property so tests can verify which service endpoint was discovered.
-
-## Database Migrations
-
-Entity Framework Core migrations are included with the project. Ensure the `dotnet-ef` tool is installed:
+Run the example with:
 
 ```bash
-dotnet tool install --global dotnet-ef
+dotnet run --project src/ExampleWorkerRunner
 ```
 
-Run migrations whenever the models change:
+During execution the console prints the latest validation state after each save.
+The process flow is illustrated below:
 
-```bash
-dotnet ef migrations add <name> --project MetricsPipeline.Core
 ```
-The database should be updated manually only when required rather than as part of every test run.
-Seed data files can be placed in the `MetricsPipeline.Console/Seed` folder and will be imported on startup if they do not already exist in the database.
+Worker run
+----------
+  SetInitial -> Save -> Valid
+      |
+      v
+  SetWithin  -> Save -> Valid
+      |
+      v
+  SetOutside -> Save -> Invalid
+```
 
-## Extending the Pipeline
+## Project Structure
 
-The default services can be replaced with custom implementations through dependency injection. Additional summarisation strategies and validation rules may be registered in the same way to tailor the pipeline to new data sources.
+- `src/ExampleLib` – reusable domain classes and infrastructure
+- `src/ExampleRunner` – console sample using the library
+- `src/MetricsPipeline.Core` – worker components used across samples
+- `src/ExampleWorkerRunner` – runs the example worker end to end
+- `src/ExampleData` – Entity Framework and MongoDB data layer
+- `tests/ExampleLib.Tests` – unit and BDD tests verifying the workflow
+- `docs` – guides such as the EF Core replication how‑to
 
-### Registering a Custom IWorkerService
-Implement your own `IWorkerService` to pull data from alternative sources. Register the implementation before running the worker:
+For additional details on replicating the EF Core setup, read `docs/EFCoreReplicationGuide.md`.
+
+## Database Setup
+
+Applications can register their DbContext and repositories in one line:
 
 ```csharp
-services.AddScoped<IWorkerService, MyWorkerService>();
+services.SetupDatabase<YourDbContext>("Server=.;Database=example;Trusted_Connection=True");
 ```
-When using the built-in `ListGatherService`, both interfaces resolve to the same scoped instance so registrations should follow the same pattern. Because the worker now delegates entirely to the orchestrator you can swap gather services without modifying the hosted service.
 
-You can also reuse `HttpMetricsClient` in your own services to call REST endpoints by specifying the HTTP method and target URI. The client returns a strongly typed list so it works with any DTO shape. When a `services__<name>__0` environment variable is present the client automatically sets its base address, enabling simple service discovery between projects. When hosting multiple projects together you can add them in `MetricsPipeline.AppHost` and call `.WithReference()` so Aspire configures the discovery variables for you.
-
-### Creating Hosted Workers
-Implement `IHostedWorker<T>` for background tasks that return typed results. Register the worker via `opts.WorkerType` or by calling `AddMetricsPipeline(typeof(MyWorker), ...)`.
-
-### Custom Validation Service
-Implement `IValidationService` to enforce domain-specific checks:
+When using MongoDB you can initialize everything in a similar fashion:
 
 ```csharp
-services.AddScoped<IValidationService, MyValidationService>();
+services.AddExampleDataMongo("mongodb://localhost:27017", "exampledb");
 ```
-Register your custom service before running the worker to apply alternative validation logic.
 
-## Testing
+Alternatively register MongoDB with:
 
-- Gathering metrics from various endpoints
-- Summarising values using different strategies
-- Validating summaries against previous results
-- Committing or discarding based on validation outcome
-- Repository and unit-of-work behaviour
-- Service discovery of the demo API via environment variables
-- Interpreting the final worker message to confirm the pipeline outcome
+```csharp
+services.SetupMongoDatabase("mongodb://localhost:27017", "exampledb");
+```
 
-Running `dotnet test` executes all scenarios and the supporting unit tests. Database migrations only need to be applied when entity models change:
+MongoDB is supported through a parallel set of classes. Install the driver with:
 
 ```bash
-dotnet test --collect:"XPlat Code Coverage"
+dotnet add src/ExampleData package MongoDB.Driver
 ```
 
-## Contributing
+Create a MongoDB database and wire up the generic repository like so:
 
-Contributions are welcome. Please ensure that the solution builds and the tests pass before opening a pull request.
-- Keep the README updated with at least five improvements per pull request.
-- Update `AGENTS.md` with lessons learned so future runs improve.
-- Generate code coverage with `dotnet test --collect:"XPlat Code Coverage"` when possible.
+```csharp
+var client = new MongoClient("mongodb://localhost:27017");
+var database = client.GetDatabase("exampledb");
+var uow = new MongoUnitOfWork(database, new MongoValidationService(database));
+var repo = uow.Repository<YourEntity>();
+```
 
-## License
+The `SetupMongoDatabase` helper returns the same services ready for use:
 
-This repository is provided for demonstration purposes without a specific license.
+```csharp
+services.SetupMongoDatabase("mongodb://localhost:27017", "exampledb");
+var repo = services.BuildServiceProvider()
+    .GetRequiredService<IGenericRepository<YourEntity>>();
+```
+
+The helpers `AddExampleDataMongo` and `SetupMongoDatabase` register `MongoClient`,
+`IMongoDatabase`, the validation service and unit of work automatically.
+
+`SetupDatabase` configures the DbContext, validation service and generic repositories. Every repository works with the `Validated` soft delete filter enabled by default.
+
+### SetupValidationBuilder
+Use this fluent helper to collect configuration steps before applying them.
+It keeps your setup code compact and environment agnostic.
+
+```csharp
+var builder = new SetupValidationBuilder()
+    .UseSqlServer<YourDbContext>("DataSource=:memory:");
+builder.Apply(services);
+```
+
+`UseMongo` can be substituted to register MongoDB instead. Chaining these calls keeps startup code tidy when switching providers.
+
+## Validation Helpers
+
+`SetupValidation` now accepts a lambda to configure the `SetupValidationBuilder`.
+Call it once during startup to set up the data layer:
+
+```csharp
+services.SetupValidation(b => b.UseSqlServer<YourDbContext>("DataSource=:memory:"));
+```
+
+After configuring the infrastructure you can register multiple plans using `AddSaveValidation`:
+
+```csharp
+services.AddSaveValidation<TasMetrics>(m => m.Value.Average(), ThresholdType.PercentChange, 0.25m);
+services.AddSaveValidation<TasAvailability>(a => a.Value.Average(), ThresholdType.Average, 1);
+```
+Both helpers return the service collection, so configuration can be chained fluently:
+
+```csharp
+services.SetupValidation(b => b.UseMongo("mongodb://localhost:27017", "demo"))
+        .AddSaveValidation<Order>(o => o.LineAmounts.Sum());
+```
+You can also perform both steps in one call using `AddSetupValidation`:
+
+```csharp
+services.AddSetupValidation<Order>(
+    b => b.UseSqlServer<YourDbContext>("DataSource=:memory:"),
+    o => o.LineAmounts.Sum());
+```
+
+### ValidationRuleSet
+
+`ValidationRuleSet` groups multiple `ValidationRule` instances using a shared metric selector.
+Pass a rule set to `UnitOfWork.SaveChangesAsync` when several thresholds must be
+checked at once:
+
+```csharp
+var rules = new ValidationRuleSet<YourEntity>(e => e.Id,
+    new ValidationRule(ValidationStrategy.Count, 1),
+    new ValidationRule(ValidationStrategy.Sum, 1));
+await uow.SaveChangesAsync(rules);
+```
+This overload validates the entity only when **all** rules are satisfied. The
+last computed metric is still recorded in the `Nanny` table for auditing.
+
+The latest summarised metric is stored in the `Nanny` table whenever entities are saved through the unit of work.
+
+### Manual Validation Service
+
+`ManualValidatorService` runs simple predicates registered per type. Use it when
+summarisation plans are overkill or you want quick checks. Call
+`AddValidatorService` during startup and register predicates with
+`AddValidatorRule`:
+
+```csharp
+var services = new ServiceCollection();
+services.AddValidatorService()
+        .AddValidatorRule<Order>(o => o.Total > 0);
+var validator = services.BuildServiceProvider()
+    .GetRequiredService<IManualValidatorService>();
+bool ok = validator.Validate(new Order());
+```
+
+- Rules are stored in a dictionary keyed by runtime type.
+- When no rules exist validation succeeds by default.
+- Every rule for the type must return `true` for the instance to be valid.
+- Inject the rule dictionary via the constructor for testability.
+- Register rules easily with `AddValidatorRule`.
+- Retrieve the rule dictionary from DI for inspection or updates.
+- The extension methods keep startup code concise.
+- BDD tests under `ManualValidatorService.feature` cover these scenarios.
+
+### Nanny Records
+
+`Nanny` rows capture the last computed metric for each save along with the program name and a runtime identifier. This history can be inspected for audit or troubleshooting purposes.
+
+## MongoDB Support
+
+The `MongoGenericRepository`, `MongoUnitOfWork` and `MongoValidationService`
+provide an alternative to Entity Framework when working with MongoDB. Each
+repository operates on an `IMongoCollection<T>` and respects the `Validated`
+flag for soft deletes. The unit of work records `Nanny` documents just like the
+EF variant.
+
+### Testing MongoDB Code
+
+- Unit tests run against an in‑memory server provided by **Mongo2Go** so no
+  external database is required.
+- `MongoRepositoryTests` verifies CRUD operations using this lightweight server.
+- BDD scenarios in `MongoRepository.feature` and `MongoSoftDelete.feature`
+  exercise the same behavior through Reqnroll steps.
+- To explore the in‑memory server yourself, inspect the `MongoRepoSteps`
+  definition under `tests/ExampleLib.BDDTests`.
+- The MongoDB driver API is documented at
+  [mongodb.github.io/mongo-csharp-driver](https://mongodb.github.io/mongo-csharp-driver/).
+
+## Generating Validation Plans
+
+A `ValidationPlan` describes how to validate an entity using a metric strategy. The default
+implementation relies on the count of records.
+
+Use `ValidationPlanFactory.CreatePlans<T, V>(connectionString)` to instantiate the
+`DbContext` of type `V` and build a plan for each property type on `T`.
+
+```csharp
+var plans = ValidationPlanFactory.CreatePlans<MyComposite, YourDbContext>(
+    "DataSource=:memory:");
+```
+
+If `MyComposite` has properties `Foo`, `Bar` and `Car`, three count based plans
+are returned. The plans can be fed into `IValidationService` to compute counts
+across tables.
+
+### Codex Tasks
+
+Running `dotnet test` now also exercises the validation plan factory scenario.
+Convenient VS Code tasks are provided under `.vscode/tasks.json` for quick
+execution from the Codex interface. Tasks exist for running all tests,
+validating the plan factory and the new setup validation scenario.
+An additional task runs the `AddValidatorService` feature to verify manual rules.

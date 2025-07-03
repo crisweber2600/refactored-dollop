@@ -1,8 +1,0 @@
-[
-  {
-    "PipelineName": "demo",
-    "Source": "https://example.com",
-    "Value": 1.0,
-    "Timestamp": "2024-01-01T00:00:00Z"
-  }
-]
