@@ -8,8 +8,4 @@ Feature: EventDriven Order Processing
   Scenario: Commit consumer persists only valid orders
     Given commit consumer is enabled
     When the demo runs with 5 orders
-<<<<<< ic50pi-codex/plan-event-driven-crud-demo-implementation
     Then only valid orders should be stored
-======
-    Then only valid orders should be stored
->>>>>> main

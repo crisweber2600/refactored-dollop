@@ -452,3 +452,14 @@ Invalid or soft deleted records are hidden by the EF Core query filter.
 The service registration helper `AddPlan2Services` wires up the in-memory
 `DbContext`, generic repository and logging via Serilog.
 Inspect the `Nanny` table using the EF in-memory API to see audit entries.
+
+## Troubleshooting
+
+If tests or demos fail to run, review these suggestions:
+
+- Set `DOTNET_ROLL_FORWARD=Major` when running .NET 9 on older apps.
+- Run `dotnet restore` to pull missing packages.
+- Ignore MassTransit outbox warnings in demo projects.
+- Remove `bin` and `obj` folders after SDK upgrades to avoid stale builds.
+- Use `--no-restore` and `--no-build` flags for quick test iterations.
+
