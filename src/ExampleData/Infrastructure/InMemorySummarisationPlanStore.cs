@@ -18,4 +18,8 @@ public class DataInMemorySummarisationPlanStore : ISummarisationPlanStore
             return plan;
         throw new KeyNotFoundException($"No SummarisationPlan registered for type {typeof(T).Name}");
     }
+<<<<<< ic50pi-codex/plan-event-driven-crud-demo-implementation
 }
+======
+}
+>>>>>> main

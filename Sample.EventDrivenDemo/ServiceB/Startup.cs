@@ -6,11 +6,16 @@ using Microsoft.Extensions.DependencyInjection;
 using Sample.EventDrivenDemo.Shared;
 using Sample.EventDrivenDemo.ServiceB.Data;
 
+
 namespace Sample.EventDrivenDemo.ServiceB;
 
 public static class Startup
 {
+<<<<<< ic50pi-codex/plan-event-driven-crud-demo-implementation
     public static ServiceProvider Configure(bool useCommit = false)
+======
+    public static ServiceProvider Configure()
+>>>>>> main
     {
         var services = new ServiceCollection();
         services.AddLogging();
@@ -18,6 +23,7 @@ public static class Startup
             o => o.TotalAmount,
             ThresholdType.PercentChange,
             0.5m);
+<<<<<< ic50pi-codex/plan-event-driven-crud-demo-implementation
 
         if (useCommit)
         {
@@ -40,3 +46,8 @@ public static class Startup
         return services.BuildServiceProvider();
     }
 }
+======
+        return services.BuildServiceProvider();
+    }
+}
+>>>>>> main

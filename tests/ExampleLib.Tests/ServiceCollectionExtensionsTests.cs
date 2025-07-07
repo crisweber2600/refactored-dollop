@@ -63,6 +63,9 @@ public class ServiceCollectionExtensionsTests
     public void SetupValidation_ExecutesBuilder()
     {
         var services = new ServiceCollection();
+        var store = new InMemorySummarisationPlanStore();
+        store.AddPlan(new SummarisationPlan<YourEntity>(e => e.Id, ThresholdType.RawDifference, 1));
+        services.AddSingleton<ISummarisationPlanStore>(store);
         services.SetupValidation(b => b.UseSqlServer<YourDbContext>("DataSource=:memory:"));
         var provider = services.BuildServiceProvider();
         Assert.NotNull(provider.GetService<IUnitOfWork>());
@@ -72,6 +75,9 @@ public class ServiceCollectionExtensionsTests
     public void SetupDatabase_RegistersDbContext()
     {
         var services = new ServiceCollection();
+        var store = new InMemorySummarisationPlanStore();
+        store.AddPlan(new SummarisationPlan<YourEntity>(e => e.Id, ThresholdType.RawDifference, 1));
+        services.AddSingleton<ISummarisationPlanStore>(store);
         services.SetupDatabase<YourDbContext>("DataSource=:memory:");
         var provider = services.BuildServiceProvider();
         Assert.NotNull(provider.GetService<IUnitOfWork>());
@@ -81,6 +87,9 @@ public class ServiceCollectionExtensionsTests
     public void SetupMongoDatabase_RegistersMongoServices()
     {
         var services = new ServiceCollection();
+        var store = new InMemorySummarisationPlanStore();
+        store.AddPlan(new SummarisationPlan<YourEntity>(e => e.Id, ThresholdType.RawDifference, 1));
+        services.AddSingleton<ISummarisationPlanStore>(store);
         services.SetupMongoDatabase("mongodb://localhost:27017", "test");
         var provider = services.BuildServiceProvider();
         Assert.NotNull(provider.GetService<IMongoDatabase>());
