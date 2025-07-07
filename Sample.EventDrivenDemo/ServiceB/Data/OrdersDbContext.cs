@@ -8,5 +8,4 @@ public class OrdersDbContext : YourDbContext
 {
     public OrdersDbContext(DbContextOptions<YourDbContext> options) : base(options) { }
 
-    public DbSet<Order> Orders => Set<Order>();
-}
+    public DbSet<Order> Orders => Set<Order>();}

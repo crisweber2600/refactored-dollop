@@ -4,7 +4,8 @@ RAGStart showcases an event‑driven validation workflow using .NET and MassTran
 
 ## Quick Start
 
-1. Install the [.NET 8 SDK](https://dotnet.microsoft.com/en-us/download).
+1. Install the [.NET 9 SDK](https://dotnet.microsoft.com/en-us/download).
+
 2. Run `dotnet build` to compile all projects.
 3. Run `dotnet test` to execute the unit and BDD tests.
 4. Optionally run `dotnet test --collect:"XPlat Code Coverage"` to verify coverage (should exceed 80%).

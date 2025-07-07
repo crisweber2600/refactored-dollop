@@ -27,9 +27,14 @@ public class EventDrivenSteps
     [Given("commit consumer is enabled")]
     public void GivenCommitConsumer()
     {
+<<<<<< ic50pi-codex/plan-event-driven-crud-demo-implementation
+        _provider = Startup.Configure(true);
+        _db = _provider.GetRequiredService<OrdersDbContext>();
+======
         _provider = Startup.Configure();
         _db = new OrdersDbContext(new DbContextOptionsBuilder<YourDbContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString()).Options);
+>>>>>> main
     }
 
     [When("the demo runs with (\\d+) orders")]
@@ -61,6 +66,17 @@ public class EventDrivenSteps
     public void ThenOnlyValidOrdersStored()
     {
         _audits.Should().NotBeNull();
+<<<<<< ic50pi-codex/plan-event-driven-crud-demo-implementation
+        _db.Should().NotBeNull();
+        var validIds = _audits!.Where(a => a.Validated)
+            .Select(a => a.EntityId)
+            .ToHashSet();
+        _db!.Orders.Select(o => o.Id.ToString())
+            .Should().BeSubsetOf(validIds);
+    }
+}
+======
         _audits!.All(a => a.Validated).Should().BeTrue();
     }
 }
+>>>>>> main
