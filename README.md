@@ -20,6 +20,8 @@ RAGStart showcases an event‑driven validation workflow using .NET and MassTran
 9. Register `SaveCommitConsumer` using `AddSaveCommit` to audit committed saves.
 10. Use `SaveChangesWithPlanAsync` to automatically apply registered summarisation plans when saving entities.
 11. Mongo repositories now trigger validation automatically via an interceptor so you rarely call `SaveChanges` yourself.
+12. Configure complex validation plans using `AddValidationFlows` and a JSON file.
+13. Use `MetricProperty`, `ThresholdType` and `ThresholdValue` keys to fine tune each registered entity.
 
 ## Event-Driven Demo
 
@@ -85,6 +87,7 @@ services.AddSaveValidation<Order>(o => o.LineAmounts.Sum(), ThresholdType.Percen
 * `MetricSelector` computes the metric value (order total in this case).
 * `ThresholdType` can be `RawDifference` or `PercentChange`.
 * `ThresholdValue` sets the allowable change and is easily tuned per entity.
+* These settings can also be supplied in a JSON file when using `AddValidationFlows`.
 * Audits of each save are stored in a `SaveAudit` table derived from `BaseEntity` so every entry has an integer key and validation flag.
 
 Override the plan later via `ISummarisationPlanStore`:
@@ -497,7 +500,13 @@ Validation flows can be defined in a JSON file and loaded at runtime. The file m
 
 ```json
 [
-  { "Type": "ExampleData.YourEntity, ExampleData", "SaveValidation": true }
+  {
+    "Type": "ExampleData.YourEntity, ExampleData",
+    "SaveValidation": true,
+    "MetricProperty": "Id",
+    "ThresholdType": "RawDifference",
+    "ThresholdValue": 2
+  }
 ]
 ```
 
@@ -508,5 +517,4 @@ var json = File.ReadAllText("flows.json");
 var options = ValidationFlowOptions.Load(json);
 services.AddValidationFlows(options);
 ```
-
-This approach lets you adjust validation logic without recompiling the application. Both unit tests and BDD scenarios cover the configuration loader.
+This approach lets you adjust validation logic without recompiling the application. Each entry now supports `MetricProperty`, `ThresholdType` and `ThresholdValue` so you can fine tune plans in configuration. Both unit tests and BDD scenarios cover the configuration loader and plan creation.

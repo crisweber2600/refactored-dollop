@@ -34,4 +34,19 @@ public class ValidationFlowOptionsTests
         var provider = services.BuildServiceProvider();
         Assert.NotNull(provider.GetService(typeof(IEntityRepository<ExampleData.YourEntity>)));
     }
+
+    [Fact]
+    public void AddValidationFlows_RegistersPlan()
+    {
+        string json = "{ \"Type\": \"ExampleData.YourEntity, ExampleData\", \"SaveValidation\": true, \"MetricProperty\": \"Id\", \"ThresholdType\": \"RawDifference\", \"ThresholdValue\": 2 }";
+        var opts = ValidationFlowOptions.Load(json);
+        var services = new ServiceCollection();
+        services.AddValidationFlows(opts);
+        var provider = services.BuildServiceProvider();
+        var store = provider.GetRequiredService<ISummarisationPlanStore>();
+        var plan = store.GetPlan<YourEntity>();
+        Assert.Equal(ThresholdType.RawDifference, plan.ThresholdType);
+        Assert.Equal(2m, plan.ThresholdValue);
+        Assert.Equal(3m, plan.MetricSelector(new YourEntity { Id = 3 }));
+    }
 }

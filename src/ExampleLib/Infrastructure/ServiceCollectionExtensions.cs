@@ -1,5 +1,6 @@
 using ExampleLib.Domain;
 using System.Collections.Generic;
+using System.Reflection;
 using MassTransit;
 using OpenTelemetry.Extensions.Hosting;
 using OpenTelemetry.Trace;
@@ -184,6 +185,26 @@ public static class ServiceCollectionExtensions
         return 0m;
     }
 
+    private static Delegate BuildMetricSelector(Type entityType, string property)
+    {
+        var method = typeof(ServiceCollectionExtensions)
+            .GetMethod(nameof(CreateSelector), BindingFlags.NonPublic | BindingFlags.Static)!
+            .MakeGenericMethod(entityType);
+        return (Delegate)method.Invoke(null, new object[] { property })!;
+    }
+
+    private static Func<T, decimal> CreateSelector<T>(string property)
+    {
+        var prop = typeof(T).GetProperty(property);
+        return entity =>
+        {
+            var value = prop?.GetValue(entity);
+            if (value != null && decimal.TryParse(value.ToString(), out var result))
+                return result;
+            return 0m;
+        };
+    }
+
     private static readonly IDictionary<Type, List<Func<object, bool>>> _validatorRules = new Dictionary<Type, List<Func<object, bool>>>();
 
     /// <summary>
@@ -221,10 +242,11 @@ public static class ServiceCollectionExtensions
             if (type == null) continue;
             if (flow.SaveValidation)
             {
+                var selector = flow.MetricProperty == null ? null : BuildMetricSelector(type, flow.MetricProperty);
                 typeof(ServiceCollectionExtensions)
                     .GetMethod(nameof(AddSaveValidation))!
                     .MakeGenericMethod(type)
-                    .Invoke(null, new object[] { services, null, ThresholdType.PercentChange, 0.1m });
+                    .Invoke(null, new object[] { services, selector, flow.ThresholdType, flow.ThresholdValue });
             }
             if (flow.SaveCommit)
             {
