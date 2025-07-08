@@ -16,3 +16,13 @@ Feature: ValidationFlows configuration
       """
     When the flows are applied
     Then a repository for YourEntity is available
+
+  Scenario: Configure custom metric and threshold
+    Given the validation flow configuration
+      """
+      { "Type": "ExampleData.YourEntity, ExampleData", "SaveValidation": true, "MetricProperty": "Id", "ThresholdType": "RawDifference", "ThresholdValue": 2 }
+      """
+    When the flows are applied
+    Then a repository for YourEntity is available
+    And a plan for YourEntity exists with threshold 2
+    And the plan uses RawDifference threshold

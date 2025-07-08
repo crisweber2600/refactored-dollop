@@ -1,3 +1,6 @@
+using ExampleLib.Domain;
+using System.Text.Json.Serialization;
+
 namespace ExampleLib.Infrastructure;
 
 /// <summary>
@@ -13,6 +16,16 @@ public class ValidationFlowDefinition
 
     /// <summary>Register save commit auditing.</summary>
     public bool SaveCommit { get; set; }
+
+    /// <summary>Name of the property used to calculate the metric.</summary>
+    public string? MetricProperty { get; set; }
+
+    /// <summary>Threshold comparison type for the plan.</summary>
+    [JsonConverter(typeof(JsonStringEnumConverter))]
+    public ThresholdType ThresholdType { get; set; } = ThresholdType.PercentChange;
+
+    /// <summary>Allowed threshold value for the plan.</summary>
+    public decimal ThresholdValue { get; set; } = 0.1m;
 
     /// <summary>Register delete validation.</summary>
     public bool DeleteValidation { get; set; }
