@@ -490,3 +490,23 @@ If tests or demos fail to run, review these suggestions:
 - Remove `bin` and `obj` folders after SDK upgrades to avoid stale builds.
 - Use `--no-restore` and `--no-build` flags for quick test iterations.
 
+
+## External Flow Configuration
+
+Validation flows can be defined in a JSON file and loaded at runtime. The file may contain a single object or an array of objects. Each entry specifies the entity type and which flows to enable.
+
+```json
+[
+  { "Type": "ExampleData.YourEntity, ExampleData", "SaveValidation": true }
+]
+```
+
+Load the file and register the flows during startup:
+
+```csharp
+var json = File.ReadAllText("flows.json");
+var options = ValidationFlowOptions.Load(json);
+services.AddValidationFlows(options);
+```
+
+This approach lets you adjust validation logic without recompiling the application. Both unit tests and BDD scenarios cover the configuration loader.
