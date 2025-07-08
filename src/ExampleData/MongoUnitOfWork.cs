@@ -19,7 +19,7 @@ public class MongoUnitOfWork : IUnitOfWork
 
     public IGenericRepository<T> Repository<T>() where T : class, IValidatable, IBaseEntity, IRootEntity
     {
-        return new MongoGenericRepository<T>(_database);
+        return new MongoGenericRepository<T>(_database, this);
     }
 
     public Task<int> SaveChangesAsync() => Task.FromResult(0);

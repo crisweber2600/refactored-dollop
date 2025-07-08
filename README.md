@@ -19,6 +19,7 @@ RAGStart showcases an event‑driven validation workflow using .NET and MassTran
 8. Call `AddValidatorService` to enable manual rule checks during startup.
 9. Register `SaveCommitConsumer` using `AddSaveCommit` to audit committed saves.
 10. Use `SaveChangesWithPlanAsync` to automatically apply registered summarisation plans when saving entities.
+11. Mongo repositories now trigger validation automatically via an interceptor so you rarely call `SaveChanges` yourself.
 
 ## Event-Driven Demo
 
@@ -405,6 +406,25 @@ repository operates on an `IMongoCollection<T>` and respects the `Validated`
 flag for soft deletes. The unit of work records `Nanny` documents just like the
 EF variant.
 
+### Automatic Validation
+
+`MongoGenericRepository` now uses `MongoCollectionInterceptor` to call
+`MongoUnitOfWork.SaveChangesWithPlanAsync` whenever a document is inserted or
+updated. Nanny entries are written automatically without additional code.
+
+Register the interceptor by calling `AddExampleDataMongo` or
+`SetupMongoDatabase` which wires the generic type for you.
+The interceptor implements `IMongoCollectionInterceptor<T>` so custom behaviour
+can be swapped in if needed.
+
+```csharp
+services.SetupMongoDatabase("mongodb://localhost:27017", "exampledb");
+var repo = provider.GetRequiredService<IGenericRepository<YourEntity>>();
+await repo.AddAsync(new YourEntity()); // validation runs automatically
+```
+You can still invoke `SaveChangesWithPlanAsync` manually after bulk operations
+to recompute metrics on demand.
+
 ### Testing MongoDB Code
 
 - Unit tests run against an in‑memory server provided by **Mongo2Go** so no
@@ -414,6 +434,7 @@ EF variant.
   exercise the same behavior through Reqnroll steps.
 - To explore the in‑memory server yourself, inspect the `MongoRepoSteps`
   definition under `tests/ExampleLib.BDDTests`.
+- `MongoInterceptorTests` demonstrates automatic validation for inserts and updates.
 - The MongoDB driver API is documented at
   [mongodb.github.io/mongo-csharp-driver](https://mongodb.github.io/mongo-csharp-driver/).
 
