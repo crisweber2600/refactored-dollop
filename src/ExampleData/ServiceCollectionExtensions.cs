@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using MongoDB.Driver;
+using ExampleData.Infrastructure;
 
 namespace ExampleData;
 
@@ -40,6 +41,7 @@ public static class ServiceCollectionExtensions
             sp.GetRequiredService<MongoClient>().GetDatabase(databaseName));
         services.AddScoped<IValidationService, MongoValidationService>();
         services.AddScoped<IUnitOfWork, MongoUnitOfWork>();
+        services.AddScoped(typeof(IMongoCollectionInterceptor<>), typeof(MongoCollectionInterceptor<>));
         return services;
     }
 
@@ -74,6 +76,7 @@ public static class ServiceCollectionExtensions
             sp.GetRequiredService<MongoClient>().GetDatabase(databaseName));
         services.AddScoped<IValidationService, MongoValidationService>();
         services.AddScoped<IUnitOfWork, MongoUnitOfWork>();
+        services.AddScoped(typeof(IMongoCollectionInterceptor<>), typeof(MongoCollectionInterceptor<>));
         services.AddSingleton<ExampleLib.Domain.ISummarisationPlanStore, ExampleData.Infrastructure.DataInMemorySummarisationPlanStore>();
         services.AddScoped(typeof(IGenericRepository<>), typeof(MongoGenericRepository<>));
         return services;

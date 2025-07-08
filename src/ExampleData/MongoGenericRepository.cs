@@ -1,15 +1,21 @@
 using MongoDB.Driver;
+using ExampleData.Infrastructure;
 
 namespace ExampleData;
 
 public class MongoGenericRepository<T> : IGenericRepository<T>
     where T : class, IValidatable, IBaseEntity, IRootEntity
 {
-    private readonly IMongoCollection<T> _collection;
+    private readonly IMongoCollectionInterceptor<T> _collection;
 
-    public MongoGenericRepository(IMongoDatabase database)
+    public MongoGenericRepository(IMongoCollectionInterceptor<T> collection)
     {
-        _collection = database.GetCollection<T>(typeof(T).Name);
+        _collection = collection;
+    }
+
+    public MongoGenericRepository(IMongoDatabase database, IUnitOfWork uow)
+        : this(new MongoCollectionInterceptor<T>(database, uow))
+    {
     }
 
     public async Task<T?> GetByIdAsync(int id, bool includeDeleted = false)
