@@ -243,7 +243,8 @@ services.SetupDatabase<YourDbContext>("Server=.;Database=example;Trusted_Connect
 ```
 
 The setup now registers an `EfSaveAuditRepository` that persists `SaveAudit`
-records using Entity Framework Core.
+records using Entity Framework Core. When MongoDB is configured the
+equivalent `MongoSaveAuditRepository` is wired instead.
 Run `dotnet ef migrations add AddSaveAudit` to generate the initial migration
 and update the database.
 
@@ -286,6 +287,9 @@ var repo = services.BuildServiceProvider()
 
 Both helpers expect an `ISummarisationPlanStore` to be registered so `UnitOfWork` can resolve plans when saving.
 
+`AddSetupValidation` uses the same builder under the hood. When `UseMongo` is chosen the
+`MongoSaveAuditRepository` replaces the EF implementation automatically.
+
 The helpers `AddExampleDataMongo` and `SetupMongoDatabase` register `MongoClient`,
 `IMongoDatabase`, the validation service and unit of work automatically.
 
@@ -303,6 +307,8 @@ builder.Apply(services);
 `EfSaveAuditRepository` is registered automatically when a SQL database is
 configured, so calling `GetLastAudit` later will query the table instead of the
 in-memory store.
+Likewise `UseMongo` registers `MongoSaveAuditRepository` so audits are persisted
+to your MongoDB instance.
 ```
 
 `UseMongo` can be substituted to register MongoDB instead. Chaining these calls keeps startup code tidy when switching providers.

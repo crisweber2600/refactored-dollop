@@ -28,10 +28,26 @@ public class AddSetupValidationSteps
         _provider = _services.BuildServiceProvider();
     }
 
+    [When("AddSetupValidation is invoked with Mongo")]
+    public void WhenInvokedMongo()
+    {
+        _services!.AddSetupValidation<YourEntity>(
+            b => b.UseMongo("mongodb://localhost:27017", "bdd"),
+            e => e.Id);
+        _provider = _services.BuildServiceProvider();
+    }
+
     [Then("a repository and validator can be resolved")]
     public void ThenServicesResolvable()
     {
         Assert.NotNull(_provider!.GetService<IEntityRepository<YourEntity>>());
+        Assert.NotNull(_provider!.GetService<ISummarisationValidator<YourEntity>>());
+    }
+
+    [Then("a mongo repository and validator can be resolved")]
+    public void ThenMongoRepositoryResolvable()
+    {
+        Assert.IsType<MongoSaveAuditRepository>(_provider!.GetService<ISaveAuditRepository>());
         Assert.NotNull(_provider!.GetService<ISummarisationValidator<YourEntity>>());
     }
 }

@@ -60,6 +60,28 @@ public class ServiceCollectionExtensionsTests
     }
 
     [Fact]
+    public void AddSetupValidation_RegistersEfRepository()
+    {
+        var services = new ServiceCollection();
+        services.AddSetupValidation<YourEntity>(
+            b => b.UseSqlServer<YourDbContext>("DataSource=:memory:"),
+            e => e.Id);
+        var provider = services.BuildServiceProvider();
+        Assert.IsType<EfSaveAuditRepository>(provider.GetRequiredService<ISaveAuditRepository>());
+    }
+
+    [Fact]
+    public void AddSetupValidation_RegistersMongoRepository()
+    {
+        var services = new ServiceCollection();
+        services.AddSetupValidation<YourEntity>(
+            b => b.UseMongo("mongodb://localhost:27017", "test"),
+            e => e.Id);
+        var provider = services.BuildServiceProvider();
+        Assert.IsType<MongoSaveAuditRepository>(provider.GetRequiredService<ISaveAuditRepository>());
+    }
+
+    [Fact]
     public void SetupValidation_ExecutesBuilder()
     {
         var services = new ServiceCollection();
