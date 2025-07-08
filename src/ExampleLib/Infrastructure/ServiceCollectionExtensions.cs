@@ -142,9 +142,19 @@ public static class ServiceCollectionExtensions
         ThresholdType thresholdType = ThresholdType.PercentChange,
         decimal thresholdValue = 0.1m)
     {
-        services.SetupValidation(configure);
+        var builder = new SetupValidationBuilder();
+        configure(builder);
+        builder.Apply(services);
+
         services.AddSaveValidation<T>(metricSelector, thresholdType, thresholdValue);
-        services.AddScoped<ISaveAuditRepository, EfSaveAuditRepository>();
+        if (builder.UsesMongo)
+        {
+            services.AddScoped<ISaveAuditRepository, MongoSaveAuditRepository>();
+        }
+        else
+        {
+            services.AddScoped<ISaveAuditRepository, EfSaveAuditRepository>();
+        }
         return services;
     }
 

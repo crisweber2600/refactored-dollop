@@ -11,6 +11,12 @@ namespace ExampleLib.Infrastructure;
 public class SetupValidationBuilder
 {
     private readonly List<Action<IServiceCollection>> _steps = new();
+    private bool _useMongo;
+
+    /// <summary>
+    /// Indicates whether MongoDB has been configured.
+    /// </summary>
+    internal bool UsesMongo => _useMongo;
 
     /// <summary>
     /// Record SQL Server configuration using the specified DbContext.
@@ -19,6 +25,7 @@ public class SetupValidationBuilder
         where TContext : YourDbContext
     {
         _steps.Add(s => s.SetupDatabase<TContext>(connectionString));
+        _useMongo = false;
         return this;
     }
 
@@ -28,6 +35,7 @@ public class SetupValidationBuilder
     public SetupValidationBuilder UseMongo(string connectionString, string databaseName)
     {
         _steps.Add(s => s.SetupMongoDatabase(connectionString, databaseName));
+        _useMongo = true;
         return this;
     }
 
