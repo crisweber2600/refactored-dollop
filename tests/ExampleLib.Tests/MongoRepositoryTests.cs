@@ -1,4 +1,7 @@
 using ExampleData;
+using ExampleData.Infrastructure;
+using ExampleLib.Infrastructure;
+using ExampleLib.Domain;
 using Mongo2Go;
 using MongoDB.Driver;
 using Xunit;
@@ -16,7 +19,10 @@ public class MongoRepositoryTests : IDisposable
         _runner = MongoDbRunner.Start();
         var client = new MongoClient(_runner.ConnectionString);
         _database = client.GetDatabase("repo-tests");
-        _repo = new MongoGenericRepository<YourEntity>(_database);
+        var store = new DataInMemorySummarisationPlanStore();
+        store.AddPlan(new SummarisationPlan<YourEntity>(e => e.Id, ThresholdType.RawDifference, 0));
+        var uow = new MongoUnitOfWork(_database, new MongoValidationService(_database), store);
+        _repo = new MongoGenericRepository<YourEntity>(_database, uow);
     }
 
     private async Task ResetAsync()

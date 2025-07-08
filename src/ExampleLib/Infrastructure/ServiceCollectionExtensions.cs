@@ -209,4 +209,45 @@ public static class ServiceCollectionExtensions
         list.Add(o => rule((T)o));
         return services;
     }
+
+    /// <summary>
+    /// Register validation flows based on external configuration.
+    /// </summary>
+    public static IServiceCollection AddValidationFlows(this IServiceCollection services, ValidationFlowOptions options)
+    {
+        foreach (var flow in options.Flows)
+        {
+            var type = Type.GetType(flow.Type);
+            if (type == null) continue;
+            if (flow.SaveValidation)
+            {
+                typeof(ServiceCollectionExtensions)
+                    .GetMethod(nameof(AddSaveValidation))!
+                    .MakeGenericMethod(type)
+                    .Invoke(null, new object[] { services, null, ThresholdType.PercentChange, 0.1m });
+            }
+            if (flow.SaveCommit)
+            {
+                typeof(ServiceCollectionExtensions)
+                    .GetMethod(nameof(AddSaveCommit))!
+                    .MakeGenericMethod(type)
+                    .Invoke(null, new object[] { services });
+            }
+            if (flow.DeleteValidation)
+            {
+                typeof(ServiceCollectionExtensions)
+                    .GetMethod(nameof(AddDeleteValidation))!
+                    .MakeGenericMethod(type)
+                    .Invoke(null, new object[] { services });
+            }
+            if (flow.DeleteCommit)
+            {
+                typeof(ServiceCollectionExtensions)
+                    .GetMethod(nameof(AddDeleteCommit))!
+                    .MakeGenericMethod(type)
+                    .Invoke(null, new object[] { services });
+            }
+        }
+        return services;
+    }
 }

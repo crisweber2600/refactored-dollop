@@ -1,4 +1,7 @@
 using ExampleData;
+using ExampleData.Infrastructure;
+using ExampleLib.Domain;
+using ExampleLib.Infrastructure;
 using Mongo2Go;
 using MongoDB.Driver;
 using Reqnroll;
@@ -18,7 +21,10 @@ public class MongoRepoSteps
         _runner = MongoDbRunner.Start();
         var client = new MongoClient(_runner.ConnectionString);
         _database = client.GetDatabase("bddrepo");
-        _repository = new MongoGenericRepository<YourEntity>(_database);
+        var store = new ExampleData.Infrastructure.DataInMemorySummarisationPlanStore();
+        store.AddPlan(new ExampleLib.Domain.SummarisationPlan<YourEntity>(e => e.Id, ExampleLib.Domain.ThresholdType.RawDifference, 0));
+        var uow = new MongoUnitOfWork(_database, new MongoValidationService(_database), store);
+        _repository = new MongoGenericRepository<YourEntity>(_database, uow);
     }
 
     [Given("a clean mongo database")]

@@ -13,7 +13,9 @@ public interface IMongoCollectionInterceptor<T>
     Task<UpdateResult> UpdateOneAsync(FilterDefinition<T> filter, UpdateDefinition<T> update, CancellationToken cancellationToken = default);
     Task<DeleteResult> DeleteOneAsync(FilterDefinition<T> filter, CancellationToken cancellationToken = default);
     IFindFluent<T, T> Find(FilterDefinition<T> filter);
-    Task<long> CountDocumentsAsync(FilterDefinition<T> filter, CancellationToken cancellationToken = default);
+    Task<long> CountDocumentsAsync(FilterDefinition<T> filter,
+        CountOptions? options = null,
+        CancellationToken cancellationToken = default);
 }
 
 /// <summary>
@@ -50,6 +52,8 @@ public class MongoCollectionInterceptor<T> : IMongoCollectionInterceptor<T>
 
     public IFindFluent<T, T> Find(FilterDefinition<T> filter) => _inner.Find(filter);
 
-    public Task<long> CountDocumentsAsync(FilterDefinition<T> filter, CancellationToken cancellationToken = default)
-        => _inner.CountDocumentsAsync(filter, cancellationToken);
+    public Task<long> CountDocumentsAsync(FilterDefinition<T> filter,
+        CountOptions? options = null,
+        CancellationToken cancellationToken = default)
+        => _inner.CountDocumentsAsync(filter, options, cancellationToken);
 }

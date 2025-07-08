@@ -1,5 +1,7 @@
 using ExampleData;
 using ExampleData.Infrastructure;
+using ExampleLib.Domain;
+using ExampleLib.Infrastructure;
 using Mongo2Go;
 using MongoDB.Driver;
 using Xunit;
