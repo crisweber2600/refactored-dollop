@@ -1,0 +1,2370 @@
+{
+	"info": {
+		"_postman_id": "183621a0-30ad-454f-9dc7-d36788c17d77",
+		"name": "Prometheus HTTP API",
+		"description": "The current stable HTTP API is reachable under /api/v1 on a Prometheus server. Any non-breaking additions will be added under that endpoint.\n\n# Format overview\nThe API response format is JSON. Every successful API request returns a ```2xx``` status code.\n\nInvalid requests that reach the API handlers return a JSON error object and one of the following HTTP response codes:\n\n```400 Bad Request``` when parameters are missing or incorrect.\n```422 Unprocessable Entity``` when an expression can't be executed ([RFC4918](https://datatracker.ietf.org/doc/html/rfc4918#page-78)).\n```503 Service Unavailable``` when queries time out or abort.\n\nOther non-```2xx``` codes may be returned for errors occurring before the API endpoint is reached.\n\nAn array of warnings may be returned if there are errors that do not inhibit the request execution. All of the data that was successfully collected will be returned in the data field.\n\nThe JSON response envelope format is as follows:\n\n```\n{\n  \"status\": \"success\" | \"error\",\n  \"data\": <data>,\n\n  // Only set if status is \"error\". The data field may still hold\n  // additional data.\n  \"errorType\": \"<string>\",\n  \"error\": \"<string>\",\n\n  // Only if there were warnings while executing the request.\n  // There will still be data in the data field.\n  \"warnings\": [\"<string>\"]\n}\n```\n# Generic placeholders:\n\n```<rfc3339 | unix_timestamp>```: Input timestamps may be provided either in [RFC3339](https://www.ietf.org/rfc/rfc3339.txt) format or as a Unix timestamp in seconds, with optional decimal places for sub-second precision. Output timestamps are always represented as Unix timestamps in seconds.\n\n```<series_selector>```: Prometheus [time series selectors](https://prometheus.io/docs/prometheus/latest/querying/basics/#time-series-selectors) like ```http_requests_total``` or ```http_requests_total{method=~\"(GET|POST)\"}``` and need to be URL-encoded.\n\n```<duration>```: [Prometheus duration strings](https://prometheus.io/docs/prometheus/latest/querying/basics/#time_durations). For example, ```5m``` refers to a duration of 5 minutes.\n\n```<bool>```: boolean values (strings ```true``` and ```false```).\n\n**Note**: Names of query parameters that may be repeated end with ```[]```.\n",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "25186772",
+		"_collection_link": "https://www.postman.com/oracledevs/verrazzano-1-x-apis/collection/wdd55hg/prometheus-http-api?action=share&source=collection_link&creator=25186772"
+	},
+	"item": [
+		{
+			"name": "admin/tsdb",
+			"item": [
+				{
+					"name": "clean_tombstones",
+					"item": [
+						{
+							"name": "Removes deleted data",
+							"request": {
+								"method": "PUT",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/admin/tsdb/clean_tombstones",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"admin",
+										"tsdb",
+										"clean_tombstones"
+									]
+								},
+								"description": "CleanTombstones removes the deleted data from disk and cleans up the existing tombstones. This can be used after deleting series to free up space.\n\n<i>New in v2.1 and supports PUT from v2.9</i>\n"
+							},
+							"response": [
+								{
+									"name": "Successful",
+									"originalRequest": {
+										"method": "PUT",
+										"header": [],
+										"url": {
+											"raw": "{{baseUrl}}/admin/tsdb/clean_tombstones",
+											"host": [
+												"{{baseUrl}}"
+											],
+											"path": [
+												"admin",
+												"tsdb",
+												"clean_tombstones"
+											]
+										}
+									},
+									"status": "No Content",
+									"code": 204,
+									"_postman_previewlanguage": "text",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "text/plain"
+										}
+									],
+									"cookie": [],
+									"body": ""
+								}
+							]
+						},
+						{
+							"name": "Removes deleted data",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/admin/tsdb/clean_tombstones",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"admin",
+										"tsdb",
+										"clean_tombstones"
+									]
+								},
+								"description": "CleanTombstones removes the deleted data from disk and cleans up the existing tombstones. This can be used after deleting series to free up space.\n\n<i>New in v2.1 and supports PUT from v2.9</i>\n"
+							},
+							"response": [
+								{
+									"name": "Successful",
+									"originalRequest": {
+										"method": "POST",
+										"header": [],
+										"url": {
+											"raw": "{{baseUrl}}/admin/tsdb/clean_tombstones",
+											"host": [
+												"{{baseUrl}}"
+											],
+											"path": [
+												"admin",
+												"tsdb",
+												"clean_tombstones"
+											]
+										}
+									},
+									"status": "No Content",
+									"code": 204,
+									"_postman_previewlanguage": "text",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "text/plain"
+										}
+									],
+									"cookie": [],
+									"body": ""
+								}
+							]
+						}
+					]
+				},
+				{
+					"name": "delete_series",
+					"item": [
+						{
+							"name": "Deletes selected data",
+							"request": {
+								"method": "PUT",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/admin/tsdb/delete_series?match[]=&start=irure&end=irure",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"admin",
+										"tsdb",
+										"delete_series"
+									],
+									"query": [
+										{
+											"key": "match[]",
+											"value": "",
+											"description": "(Required) Repeated label matcher argument that selects the series to delete. At least one match[] argument must be provided.\n\nExample: ```?match[]=up&match[]=process_start_time_seconds{job=\"prometheus\"}'```\n"
+										},
+										{
+											"key": "start",
+											"value": "irure",
+											"description": "Start timestamp. Optional and defaults to minimum possible time."
+										},
+										{
+											"key": "end",
+											"value": "irure",
+											"description": "End timestamp. Optional and defaults to maximum possible time.\n\nNot mentioning both start and end times would clear all the data for the matched series in the database.\n"
+										}
+									]
+								},
+								"description": "DeleteSeries deletes data for a selection of series in a time range. The actual data still exists on disk and is cleaned up in future compactions or can be explicitly cleaned up by hitting the [Clean Tombstones](https://prometheus.io/docs/prometheus/latest/querying/api/#clean-tombstones) endpoint.\n\nNew in v2.1 and supports PUT from v2.9\n"
+							},
+							"response": [
+								{
+									"name": "Successful",
+									"originalRequest": {
+										"method": "PUT",
+										"header": [],
+										"url": {
+											"raw": "{{baseUrl}}/admin/tsdb/delete_series?match[]=irure&start=irure&end=irure",
+											"host": [
+												"{{baseUrl}}"
+											],
+											"path": [
+												"admin",
+												"tsdb",
+												"delete_series"
+											],
+											"query": [
+												{
+													"key": "match[]",
+													"value": "irure"
+												},
+												{
+													"key": "start",
+													"value": "irure"
+												},
+												{
+													"key": "end",
+													"value": "irure"
+												}
+											]
+										}
+									},
+									"status": "No Content",
+									"code": 204,
+									"_postman_previewlanguage": "text",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "text/plain"
+										}
+									],
+									"cookie": [],
+									"body": ""
+								}
+							]
+						},
+						{
+							"name": "Deletes selected data",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/admin/tsdb/delete_series?match[]=irure&start=irure&end=irure",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"admin",
+										"tsdb",
+										"delete_series"
+									],
+									"query": [
+										{
+											"key": "match[]",
+											"value": "irure",
+											"description": "(Required) Repeated label matcher argument that selects the series to delete. At least one match[] argument must be provided.\n\nExample: ```?match[]=up&match[]=process_start_time_seconds{job=\"prometheus\"}'```\n"
+										},
+										{
+											"key": "start",
+											"value": "irure",
+											"description": "Start timestamp. Optional and defaults to minimum possible time."
+										},
+										{
+											"key": "end",
+											"value": "irure",
+											"description": "End timestamp. Optional and defaults to maximum possible time.\n\nNot mentioning both start and end times would clear all the data for the matched series in the database.\n"
+										}
+									]
+								},
+								"description": "DeleteSeries deletes data for a selection of series in a time range. The actual data still exists on disk and is cleaned up in future compactions or can be explicitly cleaned up by hitting the [Clean Tombstones](https://prometheus.io/docs/prometheus/latest/querying/api/#clean-tombstones) endpoint.\n\n---\n**NOTE:** This endpoint marks samples from series as deleted, but will not necessarily prevent associated series metadata from still being returned in metadata queries for the affected time range (even after cleaning tombstones). The exact extent of metadata deletion is an implementation detail that may change in the future.\n\n---\n\nNew in v2.1 and supports PUT from v2.9\n"
+							},
+							"response": [
+								{
+									"name": "Successful",
+									"originalRequest": {
+										"method": "POST",
+										"header": [],
+										"url": {
+											"raw": "{{baseUrl}}/admin/tsdb/delete_series?match[]=irure&start=irure&end=irure",
+											"host": [
+												"{{baseUrl}}"
+											],
+											"path": [
+												"admin",
+												"tsdb",
+												"delete_series"
+											],
+											"query": [
+												{
+													"key": "match[]",
+													"value": "irure"
+												},
+												{
+													"key": "start",
+													"value": "irure"
+												},
+												{
+													"key": "end",
+													"value": "irure"
+												}
+											]
+										}
+									},
+									"status": "No Content",
+									"code": 204,
+									"_postman_previewlanguage": "text",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "text/plain"
+										}
+									],
+									"cookie": [],
+									"body": ""
+								}
+							]
+						}
+					]
+				},
+				{
+					"name": "snapshot",
+					"item": [
+						{
+							"name": "Creates Snapshot of current data",
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									}
+								],
+								"url": {
+									"raw": "{{baseUrl}}/admin/tsdb/snapshot?skip_head=false",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"admin",
+										"tsdb",
+										"snapshot"
+									],
+									"query": [
+										{
+											"key": "skip_head",
+											"value": "false",
+											"description": "Skip data present in the head block. Optional.\n"
+										}
+									]
+								},
+								"description": "Snapshot creates a snapshot of all current data into ```snapshots/<datetime>-<rand>``` under the TSDB's data directory and returns the directory as response. It will optionally skip snapshotting data that is only present in the head block, and which has not yet been compacted to disk.\n\nNew in v2.1 and supports PUT from v2.9\n"
+							},
+							"response": [
+								{
+									"name": "The snapshot now exists at ```<data-dir>/snapshots/20171210T211224Z-2be650b6d019eb54```",
+									"originalRequest": {
+										"method": "PUT",
+										"header": [],
+										"url": {
+											"raw": "{{baseUrl}}/admin/tsdb/snapshot?skip_head=false",
+											"host": [
+												"{{baseUrl}}"
+											],
+											"path": [
+												"admin",
+												"tsdb",
+												"snapshot"
+											],
+											"query": [
+												{
+													"key": "skip_head",
+													"value": "false"
+												}
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json"
+										}
+									],
+									"cookie": [],
+									"body": "{\n  \"status\": \"success\",\n  \"data\": {\n    \"name\": \"20171210T211224Z-2be650b6d019eb54\"\n  }\n}"
+								}
+							]
+						},
+						{
+							"name": "Creates Snapshot of current data",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									}
+								],
+								"url": {
+									"raw": "{{baseUrl}}/admin/tsdb/snapshot?skip_head=true",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"admin",
+										"tsdb",
+										"snapshot"
+									],
+									"query": [
+										{
+											"key": "skip_head",
+											"value": "true",
+											"description": "Skip data present in the head block. Optional.\n"
+										}
+									]
+								},
+								"description": "Snapshot creates a snapshot of all current data into ```snapshots/<datetime>-<rand>``` under the TSDB's data directory and returns the directory as response. It will optionally skip snapshotting data that is only present in the head block, and which has not yet been compacted to disk.\n\nNew in v2.1 and supports PUT from v2.9\n"
+							},
+							"response": [
+								{
+									"name": "The snapshot now exists at ```<data-dir>/snapshots/20171210T211224Z-2be650b6d019eb54```",
+									"originalRequest": {
+										"method": "POST",
+										"header": [],
+										"url": {
+											"raw": "{{baseUrl}}/admin/tsdb/snapshot?skip_head=true",
+											"host": [
+												"{{baseUrl}}"
+											],
+											"path": [
+												"admin",
+												"tsdb",
+												"snapshot"
+											],
+											"query": [
+												{
+													"key": "skip_head",
+													"value": "true"
+												}
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json"
+										}
+									],
+									"cookie": [],
+									"body": "{\n  \"status\": \"success\",\n  \"data\": {\n    \"name\": \"20171210T211224Z-2be650b6d019eb54\"\n  }\n}"
+								}
+							]
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "labels",
+			"item": [
+				{
+					"name": "Returns label names",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/labels?start=irure&end=irure&match[]=irure",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"labels"
+							],
+							"query": [
+								{
+									"key": "start",
+									"value": "irure",
+									"description": "Start timestamp. Optional.\n"
+								},
+								{
+									"key": "end",
+									"value": "irure",
+									"description": "End timestamp. Optional.\n"
+								},
+								{
+									"key": "match[]",
+									"value": "irure",
+									"description": "Repeated series selector argument that selects the series from which to read the label values. Optional.\n"
+								}
+							]
+						},
+						"description": "The following endpoint returns a list of label names\n\nThe ```data``` section of the JSON response is a list of string label names.\n\n---\n**NOTE:** These API endpoints may return metadata for series for which there is no sample within the selected time range, and/or for series whose samples have been marked as deleted via the deletion API endpoint. The exact extent of additionally returned series metadata is an implementation detail that may change in the future.\n\n---\n"
+					},
+					"response": [
+						{
+							"name": "Success",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/labels?start=irure&end=irure&match[]=irure",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"labels"
+									],
+									"query": [
+										{
+											"key": "start",
+											"value": "irure"
+										},
+										{
+											"key": "end",
+											"value": "irure"
+										},
+										{
+											"key": "match[]",
+											"value": "irure"
+										}
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"cookie": [],
+							"body": "{\n  \"status\": \"success\",\n  \"data\": [\n    \"__name__\",\n    \"call\",\n    \"code\",\n    \"config\",\n    \"dialer_name\",\n    \"endpoint\",\n    \"event\",\n    \"goversion\",\n    \"handler\",\n    \"instance\",\n    \"interval\",\n    \"job\",\n    \"le\",\n    \"listener_name\",\n    \"name\",\n    \"quantile\",\n    \"reason\",\n    \"role\",\n    \"scrape_job\",\n    \"slice\",\n    \"version\"\n  ]\n}"
+						}
+					]
+				},
+				{
+					"name": "Returns label names",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/labels?start=irure&end=irure&match[]=irure",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"labels"
+							],
+							"query": [
+								{
+									"key": "start",
+									"value": "irure",
+									"description": "Start timestamp. Optional.\n"
+								},
+								{
+									"key": "end",
+									"value": "irure",
+									"description": "End timestamp. Optional.\n"
+								},
+								{
+									"key": "match[]",
+									"value": "irure",
+									"description": "Repeated series selector argument that selects the series from which to read the label values. Optional.\n"
+								}
+							]
+						},
+						"description": "The following endpoint returns a list of label names\n\nThe ```data``` section of the JSON response is a list of string label names.\n"
+					},
+					"response": [
+						{
+							"name": "Success",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/labels?start=irure&end=irure&match[]=irure",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"labels"
+									],
+									"query": [
+										{
+											"key": "start",
+											"value": "irure"
+										},
+										{
+											"key": "end",
+											"value": "irure"
+										},
+										{
+											"key": "match[]",
+											"value": "irure"
+										}
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"cookie": [],
+							"body": "{\n  \"status\": \"success\",\n  \"data\": [\n    \"__name__\",\n    \"call\",\n    \"code\",\n    \"config\",\n    \"dialer_name\",\n    \"endpoint\",\n    \"event\",\n    \"goversion\",\n    \"handler\",\n    \"instance\",\n    \"interval\",\n    \"job\",\n    \"le\",\n    \"listener_name\",\n    \"name\",\n    \"quantile\",\n    \"reason\",\n    \"role\",\n    \"scrape_job\",\n    \"slice\",\n    \"version\"\n  ]\n}"
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "query",
+			"item": [
+				{
+					"name": "Evaluates instant query",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/query?query=num_threads",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"query"
+							],
+							"query": [
+								{
+									"key": "query",
+									"value": "num_threads",
+									"description": "(Required) Prometheus expression query string.\n\nExample: ```?query=up```\n"
+								},
+								{
+									"key": "time",
+									"value": "irure",
+									"description": "Evaluation timestamp. Optional.\n\nThe current server time is used if the ```time``` parameter is omitted.\n\nExample: ```?metric=http_requests_total```\n",
+									"disabled": true
+								},
+								{
+									"key": "timeout",
+									"value": "irure",
+									"description": "Evaluation timeout. Optional. Defaults to and is capped by the value of the ```-query.timeout``` flag.\n\nExample: ```?metric=http_requests_total```\n",
+									"disabled": true
+								}
+							]
+						},
+						"description": "The following endpoint evaluates an instant query at a single point in time\n\nYou can URL-encode these parameters directly in the request body by using the ```POST``` method and ```Content-Type: application/x-www-form-urlencoded``` header. This is useful when specifying a large query that may breach server-side URL character limits.\n\nThe data section of the query result has the following format\n```\n{\n  \"resultType\": \"matrix\" | \"vector\" | \"scalar\" | \"string\",\n  \"result\": <value>\n}\n```\n```<value>``` refers to the query result data, which has varying formats depending on the ```resultType```. See the [expression query result formats](https://prometheus.io/docs/prometheus/latest/querying/api/#expression-query-result-formats).\n"
+					},
+					"response": [
+						{
+							"name": "Success\n\nThe following example evaluates the expression ```up``` at the time ```2015-07-01T20:10:51.781Z```\n",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/query?query=irure&time=irure&timeout=irure",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"query"
+									],
+									"query": [
+										{
+											"key": "query",
+											"value": "irure"
+										},
+										{
+											"key": "time",
+											"value": "irure"
+										},
+										{
+											"key": "timeout",
+											"value": "irure"
+										}
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"cookie": [],
+							"body": "{\n  \"status\": \"success\",\n  \"data\": {\n    \"resultType\": \"vector\",\n    \"result\": [\n      {\n        \"metric\": {\n          \"__name__\": \"up\",\n          \"job\": \"prometheus\",\n          \"instance\": \"localhost:9090\"\n        },\n        \"value\": [\n          1435781451.781,\n          \"1\"\n        ]\n      },\n      {\n        \"metric\": {\n          \"__name__\": \"up\",\n          \"job\": \"node\",\n          \"instance\": \"localhost:9100\"\n        },\n        \"value\": [\n          1435781451.781,\n          \"0\"\n        ]\n      }\n    ]\n  }\n}"
+						}
+					]
+				},
+				{
+					"name": "Evaluates instant query",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/query?query=num_threads",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"query"
+							],
+							"query": [
+								{
+									"key": "query",
+									"value": "num_threads",
+									"description": "(Required) Prometheus expression query string.\n\nExample: ```?query=up```\n"
+								},
+								{
+									"key": "time",
+									"value": "irure",
+									"description": "Evaluation timestamp. Optional.\n\nThe current server time is used if the ```time``` parameter is omitted.\n\nExample: ```?metric=http_requests_total```\n",
+									"disabled": true
+								},
+								{
+									"key": "timeout",
+									"value": "irure",
+									"description": "Evaluation timeout. Optional. Defaults to and is capped by the value of the ```-query.timeout``` flag.\n\nExample: ```?metric=http_requests_total```\n",
+									"disabled": true
+								}
+							]
+						},
+						"description": "The following endpoint evaluates an instant query at a single point in time\n\nYou can URL-encode these parameters directly in the request body by using the ```POST``` method and ```Content-Type: application/x-www-form-urlencoded``` header. This is useful when specifying a large query that may breach server-side URL character limits.\n\nThe data section of the query result has the following format\n```\n{\n  \"resultType\": \"matrix\" | \"vector\" | \"scalar\" | \"string\",\n  \"result\": <value>\n}\n```\n```<value>``` refers to the query result data, which has varying formats depending on the ```resultType```. See the [expression query result formats](https://prometheus.io/docs/prometheus/latest/querying/api/#expression-query-result-formats).\n"
+					},
+					"response": [
+						{
+							"name": "Success\n\nThe following example evaluates the expression ```up``` at the time ```2015-07-01T20:10:51.781Z```\n",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/query?query=irure&time=irure&timeout=irure",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"query"
+									],
+									"query": [
+										{
+											"key": "query",
+											"value": "irure"
+										},
+										{
+											"key": "time",
+											"value": "irure"
+										},
+										{
+											"key": "timeout",
+											"value": "irure"
+										}
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"cookie": [],
+							"body": "{\n  \"status\": \"success\",\n  \"data\": {\n    \"resultType\": \"vector\",\n    \"result\": [\n      {\n        \"metric\": {\n          \"__name__\": \"up\",\n          \"job\": \"prometheus\",\n          \"instance\": \"localhost:9090\"\n        },\n        \"value\": [\n          1435781451.781,\n          \"1\"\n        ]\n      },\n      {\n        \"metric\": {\n          \"__name__\": \"up\",\n          \"job\": \"node\",\n          \"instance\": \"localhost:9100\"\n        },\n        \"value\": [\n          1435781451.781,\n          \"0\"\n        ]\n      }\n    ]\n  }\n}"
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "query_exemplars",
+			"item": [
+				{
+					"name": "Returns list of Exemplars",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/query_exemplars?query=irure&start=irure&end=irure",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"query_exemplars"
+							],
+							"query": [
+								{
+									"key": "query",
+									"value": "irure",
+									"description": "(Required) Prometheus expression query string.\n\nExample: ```?query=test_exemplar_metric_total```\n"
+								},
+								{
+									"key": "start",
+									"value": "irure",
+									"description": "Start timestamp.\n\nExample: ```&start=2020-09-14T15:22:25.479Z```\n"
+								},
+								{
+									"key": "end",
+									"value": "irure",
+									"description": "End timestamp.\n\nExample: ```&end=020-09-14T15:23:25.479Z```\n"
+								}
+							]
+						},
+						"description": "This is <b>experimental</b> and might change in the future. The following endpoint returns a list of exemplars for a valid PromQL query for a specific time range\n"
+					},
+					"response": [
+						{
+							"name": "Success",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/query_exemplars?query=irure&start=irure&end=irure",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"query_exemplars"
+									],
+									"query": [
+										{
+											"key": "query",
+											"value": "irure"
+										},
+										{
+											"key": "start",
+											"value": "irure"
+										},
+										{
+											"key": "end",
+											"value": "irure"
+										}
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"cookie": [],
+							"body": "{\n  \"status\": \"success\",\n  \"data\": [\n    {\n      \"seriesLabels\": {\n        \"__name__\": \"test_exemplar_metric_total\",\n        \"instance\": \"localhost:8090\",\n        \"job\": \"prometheus\",\n        \"service\": \"bar\"\n      },\n      \"exemplars\": [\n        {\n          \"labels\": {\n            \"traceID\": \"EpTxMJ40fUus7aGY\"\n          },\n          \"value\": \"6\",\n          \"timestamp\": 1600096945.479\n        }\n      ]\n    },\n    {\n      \"seriesLabels\": {\n        \"__name__\": \"test_exemplar_metric_total\",\n        \"instance\": \"localhost:8090\",\n        \"job\": \"prometheus\",\n        \"service\": \"foo\"\n      },\n      \"exemplars\": [\n        {\n          \"labels\": {\n            \"traceID\": \"Olp9XHlq763ccsfa\"\n          },\n          \"value\": \"19\",\n          \"timestamp\": 1600096955.479\n        },\n        {\n          \"labels\": {\n            \"traceID\": \"hCtjygkIHwAN9vs4\"\n          },\n          \"value\": \"20\",\n          \"timestamp\": 1600096965.489\n        }\n      ]\n    }\n  ]\n}"
+						}
+					]
+				},
+				{
+					"name": "Returns list of Exemplars",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/query_exemplars?query=irure&start=irure&end=irure",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"query_exemplars"
+							],
+							"query": [
+								{
+									"key": "query",
+									"value": "irure",
+									"description": "(Required) Prometheus expression query string.\n\nExample: ```?query=test_exemplar_metric_total```\n"
+								},
+								{
+									"key": "start",
+									"value": "irure",
+									"description": "Start timestamp.\n\nExample: ```&start=2020-09-14T15:22:25.479Z```\n"
+								},
+								{
+									"key": "end",
+									"value": "irure",
+									"description": "End timestamp.\n\nExample: ```&end=020-09-14T15:23:25.479Z```\n"
+								}
+							]
+						},
+						"description": "This is <b>experimental</b> and might change in the future. The following endpoint returns a list of exemplars for a valid PromQL query for a specific time range\n"
+					},
+					"response": [
+						{
+							"name": "Success",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/query_exemplars?query=irure&start=irure&end=irure",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"query_exemplars"
+									],
+									"query": [
+										{
+											"key": "query",
+											"value": "irure"
+										},
+										{
+											"key": "start",
+											"value": "irure"
+										},
+										{
+											"key": "end",
+											"value": "irure"
+										}
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"cookie": [],
+							"body": "{\n  \"status\": \"success\",\n  \"data\": [\n    {\n      \"seriesLabels\": {\n        \"__name__\": \"test_exemplar_metric_total\",\n        \"instance\": \"localhost:8090\",\n        \"job\": \"prometheus\",\n        \"service\": \"bar\"\n      },\n      \"exemplars\": [\n        {\n          \"labels\": {\n            \"traceID\": \"EpTxMJ40fUus7aGY\"\n          },\n          \"value\": \"6\",\n          \"timestamp\": 1600096945.479\n        }\n      ]\n    },\n    {\n      \"seriesLabels\": {\n        \"__name__\": \"test_exemplar_metric_total\",\n        \"instance\": \"localhost:8090\",\n        \"job\": \"prometheus\",\n        \"service\": \"foo\"\n      },\n      \"exemplars\": [\n        {\n          \"labels\": {\n            \"traceID\": \"Olp9XHlq763ccsfa\"\n          },\n          \"value\": \"19\",\n          \"timestamp\": 1600096955.479\n        },\n        {\n          \"labels\": {\n            \"traceID\": \"hCtjygkIHwAN9vs4\"\n          },\n          \"value\": \"20\",\n          \"timestamp\": 1600096965.489\n        }\n      ]\n    }\n  ]\n}"
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "query_range",
+			"item": [
+				{
+					"name": "Evaluates query over range of time.",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/query_range?query=num_threads&start=2023-02-13T09:48:43Z&end=2023-02-14T09:48:43Z&step=15s",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"query_range"
+							],
+							"query": [
+								{
+									"key": "query",
+									"value": "num_threads",
+									"description": "(Required) Prometheus expression query string.\n\nExample: ```?query=up```\n"
+								},
+								{
+									"key": "start",
+									"value": "2023-02-13T09:48:43Z",
+									"description": "Start timestamp.\n\nExample: ```&start=2015-07-01T20:10:30.781Z```\n"
+								},
+								{
+									"key": "end",
+									"value": "2023-02-14T09:48:43Z",
+									"description": "End timestamp.\n\nExample: ```&end=2015-07-01T20:11:00.781Z```\n"
+								},
+								{
+									"key": "step",
+									"value": "15s",
+									"description": "Query resolution step width in ```duration``` format or float number of seconds.\n\nExample: ```&step=15s```\n"
+								},
+								{
+									"key": "timeout",
+									"value": "irure",
+									"description": "Evaluation timeout. Optional. Defaults to and is capped by the value of the ```-query.timeout``` flag.\n\nExample: ```?metric=http_requests_total```\n",
+									"disabled": true
+								}
+							]
+						},
+						"description": "The following endpoint evaluates an expression query over a range of time\n\nYou can URL-encode these parameters directly in the request body by using the ```POST``` method and ```Content-Type: application/x-www-form-urlencoded``` header. This is useful when specifying a large query that may breach server-side URL character limits.\n\nThe data section of the query result has the following format\n```\n{\n  \"resultType\": \"matrix\",\n  \"result\": <value>\n}\n```\nFor the format of the ```<value>``` placeholder, see the [range-vector result format](https://prometheus.io/docs/prometheus/latest/querying/api/#range-vectors).\n"
+					},
+					"response": [
+						{
+							"name": "Success\n\nThe following example evaluates the expression ```up``` over a 30-second range with a query resolution of 15 seconds.\n",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/query_range?query=irure&start=irure&end=irure&step=irure&timeout=irure",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"query_range"
+									],
+									"query": [
+										{
+											"key": "query",
+											"value": "irure"
+										},
+										{
+											"key": "start",
+											"value": "irure"
+										},
+										{
+											"key": "end",
+											"value": "irure"
+										},
+										{
+											"key": "step",
+											"value": "irure"
+										},
+										{
+											"key": "timeout",
+											"value": "irure"
+										}
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"cookie": [],
+							"body": "{\n  \"status\": \"success\",\n  \"data\": {\n    \"resultType\": \"matrix\",\n    \"result\": [\n      {\n        \"metric\": {\n          \"__name__\": \"up\",\n          \"job\": \"prometheus\",\n          \"instance\": \"localhost:9090\"\n        },\n        \"values\": [\n          [\n            1435781430.781,\n            \"1\"\n          ],\n          [\n            1435781445.781,\n            \"1\"\n          ],\n          [\n            1435781460.781,\n            \"1\"\n          ]\n        ]\n      },\n      {\n        \"metric\": {\n          \"__name__\": \"up\",\n          \"job\": \"node\",\n          \"instance\": \"localhost:9091\"\n        },\n        \"values\": [\n          [\n            1435781430.781,\n            \"0\"\n          ],\n          [\n            1435781445.781,\n            \"0\"\n          ],\n          [\n            1435781460.781,\n            \"1\"\n          ]\n        ]\n      }\n    ]\n  }\n}"
+						}
+					]
+				},
+				{
+					"name": "Evaluates query over range of time.",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/query_range?query=num_threads&start=2023-02-13T09:48:43Z&end=2023-02-14T09:48:43Z&step=15s",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"query_range"
+							],
+							"query": [
+								{
+									"key": "query",
+									"value": "num_threads",
+									"description": "(Required) Prometheus expression query string.\n\nExample: ```?query=up```\n"
+								},
+								{
+									"key": "start",
+									"value": "2023-02-13T09:48:43Z",
+									"description": "Start timestamp.\n\nExample: ```&start=2015-07-01T20:10:30.781Z```\n"
+								},
+								{
+									"key": "end",
+									"value": "2023-02-14T09:48:43Z",
+									"description": "End timestamp.\n\nExample: ```&end=2015-07-01T20:11:00.781Z```\n"
+								},
+								{
+									"key": "step",
+									"value": "15s",
+									"description": "Query resolution step width in ```duration``` format or float number of seconds.\n\nExample: ```&step=15s```\n"
+								},
+								{
+									"key": "timeout",
+									"value": "irure",
+									"description": "Evaluation timeout. Optional. Defaults to and is capped by the value of the ```-query.timeout``` flag.\n\nExample: ```?metric=http_requests_total```\n",
+									"disabled": true
+								}
+							]
+						},
+						"description": "The following endpoint evaluates an expression query over a range of time\n\nYou can URL-encode these parameters directly in the request body by using the ```POST``` method and ```Content-Type: application/x-www-form-urlencoded``` header. This is useful when specifying a large query that may breach server-side URL character limits.\n\nThe data section of the query result has the following format\n```\n{\n  \"resultType\": \"matrix\",\n  \"result\": <value>\n}\n```\nFor the format of the ```<value>``` placeholder, see the [range-vector result format](https://prometheus.io/docs/prometheus/latest/querying/api/#range-vectors).\n"
+					},
+					"response": [
+						{
+							"name": "Success\n\nThe following example evaluates the expression ```up``` over a 30-second range with a query resolution of 15 seconds.\n",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/query_range?query=irure&start=irure&end=irure&step=irure&timeout=irure",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"query_range"
+									],
+									"query": [
+										{
+											"key": "query",
+											"value": "irure"
+										},
+										{
+											"key": "start",
+											"value": "irure"
+										},
+										{
+											"key": "end",
+											"value": "irure"
+										},
+										{
+											"key": "step",
+											"value": "irure"
+										},
+										{
+											"key": "timeout",
+											"value": "irure"
+										}
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"cookie": [],
+							"body": "{\n  \"status\": \"success\",\n  \"data\": {\n    \"resultType\": \"matrix\",\n    \"result\": [\n      {\n        \"metric\": {\n          \"__name__\": \"up\",\n          \"job\": \"prometheus\",\n          \"instance\": \"localhost:9090\"\n        },\n        \"values\": [\n          [\n            1435781430.781,\n            \"1\"\n          ],\n          [\n            1435781445.781,\n            \"1\"\n          ],\n          [\n            1435781460.781,\n            \"1\"\n          ]\n        ]\n      },\n      {\n        \"metric\": {\n          \"__name__\": \"up\",\n          \"job\": \"node\",\n          \"instance\": \"localhost:9091\"\n        },\n        \"values\": [\n          [\n            1435781430.781,\n            \"0\"\n          ],\n          [\n            1435781445.781,\n            \"0\"\n          ],\n          [\n            1435781460.781,\n            \"1\"\n          ]\n        ]\n      }\n    ]\n  }\n}"
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "series",
+			"item": [
+				{
+					"name": "Returns time series",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/series?start=irure&end=irure&match[]=irure",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"series"
+							],
+							"query": [
+								{
+									"key": "start",
+									"value": "irure",
+									"description": "Start timestamp. Optional.\n"
+								},
+								{
+									"key": "end",
+									"value": "irure",
+									"description": "End timestamp. Optional.\n"
+								},
+								{
+									"key": "match[]",
+									"value": "irure",
+									"description": "(Required) Repeated series selector argument that selects the series to return. At least one ```match[]``` argument must be provided.\n\nExample: ```?' --data-urlencode 'match[]=up'```\n"
+								}
+							]
+						},
+						"description": "The following endpoint returns the list of time series that match a certain label set.\n\nYou can URL-encode these parameters directly in the request body by using the ```POST``` method and ```Content-Type: application/x-www-form-urlencoded``` header. This is useful when specifying a large or dynamic number of series selectors that may breach server-side URL character limits.\n\nThe ```data``` section of the query result consists of a list of objects that contain the label name/value pairs which identify each series.\n"
+					},
+					"response": [
+						{
+							"name": "Success\n\nThe following example returns all series that match either of the selectors ```up``` or ```process_start_time_seconds{job=\"prometheus\"}```\n",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/series?start=irure&end=irure&match[]=irure",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"series"
+									],
+									"query": [
+										{
+											"key": "start",
+											"value": "irure"
+										},
+										{
+											"key": "end",
+											"value": "irure"
+										},
+										{
+											"key": "match[]",
+											"value": "irure"
+										}
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"cookie": [],
+							"body": "{\n  \"status\": \"success\",\n  \"data\": [\n    {\n      \"__name__\": \"up\",\n      \"job\": \"prometheus\",\n      \"instance\": \"localhost:9090\"\n    },\n    {\n      \"__name__\": \"up\",\n      \"job\": \"node\",\n      \"instance\": \"localhost:9091\"\n    },\n    {\n      \"__name__\": \"process_start_time_seconds\",\n      \"job\": \"prometheus\",\n      \"instance\": \"localhost:9090\"\n    }\n  ]\n}"
+						}
+					]
+				},
+				{
+					"name": "Returns time series",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/series?start=irure&end=irure&match[]=irure",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"series"
+							],
+							"query": [
+								{
+									"key": "start",
+									"value": "irure",
+									"description": "Start timestamp. Optional.\n"
+								},
+								{
+									"key": "end",
+									"value": "irure",
+									"description": "End timestamp. Optional.\n"
+								},
+								{
+									"key": "match[]",
+									"value": "irure",
+									"description": "(Required) Repeated series selector argument that selects the series to return. At least one ```match[]``` argument must be provided.\n\nExample: ```?' --data-urlencode 'match[]=up'```\n"
+								}
+							]
+						},
+						"description": "The following endpoint returns the list of time series that match a certain label set.\n\nYou can URL-encode these parameters directly in the request body by using the ```POST``` method and ```Content-Type: application/x-www-form-urlencoded``` header. This is useful when specifying a large or dynamic number of series selectors that may breach server-side URL character limits.\n\nThe ```data``` section of the query result consists of a list of objects that contain the label name/value pairs which identify each series.\n"
+					},
+					"response": [
+						{
+							"name": "Success\n\nThe following example returns all series that match either of the selectors ```up``` or ```process_start_time_seconds{job=\"prometheus\"}```\n",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/series?start=irure&end=irure&match[]=irure",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"series"
+									],
+									"query": [
+										{
+											"key": "start",
+											"value": "irure"
+										},
+										{
+											"key": "end",
+											"value": "irure"
+										},
+										{
+											"key": "match[]",
+											"value": "irure"
+										}
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"cookie": [],
+							"body": "{\n  \"status\": \"success\",\n  \"data\": [\n    {\n      \"__name__\": \"up\",\n      \"job\": \"prometheus\",\n      \"instance\": \"localhost:9090\"\n    },\n    {\n      \"__name__\": \"up\",\n      \"job\": \"node\",\n      \"instance\": \"localhost:9091\"\n    },\n    {\n      \"__name__\": \"process_start_time_seconds\",\n      \"job\": \"prometheus\",\n      \"instance\": \"localhost:9090\"\n    }\n  ]\n}"
+						}
+					]
+				},
+				{
+					"name": "Returns time series",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/series?start=irure&end=irure&match[]=irure",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"series"
+							],
+							"query": [
+								{
+									"key": "start",
+									"value": "irure",
+									"description": "Start timestamp. Optional.\n"
+								},
+								{
+									"key": "end",
+									"value": "irure",
+									"description": "End timestamp. Optional.\n"
+								},
+								{
+									"key": "match[]",
+									"value": "irure",
+									"description": "(Required) Repeated series selector argument that selects the series to return. At least one ```match[]``` argument must be provided.\n\nExample: ```?' --data-urlencode 'match[]=up'```\n"
+								}
+							]
+						},
+						"description": "The following endpoint returns the list of time series that match a certain label set.\n\nYou can URL-encode these parameters directly in the request body by using the ```POST``` method and ```Content-Type: application/x-www-form-urlencoded``` header. This is useful when specifying a large or dynamic number of series selectors that may breach server-side URL character limits.\n\nThe ```data``` section of the query result consists of a list of objects that contain the label name/value pairs which identify each series.\n\n---\n**NOTE:** These API endpoints may return metadata for series for which there is no sample within the selected time range, and/or for series whose samples have been marked as deleted via the deletion API endpoint. The exact extent of additionally returned series metadata is an implementation detail that may change in the future.\n\n---\n"
+					},
+					"response": [
+						{
+							"name": "Success\n\nThe following example returns all series that match either of the selectors ```up``` or ```process_start_time_seconds{job=\"prometheus\"}```\n",
+							"originalRequest": {
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/series?start=irure&end=irure&match[]=irure",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"series"
+									],
+									"query": [
+										{
+											"key": "start",
+											"value": "irure"
+										},
+										{
+											"key": "end",
+											"value": "irure"
+										},
+										{
+											"key": "match[]",
+											"value": "irure"
+										}
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"cookie": [],
+							"body": "{\n  \"status\": \"success\",\n  \"data\": [\n    {\n      \"__name__\": \"up\",\n      \"job\": \"prometheus\",\n      \"instance\": \"localhost:9090\"\n    },\n    {\n      \"__name__\": \"up\",\n      \"job\": \"node\",\n      \"instance\": \"localhost:9091\"\n    },\n    {\n      \"__name__\": \"process_start_time_seconds\",\n      \"job\": \"prometheus\",\n      \"instance\": \"localhost:9090\"\n    }\n  ]\n}"
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "status",
+			"item": [
+				{
+					"name": "Returns build information",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/status/buildinfo",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"status",
+								"buildinfo"
+							]
+						},
+						"description": "The following endpoint returns various build information properties about the Prometheus server\n\nAll values are of the result type ```string```.\n\n---\n**NOTE:** The exact returned build properties may change without notice between Prometheus versions.\n\n---\n\nNew in v2.14\n"
+					},
+					"response": [
+						{
+							"name": "Success",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/status/buildinfo",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"status",
+										"buildinfo"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"cookie": [],
+							"body": "{\n  \"status\": \"success\",\n  \"data\": {\n    \"version\": \"2.13.1\",\n    \"revision\": \"cb7cbad5f9a2823a622aaa668833ca04f50a0ea7\",\n    \"branch\": \"master\",\n    \"buildUser\": \"julius@desktop\",\n    \"buildDate\": \"20191102-16:19:59\",\n    \"goVersion\": \"go1.13.1\"\n  }\n}"
+						}
+					]
+				},
+				{
+					"name": "Returns configuration file",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/status/config",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"status",
+								"config"
+							]
+						},
+						"description": "The following endpoint returns currently loaded configuration file\n\nThe config is returned as dumped YAML file. Due to limitation of\nthe YAML library, YAML comments are not included.\n"
+					},
+					"response": [
+						{
+							"name": "Success",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/status/config",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"status",
+										"config"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"cookie": [],
+							"body": "{\n  \"status\": \"success\",\n  \"data\": {\n    \"yaml\": \"<content of the loaded config file in YAML>\"\n  }\n}"
+						}
+					]
+				},
+				{
+					"name": "Returns flag values",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/status/flags",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"status",
+								"flags"
+							]
+						},
+						"description": "The following endpoint returns flag values that Prometheus was configured with\n\nAll values are of the result type ```string```.\n\nNew in v2.2\n"
+					},
+					"response": [
+						{
+							"name": "Untitled Response",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/status/flags",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"status",
+										"flags"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"cookie": [],
+							"body": "{\n  \"status\": \"success\",\n  \"data\": {\n    \"alertmanager.notification-queue-capacity\": \"10000\",\n    \"alertmanager.timeout\": \"10s\",\n    \"log.level\": \"info\",\n    \"query.lookback-delta\": \"5m\",\n    \"query.max-concurrency\": \"20\"\n  }\n}"
+						}
+					]
+				},
+				{
+					"name": "Returns runtime info",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/status/runtimeinfo",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"status",
+								"runtimeinfo"
+							]
+						},
+						"description": "The following endpoint returns various runtime information properties about the Prometheus server\n\nThe returned values are of different types, depending on the nature\nof the runtime property\n\n---\n**NOTE:** The exact returned runtime properties may change without notice between Prometheus versions.\n\n---\n\nNew in v2.14\n"
+					},
+					"response": [
+						{
+							"name": "Success",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/status/runtimeinfo",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"status",
+										"runtimeinfo"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"cookie": [],
+							"body": "{\n  \"status\": \"success\",\n  \"data\": {\n    \"startTime\": \"2019-11-02T16:23:59.301Z\",\n    \"CWD\": \"/\",\n    \"reloadConfigSuccess\": true,\n    \"lastConfigTime\": \"2019-11-02T16:23:59.000Z\",\n    \"timeSeriesCount\": 873,\n    \"corruptionCount\": 0,\n    \"goroutineCount\": 48,\n    \"GOMAXPROCS\": 4,\n    \"GOGC\": \"\",\n    \"GODEBUG\": \"\",\n    \"storageRetention\": \"15d\"\n  }\n}"
+						}
+					]
+				},
+				{
+					"name": "Returns statistics about TSBD",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/status/tsdb",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"status",
+								"tsdb"
+							]
+						},
+						"description": "The following endpoint returns various cardinality statistics about the Prometheus TSDB\n\nResponse Data\n---\n\n**headStats:** This provides the following data about the head block of the TSDB:\n>**numSeries:** The number of series.\n**chunkCount:** The number of chunks.\n**minTime:** The current minimum timestamp in milliseconds.\n**maxTime:** The current maximum timestamp in milliseconds.\n\n**seriesCountByMetricName:** This will provide a list of metrics names and their series count.\n**labelValueCountByLabelName:** This will provide a list of the label names and their value count.\n**memoryInBytesByLabelName:** This will provide a list of the label names and memory used in bytes. Memory usage is calculated by adding the length of all values for a given label name.\n**seriesCountByLabelPair:** This will provide a list of label value pairs and their series count.\n"
+					},
+					"response": [
+						{
+							"name": "Success\n",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/status/tsdb",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"status",
+										"tsdb"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"cookie": [],
+							"body": "{\n  \"status\": \"success\",\n  \"data\": {\n    \"headStats\": {\n      \"numSeries\": 508,\n      \"chunkCount\": 937,\n      \"minTime\": 1591516800000,\n      \"maxTime\": 1598896800143\n    },\n    \"seriesCountByMetricName\": [\n      {\n        \"name\": \"net_conntrack_dialer_conn_failed_total\",\n        \"value\": 20\n      },\n      {\n        \"name\": \"prometheus_http_request_duration_seconds_bucket\",\n        \"value\": 20\n      }\n    ],\n    \"labelValueCountByLabelName\": [\n      {\n        \"name\": \"__name__\",\n        \"value\": 211\n      },\n      {\n        \"name\": \"event\",\n        \"value\": 3\n      }\n    ],\n    \"memoryInBytesByLabelName\": [\n      {\n        \"name\": \"__name__\",\n        \"value\": 8266\n      },\n      {\n        \"name\": \"instance\",\n        \"value\": 28\n      }\n    ],\n    \"seriesCountByLabelValuePair\": [\n      {\n        \"name\": \"job=prometheus\",\n        \"value\": 425\n      },\n      {\n        \"name\": \"instance=localhost:9090\",\n        \"value\": 425\n      }\n    ]\n  }\n}"
+						}
+					]
+				},
+				{
+					"name": "Returns info about WAL replay.",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/status/walreplay",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"status",
+								"walreplay"
+							]
+						},
+						"description": "The following endpoint returns information about the WAL replay\n\nResponse Data\n---\n\n**read:** The number of segments replayed so far. \n**total:** The total number segments needed to be replayed. \n**progress:** The progress of the replay (0 - 100%). \n**state:** The state of the replay. \n**Possible states:** \n  - **waiting:** Waiting for the replay to start. \n  - **in progress:** The replay is in progress. \n  - **done:** The replay has finished.\n  \n---\n**NOTE:** This endpoint is available before the server has been marked ready and is updated in real time to facilitate monitoring the progress of the WAL replay.\n\n---\n\nNew in v2.28\n"
+					},
+					"response": [
+						{
+							"name": "Success",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/status/walreplay",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"status",
+										"walreplay"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"cookie": [],
+							"body": "{\n  \"status\": \"success\",\n  \"data\": {\n    \"min\": 2,\n    \"max\": 5,\n    \"current\": 40,\n    \"state\": \"in progress\"\n  }\n}"
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "targets",
+			"item": [
+				{
+					"name": "Returns current target discovery.",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/targets?state=dropped",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"targets"
+							],
+							"query": [
+								{
+									"key": "state",
+									"value": "dropped",
+									"description": "The ```state``` query parameter allows the caller to filter by active or dropped targets, (e.g., ```state=active```, ```state=dropped```, ```state=any```).\n"
+								}
+							]
+						},
+						"description": "Both the active and dropped targets are part of the response by default. ```labels``` represents the label set after relabelling has occurred. ```discoveredLabels``` represent the unmodified labels retrieved during service discovery before relabelling has occurred.\n"
+					},
+					"response": [
+						{
+							"name": "Success",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/targets?state=dropped",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"targets"
+									],
+									"query": [
+										{
+											"key": "state",
+											"value": "dropped"
+										}
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"cookie": [],
+							"body": "{\n  \"status\": \"success\",\n  \"data\": {\n    \"activeTargets\": [\n      {\n        \"discoveredLabels\": {\n          \"__address__\": \"127.0.0.1:9090\",\n          \"__metrics_path__\": \"/metrics\",\n          \"__scheme__\": \"http\",\n          \"job\": \"prometheus\"\n        },\n        \"labels\": {\n          \"instance\": \"127.0.0.1:9090\",\n          \"job\": \"prometheus\"\n        },\n        \"scrapePool\": \"prometheus\",\n        \"scrapeUrl\": \"http://127.0.0.1:9090/metrics\",\n        \"globalUrl\": \"http://example-prometheus:9090/metrics\",\n        \"lastError\": \"\",\n        \"lastScrape\": \"2017-01-17T14:07:44.723Z\",\n        \"lastScrapeDuration\": 0.050688943,\n        \"health\": \"up\"\n      }\n    ],\n    \"droppedTargets\": [\n      {\n        \"discoveredLabels\": {\n          \"__address__\": \"127.0.0.1:9100\",\n          \"__metrics_path__\": \"/metrics\",\n          \"__scheme__\": \"http\",\n          \"job\": \"node\"\n        }\n      }\n    ]\n  }\n}"
+						},
+						{
+							"name": "Success\n\nNote that an empty array is still returned for targets that are filtered out. Other values are ignored.\n\nExample: ?state=active\n",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/targets?state=dropped",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"targets"
+									],
+									"query": [
+										{
+											"key": "state",
+											"value": "dropped"
+										}
+									]
+								}
+							},
+							"status": "Created",
+							"code": 201,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"cookie": [],
+							"body": "{\n  \"status\": \"success\",\n  \"data\": {\n    \"activeTargets\": [\n      {\n        \"discoveredLabels\": {\n          \"__address__\": \"127.0.0.1:9090\",\n          \"__metrics_path__\": \"/metrics\",\n          \"__scheme__\": \"http\",\n          \"job\": \"prometheus\"\n        },\n        \"labels\": {\n          \"instance\": \"127.0.0.1:9090\",\n          \"job\": \"prometheus\"\n        },\n        \"scrapePool\": \"prometheus\",\n        \"scrapeUrl\": \"http://127.0.0.1:9090/metrics\",\n        \"globalUrl\": \"http://example-prometheus:9090/metrics\",\n        \"lastError\": \"\",\n        \"lastScrape\": \"2017-01-17T14:07:44.723Z\",\n        \"lastScrapeDuration\": 50688943,\n        \"health\": \"up\"\n      }\n    ],\n    \"droppedTargets\": []\n  }\n}"
+						}
+					]
+				},
+				{
+					"name": "Returns target metadata",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/targets/metadata?match_target=irure&metric=irure&limit=-73947193.65422273",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"targets",
+								"metadata"
+							],
+							"query": [
+								{
+									"key": "match_target",
+									"value": "irure",
+									"description": "Label selectors that match targets by their label sets. All targets are selected if left empty.\n\nExample: ```match_target={job=\"prometheus\"}```\n"
+								},
+								{
+									"key": "metric",
+									"value": "irure",
+									"description": "A metric name to retrieve metadata for. All metric metadata is retrieved if left empty.\n\nExample: ```metric=go_goroutines```\n"
+								},
+								{
+									"key": "limit",
+									"value": "-73947193.65422273",
+									"description": "Maximum number of targets to match.\n\nExample: ```limit=2```\n"
+								}
+							]
+						},
+						"description": "The following endpoint returns metadata about metrics currently scraped from targets. This is experimental and might change in the future.\n\nThe ```data``` section of the query result consists of a list of objects that contain metric metadata and the target label set."
+					},
+					"response": [
+						{
+							"name": "Success\n\nThe following example returns all metadata entries for the ```go_goroutines``` metric from the first two targets with label ```job=\"prometheus\"```.\n",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/targets/metadata?match_target=irure&metric=irure&limit=-73947193.65422273",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"targets",
+										"metadata"
+									],
+									"query": [
+										{
+											"key": "match_target",
+											"value": "irure"
+										},
+										{
+											"key": "metric",
+											"value": "irure"
+										},
+										{
+											"key": "limit",
+											"value": "-73947193.65422273"
+										}
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"cookie": [],
+							"body": "{\n  \"status\": \"success\",\n  \"data\": [\n    {\n      \"target\": {\n        \"instance\": \"127.0.0.1:9090\",\n        \"job\": \"prometheus\"\n      },\n      \"type\": \"gauge\",\n      \"help\": \"Number of goroutines that currently exist.\",\n      \"unit\": \"\"\n    },\n    {\n      \"target\": {\n        \"instance\": \"127.0.0.1:9091\",\n        \"job\": \"prometheus\"\n      },\n      \"type\": \"gauge\",\n      \"help\": \"Number of goroutines that currently exist.\",\n      \"unit\": \"\"\n    }\n  ]\n}"
+						},
+						{
+							"name": "Success\n\nThe following example returns metadata for all metrics for all targets with label ```instance=\"127.0.0.1:9090```.\n",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/targets/metadata?match_target=irure&metric=irure&limit=-73947193.65422273",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"targets",
+										"metadata"
+									],
+									"query": [
+										{
+											"key": "match_target",
+											"value": "irure"
+										},
+										{
+											"key": "metric",
+											"value": "irure"
+										},
+										{
+											"key": "limit",
+											"value": "-73947193.65422273"
+										}
+									]
+								}
+							},
+							"status": "Created",
+							"code": 201,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"cookie": [],
+							"body": "{\n  \"status\": \"success\",\n  \"data\": [\n    {\n      \"target\": {\n        \"instance\": \"127.0.0.1:9090\",\n        \"job\": \"prometheus\"\n      },\n      \"type\": \"gauge\",\n      \"help\": \"Number of goroutines that currently exist.\",\n      \"unit\": \"\"\n    },\n    {\n      \"target\": {\n        \"instance\": \"127.0.0.1:9091\",\n        \"job\": \"prometheus\"\n      },\n      \"type\": \"gauge\",\n      \"help\": \"Number of goroutines that currently exist.\",\n      \"unit\": \"\"\n    }\n  ]\n}"
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "Returns current alertmanager discovery",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{baseUrl}}/alertmanagers",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"alertmanagers"
+					]
+				},
+				"description": "Returns an overview of the current state of the Prometheus alertmanager discovery\n\nBoth the active and dropped Alertmanagers are part of the response.\n"
+			},
+			"response": [
+				{
+					"name": "Success",
+					"originalRequest": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/alertmanagers",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"alertmanagers"
+							]
+						}
+					},
+					"status": "OK",
+					"code": 200,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "Content-Type",
+							"value": "application/json"
+						}
+					],
+					"cookie": [],
+					"body": "{\n  \"status\": \"success\",\n  \"data\": {\n    \"activeAlertmanagers\": [\n      {\n        \"url\": \"http://127.0.0.1:9090/api/v1/alerts\"\n      }\n    ],\n    \"droppedAlertmanagers\": [\n      {\n        \"url\": \"http://127.0.0.1:9093/api/v1/alerts\"\n      }\n    ]\n  }\n}"
+				}
+			]
+		},
+		{
+			"name": "Returns active alerts",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{baseUrl}}/alerts",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"alerts"
+					]
+				},
+				"description": "The /alerts endpoint returns a list of all active alerts.\n\nAs the /alerts endpoint is fairly new, it does not have the same stability guarantees as the overarching API v1.\n"
+			},
+			"response": [
+				{
+					"name": "Success",
+					"originalRequest": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/alerts",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"alerts"
+							]
+						}
+					},
+					"status": "OK",
+					"code": 200,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "Content-Type",
+							"value": "application/json"
+						}
+					],
+					"cookie": [],
+					"body": "{\n  \"data\": {\n    \"alerts\": [\n      {\n        \"activeAt\": \"2018-07-04T18:27:12.606Z\",\n        \"annotations\": {},\n        \"labels\": {\n          \"alertname\": \"my-alert\"\n        },\n        \"state\": \"firing\",\n        \"value\": 1\n      }\n    ]\n  },\n  \"status\": \"success\"\n}"
+				}
+			]
+		},
+		{
+			"name": "Returns label values",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{baseUrl}}/label/:label_name/values?start=irure&end=irure&match[]=irure",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"label",
+						":label_name",
+						"values"
+					],
+					"query": [
+						{
+							"key": "start",
+							"value": "irure",
+							"description": "Start timestamp. Optional.\n"
+						},
+						{
+							"key": "end",
+							"value": "irure",
+							"description": "End timestamp. Optional.\n"
+						},
+						{
+							"key": "match[]",
+							"value": "irure",
+							"description": "Repeated series selector argument that selects the series from which to read the label values. Optional.\n"
+						}
+					],
+					"variable": [
+						{
+							"key": "label_name",
+							"value": "irure",
+							"description": "(Required) Label name\n\nExample: ```/label/job/values```\n"
+						}
+					]
+				},
+				"description": "The following endpoint returns a list of label values for a provided label name\n\nThe ```data``` section of the JSON response is a list of string label values.\n\n---\n**NOTE:** These API endpoints may return metadata for series for which there is no sample within the selected time range, and/or for series whose samples have been marked as deleted via the deletion API endpoint. The exact extent of additionally returned series metadata is an implementation detail that may change in the future.\n\n---\n"
+			},
+			"response": [
+				{
+					"name": "Success\n\nThis example queries for all label values for the job label\n",
+					"originalRequest": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/label/:label_name/values?start=irure&end=irure&match[]=irure",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"label",
+								":label_name",
+								"values"
+							],
+							"query": [
+								{
+									"key": "start",
+									"value": "irure"
+								},
+								{
+									"key": "end",
+									"value": "irure"
+								},
+								{
+									"key": "match[]",
+									"value": "irure"
+								}
+							],
+							"variable": [
+								{
+									"key": "label_name",
+									"value": "irure",
+									"description": "(Required) Label name\n\nExample: ```/label/job/values```\n"
+								}
+							]
+						}
+					},
+					"status": "OK",
+					"code": 200,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "Content-Type",
+							"value": "application/json"
+						}
+					],
+					"cookie": [],
+					"body": "{\n  \"status\": \"success\",\n  \"data\": [\n    \"node\",\n    \"prometheus\"\n  ]\n}"
+				}
+			]
+		},
+		{
+			"name": "Returns metric metadata",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{baseUrl}}/metadata",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"metadata"
+					],
+					"query": [
+						{
+							"key": "limit",
+							"value": "100",
+							"description": "(Required) Maximum number of metrics to return.\n\nExample: ```?limit=2```\n",
+							"disabled": true
+						},
+						{
+							"key": "metric",
+							"value": "irure",
+							"description": "A metric name to filter metadata for. All metric metadata is retrieved if left empty.\n\nExample: ```?metric=http_requests_total```\n",
+							"disabled": true
+						}
+					]
+				},
+				"description": "It returns metadata about metrics currently scrapped from targets. However, it does not provide any target information. This is considered experimental and might change in the future.\n\nThe data section of the query result consists of an object where each key is a metric name and each value is a list of unique metadata objects, as exposed for that metric name across all targets.\n"
+			},
+			"response": [
+				{
+					"name": "Success\n\nThe following example returns two metrics. Note that the metric ```http_requests_total``` has more than one object in the list. At least one target has a value for ```HELP``` that do not match with the rest.\n",
+					"originalRequest": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/metadata?limit=-73947193.65422273&metric=irure",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"metadata"
+							],
+							"query": [
+								{
+									"key": "limit",
+									"value": "-73947193.65422273"
+								},
+								{
+									"key": "metric",
+									"value": "irure"
+								}
+							]
+						}
+					},
+					"status": "OK",
+					"code": 200,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "Content-Type",
+							"value": "application/json"
+						}
+					],
+					"cookie": [],
+					"body": "{\n  \"status\": \"success\",\n  \"data\": {\n    \"cortex_ring_tokens\": [\n      {\n        \"type\": \"gauge\",\n        \"help\": \"Number of tokens in the ring\",\n        \"unit\": \"\"\n      }\n    ],\n    \"http_requests_total\": [\n      {\n        \"type\": \"counter\",\n        \"help\": \"Number of HTTP requests\",\n        \"unit\": \"\"\n      },\n      {\n        \"type\": \"counter\",\n        \"help\": \"Amount of HTTP requests\",\n        \"unit\": \"\"\n      }\n    ]\n  }\n}"
+				},
+				{
+					"name": "Success\n\nThe following example returns metadata only for the metric ```http_requests_total```.\n",
+					"originalRequest": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/metadata?limit=-73947193.65422273&metric=irure",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"metadata"
+							],
+							"query": [
+								{
+									"key": "limit",
+									"value": "-73947193.65422273"
+								},
+								{
+									"key": "metric",
+									"value": "irure"
+								}
+							]
+						}
+					},
+					"status": "Created",
+					"code": 201,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "Content-Type",
+							"value": "application/json"
+						}
+					],
+					"cookie": [],
+					"body": "{\n  \"status\": \"success\",\n  \"data\": {\n    \"http_requests_total\": [\n      {\n        \"type\": \"counter\",\n        \"help\": \"Number of HTTP requests\",\n        \"unit\": \"\"\n      },\n      {\n        \"type\": \"counter\",\n        \"help\": \"Amount of HTTP requests\",\n        \"unit\": \"\"\n      }\n    ]\n  }\n}"
+				}
+			]
+		},
+		{
+			"name": "Returns currently loaded rules",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{baseUrl}}/rules?type=alert",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"rules"
+					],
+					"query": [
+						{
+							"key": "type",
+							"value": "alert",
+							"description": "Return only the alerting rules (e.g. ```type=alert```) or the recording rules (e.g. ```type=record```). When the parameter is absent or empty, no filtering is done.\n"
+						}
+					]
+				},
+				"description": "The ```/rules``` API endpoint returns a list of alerting and recording rules that are currently loaded. In addition it returns the currently active alerts fired by the Prometheus instance of each alerting rule.\n\nAs the ```/rules``` endpoint is fairly new, it does not have the same stability guarantees as the overarching API v1."
+			},
+			"response": [
+				{
+					"name": "Success",
+					"originalRequest": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/rules?type=alert",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"rules"
+							],
+							"query": [
+								{
+									"key": "type",
+									"value": "alert"
+								}
+							]
+						}
+					},
+					"status": "OK",
+					"code": 200,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "Content-Type",
+							"value": "application/json"
+						}
+					],
+					"cookie": [],
+					"body": "{\n  \"data\": {\n    \"groups\": [\n      {\n        \"rules\": [\n          {\n            \"alerts\": [\n              {\n                \"activeAt\": \"2018-07-04T18:27:12.606Z\",\n                \"annotations\": {\n                  \"summary\": \"High request latency\"\n                },\n                \"labels\": {\n                  \"alertname\": \"HighRequestLatency\",\n                  \"severity\": \"page\"\n                },\n                \"state\": \"firing\",\n                \"value\": 1\n              }\n            ],\n            \"annotations\": {\n              \"summary\": \"High request latency\"\n            },\n            \"duration\": 600,\n            \"health\": \"ok\",\n            \"labels\": {\n              \"severity\": \"page\"\n            },\n            \"name\": \"HighRequestLatency\",\n            \"query\": \"job:request_latency_seconds:mean5m{job=\\\"myjob\\\"} > 0.5\",\n            \"type\": \"alerting\"\n          },\n          {\n            \"health\": \"ok\",\n            \"name\": \"job:http_inprogress_requests:sum\",\n            \"query\": \"sum by (job) (http_inprogress_requests)\",\n            \"type\": \"recording\"\n          }\n        ],\n        \"file\": \"/rules.yaml\",\n        \"interval\": 60,\n        \"name\": \"example\"\n      }\n    ]\n  },\n  \"status\": \"success\"\n}"
+				}
+			]
+		}
+	],
+	"auth": {
+		"type": "basic",
+		"basic": [
+			{
+				"key": "password",
+				"value": "{{consolesPassword}}",
+				"type": "string"
+			},
+			{
+				"key": "username",
+				"value": "verrazzano",
+				"type": "string"
+			}
+		]
+	},
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "{{prometheusUrl}}/api/v1",
+			"type": "string"
+		}
+	]
+}
