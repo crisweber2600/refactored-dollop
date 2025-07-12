@@ -8,21 +8,30 @@ provides both the domain logic and data layer.
 ## Quick Start
 
 1. Install the [.NET 9 SDK](https://dotnet.microsoft.com/en-us/download).
+2. Run `./dotnet-install.sh -Channel 8.0 -Runtime dotnet` if the test host reports a missing framework.
 
-2. Run `dotnet build` to compile all projects.
-3. Run `dotnet test` to execute the unit and BDD tests.
-4. Optionally run `dotnet test --collect:"XPlat Code Coverage"` to verify coverage (should exceed 80%).
-5. Reference `ExampleLib` from your own application to explore the validation
+3. Run `dotnet build` to compile all projects.
+4. Run `dotnet test` to execute the unit and BDD tests.
+5. Optionally run `dotnet test --collect:"XPlat Code Coverage"` to verify coverage (should exceed 80%).
+6. Reference `ExampleLib` from your own application to explore the validation
    workflow. The original runner project has been removed in favor of a leaner
    library.
-6. Execute the `run tests` task in VS Code to verify everything locally.
-7. Use `AddSetupValidation` to configure the data layer and a default plan in a single statement.
-8. Call `AddValidatorService` to enable manual rule checks during startup.
-9. Register `SaveCommitConsumer` using `AddSaveCommit` to audit committed saves.
-10. Use `SaveChangesWithPlanAsync` to automatically apply registered summarisation plans when saving entities.
-11. Mongo repositories now trigger validation automatically via an interceptor so you rarely call `SaveChanges` yourself.
-12. Configure complex validation plans using `AddValidationFlows` and a JSON file.
-13. Use `MetricProperty`, `ThresholdType` and `ThresholdValue` keys to fine tune each registered entity.
+7. Execute the `run tests` task in VS Code to verify everything locally.
+8. Use `AddSetupValidation` to configure the data layer and a default plan in a single statement.
+9. Call `AddValidatorService` to enable manual rule checks during startup.
+10. Register `SaveCommitConsumer` using `AddSaveCommit` to audit committed saves.
+11. Use `SetupDatabase<YourDbContext>` or `SetupMongoDatabase` to register the data layer in one line.
+12. Use `SaveChangesWithPlanAsync` to automatically apply registered summarisation plans when saving entities.
+13. Mongo repositories now trigger validation automatically via an interceptor so you rarely call `SaveChanges` yourself.
+14. Configure complex validation plans using `AddValidationFlows` and a JSON file.
+15. Use `MetricProperty`, `ThresholdType` and `ThresholdValue` keys to fine tune each registered entity.
+```csharp
+// EF Core setup
+services.SetupDatabase<MyDbContext>("Server=. ;Database=example;");
+// MongoDB setup
+services.SetupMongoDatabase("mongodb://localhost:27017","exampledb");
+```
+
 
 ## Event-Driven Demo
 
@@ -79,6 +88,24 @@ services.AddSaveValidation<Order>(o => o.LineAmounts.Sum(), ThresholdType.Percen
 * `ThresholdValue` sets the allowable change and is easily tuned per entity.
 * These settings can also be supplied in a JSON file when using `AddValidationFlows`.
 * Audits of each save are stored in a `SaveAudit` table derived from `BaseEntity` so every entry has an integer key and validation flag.
+
+### Validation Checks
+
+Two common strategies are provided out of the box:
+
+```csharp
+// Ensure the count of records does not drop below one
+var rules = new ValidationRuleSet<YourEntity>(e => 1,
+    new ValidationRule(ValidationStrategy.Count, 1));
+
+// Ensure the Price property does not change by more than 10%
+services.AddSaveValidation<YourEntity>(e => (decimal)e.Price,
+    ThresholdType.PercentChange, 0.1m);
+```
+
+If validation fails a `KeyNotFoundException` or `InvalidOperationException` is
+thrown depending on the plan provider. Successful validation simply saves the
+entity.
 
 Override the plan later via `IValidationPlanProvider`:
 
@@ -330,6 +357,17 @@ await uow.SaveChangesWithPlanAsync<YourEntity>();
 ```
 Inject `IValidationPlanProvider` when constructing a unit of work so plans can be resolved on demand.
 
+### Unified Validation Service
+
+Both EF Core and MongoDB now implement `IValidationService`. Register `ValidationService` for a DbContext or `MongoValidationService` for a Mongo setup. The unit of work depends only on this interface so switching providers requires no code changes.
+
+```csharp
+services.SetupDatabase<MyDbContext>("...")
+        .AddSaveValidation<MyEntity>(e => e.Id);
+```
+
+The helper also registers an in-memory `IValidationPlanProvider` so you can add plans through `AddSaveValidation` or `AddValidationFlows`.
+
 ### Manual Validation Service
 
 `ManualValidatorService` runs simple predicates registered per type. Use it when
@@ -442,6 +480,8 @@ If tests or demos fail to run, review these suggestions:
 - Ignore MassTransit outbox warnings in demo projects.
 - Remove `bin` and `obj` folders after SDK upgrades to avoid stale builds.
 - Use `--no-restore` and `--no-build` flags for quick test iterations.
+- If the test host cannot start, install the .NET 8 runtime using
+  `./dotnet-install.sh -Channel 8.0 -Runtime dotnet`.
 
 
 ## External Flow Configuration
