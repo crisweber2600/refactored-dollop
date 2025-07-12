@@ -11,7 +11,7 @@ public class SummarisationValidatorTests
     [Fact]
     public void NoPreviousAudit_ReturnsTrue()
     {
-        var plan = new SummarisationPlan<YourEntity>(e => e.Id, ThresholdType.RawDifference, 5);
+        var plan = new ValidationPlan<YourEntity>(e => e.Id, ThresholdType.RawDifference, 5);
         var entity = new YourEntity { Id = 10 };
 
         var result = _validator.Validate(entity, null, plan);
@@ -22,7 +22,7 @@ public class SummarisationValidatorTests
     [Fact]
     public void RawDifferenceWithinThreshold_ReturnsTrue()
     {
-        var plan = new SummarisationPlan<YourEntity>(e => e.Id, ThresholdType.RawDifference, 5);
+        var plan = new ValidationPlan<YourEntity>(e => e.Id, ThresholdType.RawDifference, 5);
         var entity = new YourEntity { Id = 12 };
         var previous = new SaveAudit { MetricValue = 10 };
 
@@ -34,7 +34,7 @@ public class SummarisationValidatorTests
     [Fact]
     public void PercentChangeExceedsThreshold_ReturnsFalse()
     {
-        var plan = new SummarisationPlan<YourEntity>(e => e.Id, ThresholdType.PercentChange, 0.1m);
+        var plan = new ValidationPlan<YourEntity>(e => e.Id, ThresholdType.PercentChange, 0.1m);
         var entity = new YourEntity { Id = 12 };
         var previous = new SaveAudit { MetricValue = 10 };
 

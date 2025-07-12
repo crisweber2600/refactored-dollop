@@ -11,8 +11,8 @@ public class SaveValidationConsumerTests
     [Fact]
     public async Task Consume_AddsAuditAndPublishesEvent()
     {
-        var planStore = new InMemorySummarisationPlanStore();
-        var plan = new SummarisationPlan<YourEntity>(e => e.Id, ThresholdType.RawDifference, 5);
+        var planStore = new InMemoryValidationPlanProvider();
+        var plan = new ValidationPlan<YourEntity>(e => e.Id, ThresholdType.RawDifference, 5);
         planStore.AddPlan(plan);
         var auditRepo = new InMemorySaveAuditRepository();
         var validator = new SummarisationValidator<YourEntity>();

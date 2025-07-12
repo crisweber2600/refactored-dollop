@@ -1,5 +1,6 @@
 using ExampleLib.Messages;
 using MassTransit;
+using ExampleLib;
 
 namespace ExampleLib.Domain;
 
@@ -9,10 +10,10 @@ namespace ExampleLib.Domain;
 /// </summary>
 public class SaveCommitConsumer<T> : IConsumer<SaveValidated<T>>
 {
-    private readonly ISummarisationPlanStore _planStore;
+    private readonly IValidationPlanProvider _planStore;
     private readonly ISaveAuditRepository _auditRepository;
 
-    public SaveCommitConsumer(ISummarisationPlanStore planStore, ISaveAuditRepository auditRepository)
+    public SaveCommitConsumer(IValidationPlanProvider planStore, ISaveAuditRepository auditRepository)
     {
         _planStore = planStore;
         _auditRepository = auditRepository;

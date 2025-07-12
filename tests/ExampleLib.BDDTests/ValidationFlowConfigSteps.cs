@@ -37,7 +37,7 @@ public class ValidationFlowConfigSteps
     [Then("a plan for YourEntity exists with threshold (.*)")]
     public void ThenPlanWithThreshold(decimal value)
     {
-        var store = _provider!.GetRequiredService<ISummarisationPlanStore>();
+        var store = _provider!.GetRequiredService<IValidationPlanProvider>();
         var plan = store.GetPlan<YourEntity>();
         Assert.Equal(value, plan.ThresholdValue);
     }
@@ -45,7 +45,7 @@ public class ValidationFlowConfigSteps
     [Then("the plan uses (.*) threshold")]
     public void ThenPlanUsesType(string type)
     {
-        var store = _provider!.GetRequiredService<ISummarisationPlanStore>();
+        var store = _provider!.GetRequiredService<IValidationPlanProvider>();
         var plan = store.GetPlan<YourEntity>();
         Assert.Equal(Enum.Parse<ThresholdType>(type), plan.ThresholdType);
     }

@@ -57,7 +57,7 @@ public static class ServiceCollectionExtensions
         services.AddDbContext<TContext>(o => o.UseSqlServer(connectionString));
         services.AddScoped<IValidationService, ValidationService>();
         services.AddScoped<IUnitOfWork, UnitOfWork<TContext>>();
-        services.AddSingleton<ExampleLib.Domain.ISummarisationPlanStore, ExampleData.Infrastructure.DataInMemorySummarisationPlanStore>();
+        services.AddSingleton<ExampleLib.IValidationPlanProvider, ExampleData.Infrastructure.DataInMemoryValidationPlanProvider>();
         services.AddScoped(typeof(IGenericRepository<>), typeof(EfGenericRepository<>));
         return services;
     }
@@ -77,7 +77,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IValidationService, MongoValidationService>();
         services.AddScoped<IUnitOfWork, MongoUnitOfWork>();
         services.AddScoped(typeof(IMongoCollectionInterceptor<>), typeof(MongoCollectionInterceptor<>));
-        services.AddSingleton<ExampleLib.Domain.ISummarisationPlanStore, ExampleData.Infrastructure.DataInMemorySummarisationPlanStore>();
+        services.AddSingleton<ExampleLib.IValidationPlanProvider, ExampleData.Infrastructure.DataInMemoryValidationPlanProvider>();
         services.AddScoped(typeof(IGenericRepository<>), typeof(MongoGenericRepository<>));
         return services;
     }

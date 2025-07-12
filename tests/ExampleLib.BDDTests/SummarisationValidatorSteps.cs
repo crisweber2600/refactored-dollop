@@ -9,7 +9,7 @@ namespace ExampleLib.BDDTests;
 public class SummarisationValidatorSteps
 {
     private readonly ISummarisationValidator<YourEntity> _validator;
-    private SummarisationPlan<YourEntity>? _plan;
+    private ValidationPlan<YourEntity>? _plan;
     private SaveAudit? _previous;
     private YourEntity _entity = new();
     private bool _result;
@@ -19,11 +19,11 @@ public class SummarisationValidatorSteps
         _validator = validator;
     }
 
-    [Given("a summarisation plan using (.*) threshold (.*)")]
+    [Given("a validation plan using (.*) threshold (.*)")]
     public void GivenAPlan(string type, decimal threshold)
     {
         var t = Enum.Parse<ThresholdType>(type);
-        _plan = new SummarisationPlan<YourEntity>(e => e.Id, t, threshold);
+        _plan = new ValidationPlan<YourEntity>(e => e.Id, t, threshold);
     }
 
     [Given("no previous audit")]

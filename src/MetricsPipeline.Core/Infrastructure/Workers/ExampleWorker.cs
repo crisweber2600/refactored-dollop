@@ -1,4 +1,4 @@
-using ExampleLib.Domain;
+using ExampleLib;
 using MetricsPipeline.Core.Domain;
 
 namespace MetricsPipeline.Core.Infrastructure.Workers;
@@ -6,12 +6,12 @@ namespace MetricsPipeline.Core.Infrastructure.Workers;
 public class ExampleWorker
 {
     private readonly ISaveAuditRepository _auditRepository;
-    private readonly ISummarisationPlanStore _planStore;
+    private readonly IValidationPlanProvider _planStore;
     private readonly ISummarisationValidator<ExampleEntity> _validator;
     private readonly ValueProvider _provider;
 
     public ExampleWorker(ISaveAuditRepository auditRepository,
-                         ISummarisationPlanStore planStore,
+                         IValidationPlanProvider planStore,
                          ISummarisationValidator<ExampleEntity> validator,
                          ValueProvider provider)
     {

@@ -8,8 +8,8 @@ public class InMemoryStoreTests
     [Fact]
     public void PlanStore_AddAndRetrieve_Works()
     {
-        var store = new InMemorySummarisationPlanStore();
-        var plan = new SummarisationPlan<string>(_ => 1m, ThresholdType.RawDifference, 0);
+        var store = new InMemoryValidationPlanProvider();
+        var plan = new ValidationPlan<string>(_ => 1m, ThresholdType.RawDifference, 0);
         store.AddPlan(plan);
 
         var result = store.GetPlan<string>();

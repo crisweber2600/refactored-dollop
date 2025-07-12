@@ -21,8 +21,8 @@ public class MongoRepoSteps
         _runner = MongoDbRunner.Start();
         var client = new MongoClient(_runner.ConnectionString);
         _database = client.GetDatabase("bddrepo");
-        var store = new ExampleData.Infrastructure.DataInMemorySummarisationPlanStore();
-        store.AddPlan(new ExampleLib.Domain.SummarisationPlan<YourEntity>(e => e.Id, ExampleLib.Domain.ThresholdType.RawDifference, 0));
+        var store = new ExampleData.Infrastructure.DataInMemoryValidationPlanProvider();
+        store.AddPlan(new ExampleLib.ValidationPlan<YourEntity>(e => e.Id, ExampleLib.ThresholdType.RawDifference, 0));
         var uow = new MongoUnitOfWork(_database, new MongoValidationService(_database), store);
         _repository = new MongoGenericRepository<YourEntity>(_database, uow);
     }
