@@ -11,20 +11,21 @@ provides both the domain logic and data layer.
 2. Run `./dotnet-install.sh -Channel 8.0 -Runtime dotnet` if the test host reports a missing framework.
 
 3. Run `dotnet build` to compile all projects.
-4. Run `dotnet test` to execute the unit and BDD tests.
-5. Optionally run `dotnet test --collect:"XPlat Code Coverage"` to verify coverage (should exceed 80%).
+4. Run `dotnet test` to execute the unit tests and ensure the validation service behaves correctly.
+5. Optionally run `dotnet test --collect:"XPlat Code Coverage"` to generate a coverage report.
 6. Reference `ExampleLib` from your own application to explore the validation
    workflow. The original runner project has been removed in favor of a leaner
    library.
 7. Execute the `run tests` task in VS Code to verify everything locally.
 8. Use `AddSetupValidation` to configure the data layer and a default plan in a single statement.
 9. Call `AddValidatorService` to enable manual rule checks during startup.
-10. Register `SaveCommitConsumer` using `AddSaveCommit` to audit committed saves.
+10. Use `AddSaveCommit` to audit committed saves without hosting a consumer.
 11. Use `SetupDatabase<YourDbContext>` or `SetupMongoDatabase` to register the data layer in one line.
 12. Use `SaveChangesWithPlanAsync` to automatically apply registered summarisation plans when saving entities.
 13. Mongo repositories now trigger validation automatically via an interceptor so you rarely call `SaveChanges` yourself.
 14. Configure complex validation plans using `AddValidationFlows` and a JSON file.
 15. Use `MetricProperty`, `ThresholdType` and `ThresholdValue` keys to fine tune each registered entity.
+16. Coverage settings can be tweaked with `coverage.runsettings` if additional exclusions are required.
 ```csharp
 // EF Core setup
 services.SetupDatabase<MyDbContext>("Server=. ;Database=example;");
@@ -35,11 +36,13 @@ services.SetupMongoDatabase("mongodb://localhost:27017","exampledb");
 
 ## Event-Driven Demo
 
-Previous revisions included a small demo showcasing two services
-communicating over a bus. The code has been removed to streamline the
-repository, but the documentation remains for historical context.
+Previous revisions included a worker demo and MassTransit consumers.
+Those samples have been removed so the library focuses solely on
+validation and repository helpers.
 Use the library in your own worker or web project to replicate the
 behaviour.
+The documentation retains the message flow for reference but all
+consumer tests have been deleted.
 
 8. Register `AddDeleteValidation` or `AddDeleteCommit` to handle delete events.
 ## Validation Workflow
@@ -218,6 +221,8 @@ library itself. You can still create a custom worker using the classes under
   library.
 - `src/MetricsPipeline.Core` – worker components used across samples.
 - `tests/ExampleLib.Tests` – unit tests covering repository and validation logic.
+- `ValidationServiceTests` now exercise Sum, Average, Count and Variance
+  strategies using the in-memory provider.
 - `tests/ExampleLib.BDDTests` – BDD scenarios demonstrating end‑to‑end flows.
 - `docs` – guides such as the EF Core replication how‑to.
 
@@ -367,6 +372,12 @@ services.SetupDatabase<MyDbContext>("...")
 ```
 
 The helper also registers an in-memory `IValidationPlanProvider` so you can add plans through `AddSaveValidation` or `AddValidationFlows`.
+
+`IValidationService` provides several strategies:
+* `Sum` totals a numeric field.
+* `Average` computes the mean value.
+* `Count` returns the number of records.
+* `Variance` calculates statistical variance.
 
 ### Manual Validation Service
 
