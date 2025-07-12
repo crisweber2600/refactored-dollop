@@ -15,8 +15,6 @@ public static class Dependencies
     public static IServiceCollection CreateServices()
     {
         var services = new ServiceCollection();
-        services.AddTransient<ICalculator, Calculator>();
-        services.AddTransient<IGuideReader, FileGuideReader>();
         services.AddDbContext<YourDbContext>(opts => opts.UseInMemoryDatabase(Guid.NewGuid().ToString()));
         services.AddScoped(typeof(IGenericRepository<>), typeof(EfGenericRepository<>));
         services.AddScoped<IValidationService, ValidationService>();
