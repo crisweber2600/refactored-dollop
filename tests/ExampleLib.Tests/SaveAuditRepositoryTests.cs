@@ -1,6 +1,5 @@
 using ExampleData;
 using ExampleLib.Domain;
-using SaveAudit = ExampleLib.Domain.SaveAudit;
 using ExampleLib.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 
@@ -17,7 +16,7 @@ public class SaveAuditRepositoryTests
 
         using var context = new YourDbContext(options);
         context.Database.EnsureCreated();
-        context.SaveAudits.Add(new ExampleData.SaveAudit
+        context.SaveAudits.Add(new SaveAudit
         {
             EntityType = "User",
             EntityId = "1",
@@ -25,7 +24,7 @@ public class SaveAuditRepositoryTests
             Validated = true,
             Timestamp = DateTimeOffset.UtcNow.AddMinutes(-5)
         });
-        context.SaveAudits.Add(new ExampleData.SaveAudit
+        context.SaveAudits.Add(new SaveAudit
         {
             EntityType = "User",
             EntityId = "1",

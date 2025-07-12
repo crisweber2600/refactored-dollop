@@ -1,7 +1,5 @@
 using ExampleData;
 using ExampleLib.Domain;
-using DataSaveAudit = ExampleData.SaveAudit;
-using DomainSaveAudit = ExampleLib.Domain.SaveAudit;
 using Microsoft.EntityFrameworkCore;
 
 namespace ExampleLib.Infrastructure;
@@ -19,7 +17,7 @@ public class EfSaveAuditRepository : ISaveAuditRepository
     }
 
     /// <inheritdoc />
-    public DomainSaveAudit? GetLastAudit(string entityType, string entityId)
+    public SaveAudit? GetLastAudit(string entityType, string entityId)
     {
         var entity = _context.SaveAudits
             .AsNoTracking()
@@ -28,33 +26,16 @@ public class EfSaveAuditRepository : ISaveAuditRepository
             .OrderByDescending(a => a.Id)
             .FirstOrDefault();
 
-        return entity == null
-            ? null
-            : new DomainSaveAudit
-            {
-                EntityType = entity.EntityType,
-                EntityId = entity.EntityId,
-                MetricValue = entity.MetricValue,
-                Validated = entity.Validated,
-                Timestamp = entity.Timestamp
-            };
+        return entity;
     }
 
     /// <inheritdoc />
-    public void AddAudit(DomainSaveAudit audit)
+    public void AddAudit(SaveAudit audit)
     {
         var entity = _context.SaveAudits.FirstOrDefault(a => a.EntityType == audit.EntityType && a.EntityId == audit.EntityId);
         if (entity == null)
         {
-            entity = new DataSaveAudit
-            {
-                EntityType = audit.EntityType,
-                EntityId = audit.EntityId,
-                MetricValue = audit.MetricValue,
-                Timestamp = audit.Timestamp,
-                Validated = audit.Validated
-            };
-            _context.SaveAudits.Add(entity);
+            _context.SaveAudits.Add(audit);
         }
         else
         {

@@ -1,4 +1,5 @@
 using System.Linq.Expressions;
+using ExampleLib.Domain;
 using Microsoft.EntityFrameworkCore;
 
 namespace ExampleData;

@@ -6,6 +6,9 @@ namespace ExampleLib.Domain;
 /// </summary>
 public class SaveAudit
 {
+    /// <summary>Database identifier used by EF Core.</summary>
+    public int Id { get; set; }
+
     public string EntityType { get; set; } = string.Empty;
     public string EntityId { get; set; } = string.Empty;
     public decimal MetricValue { get; set; }
