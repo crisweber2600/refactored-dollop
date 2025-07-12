@@ -17,8 +17,8 @@ public class SaveCommitConsumerSteps
     [Given("a SaveCommit consumer")]
     public void GivenConsumer()
     {
-        var store = new InMemorySummarisationPlanStore();
-        store.AddPlan(new SummarisationPlan<YourEntity>(e => e.Id, ThresholdType.RawDifference, 1));
+        var store = new InMemoryValidationPlanProvider();
+        store.AddPlan(new ValidationPlan<YourEntity>(e => e.Id, ThresholdType.RawDifference, 1));
         _repo = new InMemorySaveAuditRepository();
         _harness = new InMemoryTestHarness();
         _harness.Consumer(() => new SaveCommitConsumer<YourEntity>(store, _repo));

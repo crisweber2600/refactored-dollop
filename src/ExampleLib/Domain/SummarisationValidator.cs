@@ -1,16 +1,17 @@
 using System;
+using ExampleLib;
 
 namespace ExampleLib.Domain;
 
 /// <summary>
 /// Default implementation of <see cref="ISummarisationValidator{T}"/>.
 /// Compares the current entity metric with the previous saved metric
-/// according to the rules defined in a <see cref="SummarisationPlan{T}"/>.
+/// according to the rules defined in a <see cref="ValidationPlan{T}"/>.
 /// </summary>
 public class SummarisationValidator<T> : ISummarisationValidator<T>
 {
     /// <inheritdoc />
-    public bool Validate(T currentEntity, SaveAudit previousAudit, SummarisationPlan<T> plan)
+    public bool Validate(T currentEntity, SaveAudit previousAudit, ValidationPlan<T> plan)
     {
         if (plan == null) throw new ArgumentNullException(nameof(plan));
         if (currentEntity == null) throw new ArgumentNullException(nameof(currentEntity));

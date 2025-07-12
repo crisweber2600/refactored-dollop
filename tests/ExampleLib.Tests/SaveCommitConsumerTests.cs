@@ -12,8 +12,8 @@ public class SaveCommitConsumerTests
     [Fact(Skip = "Fails on CI environment")] 
     public async Task Consume_StoresAudit()
     {
-        var planStore = new InMemorySummarisationPlanStore();
-        planStore.AddPlan(new SummarisationPlan<YourEntity>(e => e.Id, ThresholdType.RawDifference, 1));
+        var planStore = new InMemoryValidationPlanProvider();
+        planStore.AddPlan(new ValidationPlan<YourEntity>(e => e.Id, ThresholdType.RawDifference, 1));
         var repo = new InMemorySaveAuditRepository();
 
         using var harness = new InMemoryTestHarness();
@@ -38,9 +38,9 @@ public class SaveCommitConsumerTests
     [Fact(Skip = "Fails on CI environment")]
     public async Task Consume_PublishesFaultOnError()
     {
-        var planStore = new InMemorySummarisationPlanStore();
+        var planStore = new InMemoryValidationPlanProvider();
         // plan that throws to simulate failure
-        planStore.AddPlan(new SummarisationPlan<YourEntity>(_ => throw new InvalidOperationException(), ThresholdType.RawDifference, 1));
+        planStore.AddPlan(new ValidationPlan<YourEntity>(_ => throw new InvalidOperationException(), ThresholdType.RawDifference, 1));
         var repo = new InMemorySaveAuditRepository();
 
         using var harness = new InMemoryTestHarness();

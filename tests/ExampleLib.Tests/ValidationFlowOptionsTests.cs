@@ -43,7 +43,7 @@ public class ValidationFlowOptionsTests
         var services = new ServiceCollection();
         services.AddValidationFlows(opts);
         var provider = services.BuildServiceProvider();
-        var store = provider.GetRequiredService<ISummarisationPlanStore>();
+        var store = provider.GetRequiredService<IValidationPlanProvider>();
         var plan = store.GetPlan<YourEntity>();
         Assert.Equal(ThresholdType.RawDifference, plan.ThresholdType);
         Assert.Equal(2m, plan.ThresholdValue);

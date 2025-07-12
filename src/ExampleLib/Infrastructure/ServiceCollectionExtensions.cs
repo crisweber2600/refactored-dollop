@@ -30,11 +30,11 @@ public static class ServiceCollectionExtensions
     {
         services.AddSingleton(typeof(ISummarisationValidator<>), typeof(SummarisationValidator<>));
         services.AddSingleton<ISaveAuditRepository, InMemorySaveAuditRepository>();
-        services.AddSingleton<ISummarisationPlanStore>(sp =>
+        services.AddSingleton<IValidationPlanProvider>(sp =>
         {
-            var store = new InMemorySummarisationPlanStore();
+            var store = new InMemoryValidationPlanProvider();
             Func<T, decimal> selector = metricSelector ?? DefaultSelector<T>;
-            store.AddPlan(new SummarisationPlan<T>(selector, thresholdType, thresholdValue));
+            store.AddPlan(new ValidationPlan<T>(selector, thresholdType, thresholdValue));
             return store;
         });
 

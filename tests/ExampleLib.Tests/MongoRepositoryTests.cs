@@ -19,8 +19,8 @@ public class MongoRepositoryTests : IDisposable
         _runner = MongoDbRunner.Start();
         var client = new MongoClient(_runner.ConnectionString);
         _database = client.GetDatabase("repo-tests");
-        var store = new DataInMemorySummarisationPlanStore();
-        store.AddPlan(new SummarisationPlan<YourEntity>(e => e.Id, ThresholdType.RawDifference, 0));
+        var store = new DataInMemoryValidationPlanProvider();
+        store.AddPlan(new ValidationPlan<YourEntity>(e => e.Id, ThresholdType.RawDifference, 0));
         var uow = new MongoUnitOfWork(_database, new MongoValidationService(_database), store);
         _repo = new MongoGenericRepository<YourEntity>(_database, uow);
     }
