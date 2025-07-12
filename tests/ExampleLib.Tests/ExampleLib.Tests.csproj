@@ -19,7 +19,6 @@
   <ItemGroup>
     <Using Include="Xunit" />
   <ProjectReference Include="../../src/ExampleLib/ExampleLib.csproj" />
-  <ProjectReference Include="../../src/MetricsPipeline.Core/MetricsPipeline.Core.csproj" />
   </ItemGroup>
 
   <!-- ExampleData merged into ExampleLib -->

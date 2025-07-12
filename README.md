@@ -13,8 +13,8 @@ provides both the domain logic and data layer.
 3. Run `dotnet test` to execute the unit and BDD tests.
 4. Optionally run `dotnet test --collect:"XPlat Code Coverage"` to verify coverage (should exceed 80%).
 5. Reference `ExampleLib` from your own application to explore the validation
-   workflow. The original runner project has been removed in favor of a leaner
-   library.
+   workflow. The previous `MetricsPipeline.Core` helpers were removed so the
+   library now stands alone.
 6. Execute the `run tests` task in VS Code to verify everything locally.
 7. Use `AddSetupValidation` to configure the data layer and a default plan in a single statement.
 8. Call `AddValidatorService` to enable manual rule checks during startup.
@@ -78,35 +78,15 @@ services.AddSaveValidation<Order>(o => o.LineAmounts.Sum(), ThresholdType.Percen
 * These settings can also be supplied in a JSON file when using `AddValidationFlows`.
 * Audits of each save are stored in a `SaveAudit` table so every entry has an integer key and validation flag.
 
-Override the plan later via `ISummarisationPlanStore`:
+Override the plan later via `ISummarisationPlanStore` to tweak validation logic without recompiling:
 
 ```csharp
-services.AddMetricsPipeline(
-    typeof(GenericMetricsWorker),
-    o => o.UseInMemoryDatabase("demo"),
-    opts => opts.AddWorker = true);
+var store = services.BuildServiceProvider().GetRequiredService<ISummarisationPlanStore>();
+store.AddPlan(new SummarisationPlan<YourEntity>(e => e.Id, ThresholdType.RawDifference, 1));
 ```
-Calling the orchestrator directly requires the worker method name:
+Manual rules can also run during startup via `AddValidatorService` so configuration issues are caught early.
 
-```csharp
-var result = await orchestrator.ExecuteAsync<MyDto>(
-    "demo",
-    x => x.Value,
-    SummaryStrategy.Average,
-    5.0,
-    CancellationToken.None,
-    GenericMetricsWorker.WorkerMethod);
-```
-The worker selects its own `Source` value so callers no longer supply one.
-The console host fetches a small set of metric values from an in-memory source, summarises them and either commits the result or discards it depending on validation. Each stage writes its status to the console.
-## Worker Registration and DI Options
 
-- **AddWorker** registers `PipelineWorker` as a hosted service so metrics run in the background.
-- **WorkerMode** selects between `InMemory` and `Http` gatherers.
-- **RegisterHttpClient** makes `HttpMetricsClient` available without changing the gather service.
-- **ConfigureClient** lets you set `HttpClient` properties such as `BaseAddress` after service discovery.
-- **Worker classes** live under `MetricsPipeline.Core/Infrastructure/Workers` for reuse across hosts.
-- **WorkerType** lets you specify an alternative hosted worker. Set `opts.WorkerType = typeof(MyWorker)` or use the overload `AddMetricsPipeline(typeof(MyWorker), ...)`.
 
 ## Setup Validation
 
@@ -177,17 +157,16 @@ var last = provider.GetRequiredService<ISaveAuditRepository>()
 
 ### Example Worker Runner
 
-Earlier commits shipped a dedicated worker host used for manual
-experimentation. The host has been removed to keep the codebase focused on the
-library itself. You can still create a custom worker using the classes under
-`MetricsPipeline.Core` together with `ExampleLib`.
+Earlier revisions included a small worker host for experimentation. The project
+and supporting `MetricsPipeline.Core` library have been deleted to streamline
+the repository. You can still build your own worker by referencing `ExampleLib`
+directly.
 
 ## Project Structure
 
 - `src/ExampleLib` – reusable domain classes and infrastructure. The data layer
   has been merged into this project so consumers only reference a single
   library.
-- `src/MetricsPipeline.Core` – worker components used across samples.
 - `tests/ExampleLib.Tests` – unit tests covering repository and validation logic.
 - `tests/ExampleLib.BDDTests` – BDD scenarios demonstrating end‑to‑end flows.
 - `docs` – guides such as the EF Core replication how‑to.
@@ -390,10 +369,11 @@ to recompute metrics on demand.
 - Unit tests run against an in‑memory server provided by **Mongo2Go** so no
   external database is required.
 - `MongoRepositoryTests` verifies CRUD operations using this lightweight server.
-- BDD scenarios in `MongoRepository.feature` and `MongoSoftDelete.feature`
-  exercise the same behavior through Reqnroll steps.
-- To explore the in‑memory server yourself, inspect the `MongoRepoSteps`
-  definition under `tests/ExampleLib.BDDTests`.
+  - BDD scenarios in `MongoRepository.feature` and `MongoSoftDelete.feature`
+    exercise the same behavior through Reqnroll steps. Demo features have been
+    removed so tests now focus entirely on EF Core and MongoDB validation.
+  - To explore the in‑memory server yourself, inspect the `MongoRepoSteps`
+    definition under `tests/ExampleLib.BDDTests`.
 - `MongoInterceptorTests` demonstrates automatic validation for inserts and updates.
 - The MongoDB driver API is documented at
   [mongodb.github.io/mongo-csharp-driver](https://mongodb.github.io/mongo-csharp-driver/).
