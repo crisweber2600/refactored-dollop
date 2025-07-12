@@ -22,7 +22,7 @@ public static class ServiceCollectionExtensions
         string connectionString)
     {
         services.AddDbContext<YourDbContext>(o => o.UseSqlServer(connectionString));
-        services.AddScoped<IValidationService, ValidationService>();
+        services.AddScoped<ExampleLib.Domain.IValidationService, ExampleLib.Infrastructure.ValidationService>();
         services.AddScoped<IUnitOfWork, UnitOfWork<YourDbContext>>();
         return services;
     }
@@ -39,7 +39,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton(new MongoClient(connectionString));
         services.AddSingleton<IMongoDatabase>(sp =>
             sp.GetRequiredService<MongoClient>().GetDatabase(databaseName));
-        services.AddScoped<IValidationService, MongoValidationService>();
+        services.AddScoped<ExampleLib.Domain.IValidationService, ExampleLib.Infrastructure.ValidationService>();
         services.AddScoped<IUnitOfWork, MongoUnitOfWork>();
         services.AddScoped(typeof(IMongoCollectionInterceptor<>), typeof(MongoCollectionInterceptor<>));
         return services;
@@ -55,7 +55,7 @@ public static class ServiceCollectionExtensions
         where TContext : YourDbContext
     {
         services.AddDbContext<TContext>(o => o.UseSqlServer(connectionString));
-        services.AddScoped<IValidationService, ValidationService>();
+        services.AddScoped<ExampleLib.Domain.IValidationService, ExampleLib.Infrastructure.ValidationService>();
         services.AddScoped<IUnitOfWork, UnitOfWork<TContext>>();
         services.AddSingleton<ExampleLib.Domain.ISummarisationPlanStore, ExampleData.Infrastructure.DataInMemorySummarisationPlanStore>();
         services.AddScoped(typeof(IGenericRepository<>), typeof(EfGenericRepository<>));
@@ -74,7 +74,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton(new MongoClient(connectionString));
         services.AddSingleton<IMongoDatabase>(sp =>
             sp.GetRequiredService<MongoClient>().GetDatabase(databaseName));
-        services.AddScoped<IValidationService, MongoValidationService>();
+        services.AddScoped<ExampleLib.Domain.IValidationService, ExampleLib.Infrastructure.ValidationService>();
         services.AddScoped<IUnitOfWork, MongoUnitOfWork>();
         services.AddScoped(typeof(IMongoCollectionInterceptor<>), typeof(MongoCollectionInterceptor<>));
         services.AddSingleton<ExampleLib.Domain.ISummarisationPlanStore, ExampleData.Infrastructure.DataInMemorySummarisationPlanStore>();

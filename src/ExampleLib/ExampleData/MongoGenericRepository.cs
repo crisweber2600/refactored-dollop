@@ -1,5 +1,6 @@
 using MongoDB.Driver;
 using ExampleData.Infrastructure;
+using ExampleLib.Domain;
 
 namespace ExampleData;
 
@@ -13,8 +14,8 @@ public class MongoGenericRepository<T> : IGenericRepository<T>
         _collection = collection;
     }
 
-    public MongoGenericRepository(IMongoDatabase database, IUnitOfWork uow)
-        : this(new MongoCollectionInterceptor<T>(database, uow))
+    public MongoGenericRepository(IMongoDatabase database, IValidationService validationService)
+        : this(new MongoCollectionInterceptor<T>(database, validationService))
     {
     }
 
