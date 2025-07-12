@@ -11,7 +11,7 @@ public class ValidationFlowOptionsTests
     [Fact]
     public void Load_SingleObject_ParsesFlow()
     {
-        string json = "{ \"Type\": \"ExampleData.YourEntity, ExampleData\", \"SaveValidation\": true }";
+        string json = "{ \"Type\": \"ExampleData.YourEntity, ExampleLib\", \"SaveValidation\": true }";
         var opts = ValidationFlowOptions.Load(json);
         Assert.Single(opts.Flows);
     }
@@ -19,7 +19,7 @@ public class ValidationFlowOptionsTests
     [Fact]
     public void Load_Array_ParsesFlows()
     {
-        string json = "[ { \"Type\": \"ExampleData.YourEntity, ExampleData\", \"SaveValidation\": true }, { \"Type\": \"ExampleData.YourEntity, ExampleData\", \"DeleteValidation\": true } ]";
+        string json = "[ { \"Type\": \"ExampleData.YourEntity, ExampleLib\", \"SaveValidation\": true }, { \"Type\": \"ExampleData.YourEntity, ExampleLib\", \"DeleteValidation\": true } ]";
         var opts = ValidationFlowOptions.Load(json);
         Assert.Equal(2, opts.Flows.Count);
     }
@@ -27,7 +27,7 @@ public class ValidationFlowOptionsTests
     [Fact]
     public void AddValidationFlows_RegistersServices()
     {
-        string json = "{ \"Type\": \"ExampleData.YourEntity, ExampleData\", \"SaveValidation\": true }";
+        string json = "{ \"Type\": \"ExampleData.YourEntity, ExampleLib\", \"SaveValidation\": true }";
         var opts = ValidationFlowOptions.Load(json);
         var services = new ServiceCollection();
         services.AddValidationFlows(opts);
@@ -38,7 +38,7 @@ public class ValidationFlowOptionsTests
     [Fact]
     public void AddValidationFlows_RegistersPlan()
     {
-        string json = "{ \"Type\": \"ExampleData.YourEntity, ExampleData\", \"SaveValidation\": true, \"MetricProperty\": \"Id\", \"ThresholdType\": \"RawDifference\", \"ThresholdValue\": 2 }";
+        string json = "{ \"Type\": \"ExampleData.YourEntity, ExampleLib\", \"SaveValidation\": true, \"MetricProperty\": \"Id\", \"ThresholdType\": \"RawDifference\", \"ThresholdValue\": 2 }";
         var opts = ValidationFlowOptions.Load(json);
         var services = new ServiceCollection();
         services.AddValidationFlows(opts);

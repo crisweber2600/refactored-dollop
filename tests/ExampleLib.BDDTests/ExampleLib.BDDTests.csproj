@@ -15,7 +15,6 @@
   <ItemGroup>
     <ProjectReference Include="../ExampleLib.Tests/ExampleLib.Tests.csproj" />
     <ProjectReference Include="../../src/ExampleLib/ExampleLib.csproj" />
-    <ProjectReference Include="..\..\src\ExampleData\ExampleData.csproj" />
     <ProjectReference Include="../../src/MetricsPipeline.Core/MetricsPipeline.Core.csproj" />
   </ItemGroup>
 </Project>

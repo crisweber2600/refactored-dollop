@@ -2,6 +2,9 @@
 
 RAGStart showcases an event‑driven validation workflow using .NET and MassTransit. The libraries are designed for reuse in other projects and come with unit and BDD tests.
 
+`ExampleData` has been merged into `ExampleLib` so a single package now
+provides both the domain logic and data layer.
+
 ## Quick Start
 
 1. Install the [.NET 9 SDK](https://dotnet.microsoft.com/en-us/download).
@@ -9,11 +12,9 @@ RAGStart showcases an event‑driven validation workflow using .NET and MassTran
 2. Run `dotnet build` to compile all projects.
 3. Run `dotnet test` to execute the unit and BDD tests.
 4. Optionally run `dotnet test --collect:"XPlat Code Coverage"` to verify coverage (should exceed 80%).
-5. Launch the original example app:
-   ```bash
-   dotnet run --project src/ExampleRunner
-   ```
-   The console logs show save events, validations and stored audits.
+5. Reference `ExampleLib` from your own application to explore the validation
+   workflow. The original runner project has been removed in favor of a leaner
+   library.
 6. Execute the `run tests` task in VS Code to verify everything locally.
 7. Use `AddSetupValidation` to configure the data layer and a default plan in a single statement.
 8. Call `AddValidatorService` to enable manual rule checks during startup.
@@ -25,22 +26,11 @@ RAGStart showcases an event‑driven validation workflow using .NET and MassTran
 
 ## Event-Driven Demo
 
-The `Sample.EventDrivenDemo` project runs two services together:
-
-```bash
-dotnet run --project Sample.EventDrivenDemo
-```
-
-`ServiceA` randomly inflates order totals before sending save requests.
-`ServiceB` validates each request and records an audit. When the optional commit
-consumer is enabled only valid orders are persisted.
-
-### Sequence
-
-```text
-ServiceA -> Bus -> ValidationConsumer -> AuditRepo
-                              `-> CommitConsumer (optional) -> DbContext
-```
+Previous revisions included a small demo showcasing two services
+communicating over a bus. The code has been removed to streamline the
+repository, but the documentation remains for historical context.
+Use the library in your own worker or web project to replicate the
+behaviour.
 
 8. Register `AddDeleteValidation` or `AddDeleteCommit` to handle delete events.
 ## Validation Workflow
@@ -189,52 +179,20 @@ var last = provider.GetRequiredService<ISaveAuditRepository>()
 
 ### Example Worker Runner
 
-`ExampleWorkerRunner` builds on the library with a dedicated worker. The worker
-saves an entity three times: once with the initial values, again with values
-within the threshold and finally with values that exceed the threshold.
-
-```
-Project setup
--------------
-[Program] --> [ServiceCollection] --> [MassTransit Bus]
-                        |
-                        v
-                  [ExampleWorker]
-                        |
-                        v
-                  [Repository] --> [Validator] --> [AuditStore]
-```
-
-Run the example with:
-
-```bash
-dotnet run --project src/ExampleWorkerRunner
-```
-
-During execution the console prints the latest validation state after each save.
-The process flow is illustrated below:
-
-```
-Worker run
-----------
-  SetInitial -> Save -> Valid
-      |
-      v
-  SetWithin  -> Save -> Valid
-      |
-      v
-  SetOutside -> Save -> Invalid
-```
+Earlier commits shipped a dedicated worker host used for manual
+experimentation. The host has been removed to keep the codebase focused on the
+library itself. You can still create a custom worker using the classes under
+`MetricsPipeline.Core` together with `ExampleLib`.
 
 ## Project Structure
 
-- `src/ExampleLib` – reusable domain classes and infrastructure
-- `src/ExampleRunner` – console sample using the library
-- `src/MetricsPipeline.Core` – worker components used across samples
-- `src/ExampleWorkerRunner` – runs the example worker end to end
-- `src/ExampleData` – Entity Framework and MongoDB data layer
-- `tests/ExampleLib.Tests` – unit and BDD tests verifying the workflow
-- `docs` – guides such as the EF Core replication how‑to
+- `src/ExampleLib` – reusable domain classes and infrastructure. The data layer
+  has been merged into this project so consumers only reference a single
+  library.
+- `src/MetricsPipeline.Core` – worker components used across samples.
+- `tests/ExampleLib.Tests` – unit tests covering repository and validation logic.
+- `tests/ExampleLib.BDDTests` – BDD scenarios demonstrating end‑to‑end flows.
+- `docs` – guides such as the EF Core replication how‑to.
 
 For additional details on replicating the EF Core setup, read `docs/EFCoreReplicationGuide.md`.
 
@@ -469,18 +427,10 @@ An additional task runs the `AddValidatorService` feature to verify manual rules
 
 ## Plan 2 Repository + Unit of Work Sample
 
-The `samples/Plan2RepositoryUoW` folder demonstrates CRUD operations using
-`GenericRepository` and `UnitOfWork` with metric-based validation. Run the app:
-
-```bash
- dotnet run --project samples/Plan2RepositoryUoW/Plan2App
-```
-
-Unit tests live in `Plan2Tests` and cover create success and failure cases.
-Invalid or soft deleted records are hidden by the EF Core query filter.
-
-The service registration helper `AddPlan2Services` wires up the in-memory
-`DbContext`, generic repository and logging via Serilog.
+Earlier versions contained a second sample under `samples/Plan2RepositoryUoW`.
+It has been removed to simplify the repository. The documentation is retained
+for reference should you wish to build a similar setup using the merged
+`ExampleLib` project.
 Inspect the `Nanny` table using the EF in-memory API to see audit entries.
 
 ## Troubleshooting
