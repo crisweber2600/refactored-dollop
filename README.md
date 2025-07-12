@@ -67,7 +67,7 @@ Deletes follow a similar event pattern:
 4. Service registration helpers `AddDeleteValidation<T>` and `AddDeleteCommit<T>` wire the consumers.
 5. Tests in `DeleteFlowTests` demonstrate the full validation and commit sequence.
 
-### Configuring a Summarisation Plan
+### Configuring a Validation Plan
 
 A plan defines how to compute a numeric metric from an entity and what threshold is allowed between saves:
 
@@ -77,8 +77,12 @@ services.AddSaveValidation<Order>(o => o.LineAmounts.Sum(), ThresholdType.Percen
 * `MetricSelector` computes the metric value (order total in this case).
 * `ThresholdType` can be `RawDifference` or `PercentChange`.
 * `ThresholdValue` sets the allowable change and is easily tuned per entity.
+* Plans are stored using `IValidationPlanProvider` which holds `ValidationPlan<T>` instances in a dictionary.
 * These settings can also be supplied in a JSON file when using `AddValidationFlows`.
 * Audits of each save are stored in a `SaveAudit` table derived from `BaseEntity` so every entry has an integer key and validation flag.
+* Register the provider via `services.AddSingleton<IValidationPlanProvider, InMemoryValidationPlanProvider>();`
+* `ValidationPlan<T>` now lives in the `ExampleLib` namespace for easy reuse.
+* `UnitOfWork` resolves plans from the provider inside `SaveChangesWithPlanAsync`.
 
 Override the plan later via `IValidationPlanProvider`:
 

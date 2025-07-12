@@ -1,6 +1,7 @@
 using ExampleData;
 using ExampleLib;
 using ExampleLib.Infrastructure;
+using ExampleLib.Domain;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 

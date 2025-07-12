@@ -1,5 +1,7 @@
 namespace ExampleLib;
 
+using ExampleLib.Domain;
+
 /// <summary>
 /// Defines how to compute a summarisation metric from an entity of type T and how to validate changes.
 /// </summary>

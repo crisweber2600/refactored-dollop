@@ -1,4 +1,5 @@
 using ExampleLib;
+using ExampleLib.Domain;
 using MetricsPipeline.Core.Domain;
 
 namespace MetricsPipeline.Core.Infrastructure.Workers;

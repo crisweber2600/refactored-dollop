@@ -9,7 +9,7 @@
         {
             "label": "validation plan scenario",
             "type": "shell",
-            "command": "dotnet test --filter ValidationPlanFactory"
+            "command": "dotnet test --filter ValidationFlows"
         },
         {
             "label": "add setup validation scenario",
