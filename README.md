@@ -35,7 +35,7 @@ behaviour.
 8. Register `AddDeleteValidation` or `AddDeleteCommit` to handle delete events.
 ## Validation Workflow
 
-Entity saves publish a `SaveRequested<T>` event. A `SaveValidationConsumer<T>` validates the save against a configurable `SummarisationPlan<T>` and records the result as a `SaveAudit`.
+Entity saves publish a `SaveRequested<T>` event. A `SaveValidationConsumer<T>` validates the save against a configurable `SummarisationPlan<T>` and records the result as a unified `SaveAudit` entry.
 
 ```mermaid
 sequenceDiagram
@@ -78,7 +78,7 @@ services.AddSaveValidation<Order>(o => o.LineAmounts.Sum(), ThresholdType.Percen
 * `ThresholdType` can be `RawDifference` or `PercentChange`.
 * `ThresholdValue` sets the allowable change and is easily tuned per entity.
 * These settings can also be supplied in a JSON file when using `AddValidationFlows`.
-* Audits of each save are stored in a `SaveAudit` table derived from `BaseEntity` so every entry has an integer key and validation flag.
+* Audits of each save are stored in a `SaveAudit` table so every entry has an integer key and validation flag.
 
 Override the plan later via `ISummarisationPlanStore`:
 
@@ -132,7 +132,7 @@ Validators derived from `SetupValidator` execute against the service provider so
 
 ## Commit Auditing
 
-`SaveCommitConsumer` listens for `SaveValidated<T>` events and records a final `SaveAudit`. If persistence fails a `SaveCommitFault<T>` message is published. Register the consumer via `services.AddSaveCommit<T>()`.
+`SaveCommitConsumer` listens for `SaveValidated<T>` events and records a final `SaveAudit`. The same model is shared by all repositories. If persistence fails a `SaveCommitFault<T>` message is published. Register the consumer via `services.AddSaveCommit<T>()`.
 ## Reliability Features
 
 MassTransit now enables automatic retries and an in-memory outbox on every endpoint.
@@ -168,9 +168,7 @@ At a high level the pipeline flows through a fixed sequence of services coordina
 ### Example Runner
 
 The `ExampleRunner` project wires the dependencies and shows the workflow end‑to‑end. Run the project and observe the console output for validation results. Inspect `ISaveAuditRepository` to review the stored audits. The runner now registers `SaveCommitConsumer` so committed saves are audited too.
-The `ExampleRunner` project wires the dependencies and shows the workflow end‑to‑end. Run the project and observe the console output for validation results. Inspect `ISaveAuditRepository` to review the stored audits.
-The runner now stores audits in a database when `AddSetupValidation` is used,
-demonstrating how metrics persist between runs. Retrieve the latest audit like
+The runner stores audits in a database when `AddSetupValidation` is used, demonstrating how metrics persist between runs using the shared `SaveAudit` model. Retrieve the latest audit like
 so:
 ```csharp
 var last = provider.GetRequiredService<ISaveAuditRepository>()
@@ -207,6 +205,7 @@ services.SetupDatabase<YourDbContext>("Server=.;Database=example;Trusted_Connect
 The setup now registers an `EfSaveAuditRepository` that persists `SaveAudit`
 records using Entity Framework Core. When MongoDB is configured the
 equivalent `MongoSaveAuditRepository` is wired instead.
+Both implementations operate on the same `SaveAudit` type so no mapping is required.
 Run `dotnet ef migrations add AddSaveAudit` to generate the initial migration
 and update the database.
 
@@ -270,7 +269,7 @@ builder.Apply(services);
 configured, so calling `GetLastAudit` later will query the table instead of the
 in-memory store.
 Likewise `UseMongo` registers `MongoSaveAuditRepository` so audits are persisted
-to your MongoDB instance.
+to your MongoDB instance. Both repositories share the single `SaveAudit` model.
 ```
 
 `UseMongo` can be substituted to register MongoDB instead. Chaining these calls keeps startup code tidy when switching providers.
