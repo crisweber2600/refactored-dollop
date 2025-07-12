@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
 using System.Linq;
+using ExampleLib.Domain;
 
 namespace ExampleData;
 
@@ -40,33 +41,13 @@ public class UnitOfWork<TContext> : IUnitOfWork where TContext : DbContext
 
     public Task<int> SaveChangesAsync() => _context.SaveChangesAsync();
 
-    public async Task<int> SaveChangesAsync<TEntity>(Expression<Func<TEntity, double>> selector,
+    public Task<int> SaveChangesAsync<TEntity>(Expression<Func<TEntity, double>> selector,
         ValidationStrategy strategy,
         double threshold,
         CancellationToken cancellationToken = default)
         where TEntity : class, IValidatable, IBaseEntity, IRootEntity
     {
-        var summary = await _validationService.ComputeAsync(selector, strategy, cancellationToken);
-
-        foreach (var entry in _context.ChangeTracker.Entries<TEntity>()
-                     .Where(e => e.State == EntityState.Added || e.State == EntityState.Modified))
-        {
-            entry.Entity.Validated = summary >= threshold;
-        }
-
-        if (_context is YourDbContext db)
-        {
-            db.Nannies.Add(new Nanny
-            {
-                ProgramName = System.Reflection.Assembly.GetEntryAssembly()?.GetName().Name ?? "Unknown",
-                Entity = typeof(TEntity).Name,
-                SummarizedValue = summary,
-                DateTime = DateTime.UtcNow,
-                RuntimeID = Guid.NewGuid()
-            });
-        }
-
-        return await _context.SaveChangesAsync(cancellationToken);
+        return SaveChangesWithPlanAsync<TEntity>(cancellationToken);
     }
 
     /// <summary>
@@ -79,44 +60,26 @@ public class UnitOfWork<TContext> : IUnitOfWork where TContext : DbContext
     {
         if (ruleSet == null) throw new ArgumentNullException(nameof(ruleSet));
 
-        double summary = 0;
-        var isValid = true;
-
-        foreach (var rule in ruleSet.Rules)
-        {
-            summary = await _validationService.ComputeAsync(ruleSet.Selector, rule.Strategy, cancellationToken);
-            if (summary < rule.Threshold)
-            {
-                isValid = false;
-            }
-        }
-
         foreach (var entry in _context.ChangeTracker.Entries<TEntity>()
                      .Where(e => e.State == EntityState.Added || e.State == EntityState.Modified))
         {
+            var isValid = await _validationService.ValidateAndSaveAsync(entry.Entity, entry.Entity.Id.ToString(), cancellationToken);
             entry.Entity.Validated = isValid;
-        }
-
-        if (_context is YourDbContext db)
-        {
-            db.Nannies.Add(new Nanny
-            {
-                ProgramName = System.Reflection.Assembly.GetEntryAssembly()?.GetName().Name ?? "Unknown",
-                Entity = typeof(TEntity).Name,
-                SummarizedValue = summary,
-                DateTime = DateTime.UtcNow,
-                RuntimeID = Guid.NewGuid()
-            });
         }
 
         return await _context.SaveChangesAsync(cancellationToken);
     }
 
-    public Task<int> SaveChangesWithPlanAsync<TEntity>(CancellationToken cancellationToken = default)
+    public async Task<int> SaveChangesWithPlanAsync<TEntity>(CancellationToken cancellationToken = default)
         where TEntity : class, IValidatable, IBaseEntity, IRootEntity
     {
-        var plan = _planStore.GetPlan<TEntity>();
-        Expression<Func<TEntity, double>> selector = e => (double)plan.MetricSelector(e);
-        return SaveChangesAsync(selector, ValidationStrategy.Sum, (double)plan.ThresholdValue, cancellationToken);
+        foreach (var entry in _context.ChangeTracker.Entries<TEntity>()
+                     .Where(e => e.State == EntityState.Added || e.State == EntityState.Modified))
+        {
+            var isValid = await _validationService.ValidateAndSaveAsync(entry.Entity, entry.Entity.Id.ToString(), cancellationToken);
+            entry.Entity.Validated = isValid;
+        }
+
+        return await _context.SaveChangesAsync(cancellationToken);
     }
 }

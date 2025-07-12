@@ -18,7 +18,7 @@ provides both the domain logic and data layer.
 6. Execute the `run tests` task in VS Code to verify everything locally.
 7. Use `AddSetupValidation` to configure the data layer and a default plan in a single statement.
 8. Call `AddValidatorService` to enable manual rule checks during startup.
-9. Register `SaveCommitConsumer` using `AddSaveCommit` to audit committed saves.
+9. Use `IValidationService.ValidateAndSaveAsync` to validate entities and record audits before saving.
 10. Use `SaveChangesWithPlanAsync` to automatically apply registered summarisation plans when saving entities.
 11. Mongo repositories now trigger validation automatically via an interceptor so you rarely call `SaveChanges` yourself.
 12. Configure complex validation plans using `AddValidationFlows` and a JSON file.
@@ -32,40 +32,14 @@ repository, but the documentation remains for historical context.
 Use the library in your own worker or web project to replicate the
 behaviour.
 
-8. Register `AddDeleteValidation` or `AddDeleteCommit` to handle delete events.
+8. Register `AddDeleteValidation` or `AddDeleteCommit` to configure manual delete checks.
 ## Validation Workflow
 
-Entity saves publish a `SaveRequested<T>` event. A `SaveValidationConsumer<T>` validates the save against a configurable `SummarisationPlan<T>` and records the result as a `SaveAudit`.
-
-```mermaid
-sequenceDiagram
-    participant Client
-    participant Repository
-    participant Bus
-    participant Consumer
-    participant Validator
-    participant AuditRepo
-    Client->>Repository: SaveAsync(entity)
-    Repository->>Bus: Publish SaveRequested
-    Bus->>Consumer: Deliver event
-    Consumer->>Validator: Validate(entity, lastAudit, plan)
-    Validator-->>Consumer: bool result
-    Consumer->>AuditRepo: AddAudit
-    Consumer->>Bus: Publish SaveValidated
-    Bus->>CommitConsumer: Deliver validated event
-    CommitConsumer->>AuditRepo: Record commit
-    CommitConsumer->>Bus: Publish SaveCommitFault on error
-```
+`IValidationService` validates entities directly using the configured `SummarisationPlan`. The result is stored as a `SaveAudit` before the entity is committed.
 
 ## Delete Workflow
 
-Deletes follow a similar event pattern:
-
-1. A `DeleteRequested<T>` event is published when an entity should be removed.
-2. `DeleteValidationConsumer<T>` checks any manual rules and emits `DeleteValidated<T>`.
-3. If validated, `DeleteCommitConsumer<T>` publishes a `DeleteCommitted<T>` event.
-4. Service registration helpers `AddDeleteValidation<T>` and `AddDeleteCommit<T>` wire the consumers.
-5. Tests in `DeleteFlowTests` demonstrate the full validation and commit sequence.
+Deletion can optionally run through manual rules registered via `AddDeleteValidation<T>`. When all rules pass, the entity is removed or marked invalid.
 
 ### Configuring a Summarisation Plan
 
@@ -132,12 +106,10 @@ Validators derived from `SetupValidator` execute against the service provider so
 
 ## Commit Auditing
 
-`SaveCommitConsumer` listens for `SaveValidated<T>` events and records a final `SaveAudit`. If persistence fails a `SaveCommitFault<T>` message is published. Register the consumer via `services.AddSaveCommit<T>()`.
+`IValidationService` writes a `SaveAudit` record whenever a save occurs. Use the service directly or via `SaveChangesWithPlanAsync` on the unit of work.
 ## Reliability Features
 
-MassTransit now enables automatic retries and an in-memory outbox on every endpoint.
-Poison messages are moved to a dedicated dead letter queue and logged via **Serilog**.
-OpenTelemetry tracing captures bus activity so message flow can be observed.
+The simplified library no longer depends on MassTransit. Validation happens synchronously and any exceptions bubble up to the caller. Logging and tracing remain available through standard ASP.NET Core infrastructure.
 
 ```csharp
 services.AddSaveValidation<Order>(o => o.LineAmounts.Sum());
