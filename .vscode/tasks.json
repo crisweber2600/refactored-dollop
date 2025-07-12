@@ -7,11 +7,6 @@
             "command": "dotnet test --no-restore --no-build"
         },
         {
-            "label": "validation plan scenario",
-            "type": "shell",
-            "command": "dotnet test --filter ValidationPlanFactory"
-        },
-        {
             "label": "add setup validation scenario",
             "type": "shell",
             "command": "dotnet test --filter AddSetupValidation"

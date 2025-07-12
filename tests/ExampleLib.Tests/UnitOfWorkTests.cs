@@ -18,8 +18,8 @@ public class UnitOfWorkTests
             .Options;
         using var context = new YourDbContext(options);
         var service = new ValidationService(context);
-        var store = new InMemorySummarisationPlanStore();
-        store.AddPlan(new SummarisationPlan<YourEntity>(e => e.Id, ThresholdType.RawDifference, 1));
+        var store = new InMemoryValidationPlanProvider();
+        store.AddPlan(new ValidationPlan<YourEntity>(e => e.Id, ThresholdType.RawDifference, 1));
         var uow = new UnitOfWork<YourDbContext>(context, service, store);
         var repo = uow.Repository<YourEntity>();
 
@@ -43,8 +43,8 @@ public class UnitOfWorkTests
         var mock = new Mock<IValidationService>();
         mock.Setup(s => s.ComputeAsync<YourEntity>(It.IsAny<Expression<Func<YourEntity, double>>>(), ValidationStrategy.Count, It.IsAny<CancellationToken>()))
             .ReturnsAsync(2);
-        var store = new InMemorySummarisationPlanStore();
-        store.AddPlan(new SummarisationPlan<YourEntity>(e => e.Id, ThresholdType.RawDifference, 1));
+        var store = new InMemoryValidationPlanProvider();
+        store.AddPlan(new ValidationPlan<YourEntity>(e => e.Id, ThresholdType.RawDifference, 1));
         var uow = new UnitOfWork<YourDbContext>(context, mock.Object, store);
         var repo = uow.Repository<YourEntity>();
 
@@ -65,8 +65,8 @@ public class UnitOfWorkTests
         var mock = new Mock<IValidationService>();
         mock.Setup(s => s.ComputeAsync<YourEntity>(It.IsAny<Expression<Func<YourEntity, double>>>(), ValidationStrategy.Count, It.IsAny<CancellationToken>()))
             .ReturnsAsync(0);
-        var store = new InMemorySummarisationPlanStore();
-        store.AddPlan(new SummarisationPlan<YourEntity>(e => e.Id, ThresholdType.RawDifference, 1));
+        var store = new InMemoryValidationPlanProvider();
+        store.AddPlan(new ValidationPlan<YourEntity>(e => e.Id, ThresholdType.RawDifference, 1));
         var uow = new UnitOfWork<YourDbContext>(context, mock.Object, store);
         var repo = uow.Repository<YourEntity>();
 
@@ -85,8 +85,8 @@ public class UnitOfWorkTests
             .Options;
         using var context = new YourDbContext(options);
         var service = new ValidationService(context);
-        var store = new InMemorySummarisationPlanStore();
-        store.AddPlan(new SummarisationPlan<YourEntity>(e => e.Id, ThresholdType.RawDifference, 0));
+        var store = new InMemoryValidationPlanProvider();
+        store.AddPlan(new ValidationPlan<YourEntity>(e => e.Id, ThresholdType.RawDifference, 0));
         var uow = new UnitOfWork<YourDbContext>(context, service, store);
         var repo = uow.Repository<YourEntity>();
 
@@ -107,8 +107,8 @@ public class UnitOfWorkTests
         var mock = new Mock<IValidationService>();
         mock.Setup(s => s.ComputeAsync<YourEntity>(It.IsAny<Expression<Func<YourEntity, double>>>(), It.IsAny<ValidationStrategy>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(1);
-        var store = new InMemorySummarisationPlanStore();
-        store.AddPlan(new SummarisationPlan<YourEntity>(e => e.Id, ThresholdType.RawDifference, 1));
+        var store = new InMemoryValidationPlanProvider();
+        store.AddPlan(new ValidationPlan<YourEntity>(e => e.Id, ThresholdType.RawDifference, 1));
         var uow = new UnitOfWork<YourDbContext>(context, mock.Object, store);
         var repo = uow.Repository<YourEntity>();
 

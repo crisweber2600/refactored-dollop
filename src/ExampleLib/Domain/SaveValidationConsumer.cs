@@ -1,4 +1,5 @@
 using MassTransit;
+using ExampleLib;
 
 namespace ExampleLib.Domain;
 
@@ -7,11 +8,11 @@ namespace ExampleLib.Domain;
 /// </summary>
 public class SaveValidationConsumer<T> : IConsumer<SaveRequested<T>>
 {
-    private readonly ISummarisationPlanStore _planStore;
+    private readonly IValidationPlanProvider _planStore;
     private readonly ISaveAuditRepository _auditRepository;
     private readonly ISummarisationValidator<T> _validator;
 
-    public SaveValidationConsumer(ISummarisationPlanStore planStore,
+    public SaveValidationConsumer(IValidationPlanProvider planStore,
         ISaveAuditRepository auditRepository,
         ISummarisationValidator<T> validator)
     {

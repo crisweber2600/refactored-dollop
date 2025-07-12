@@ -20,8 +20,8 @@ public class UnitOfWorkPlanTests
         var mock = new Mock<IValidationService>();
         mock.Setup(s => s.ComputeAsync<YourEntity>(It.IsAny<Expression<Func<YourEntity, double>>>(), ValidationStrategy.Sum, It.IsAny<CancellationToken>()))
             .ReturnsAsync(2);
-        var store = new InMemorySummarisationPlanStore();
-        store.AddPlan(new SummarisationPlan<YourEntity>(e => e.Id, ThresholdType.RawDifference, 1));
+        var store = new InMemoryValidationPlanProvider();
+        store.AddPlan(new ValidationPlan<YourEntity>(e => e.Id, ThresholdType.RawDifference, 1));
         var uow = new UnitOfWork<YourDbContext>(context, mock.Object, store);
         var repo = uow.Repository<YourEntity>();
 

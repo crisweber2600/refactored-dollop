@@ -13,9 +13,9 @@ public class SetupValidationBuilderTests
     public void UseSqlServer_ConfiguresUnitOfWork()
     {
         var services = new ServiceCollection();
-        var store = new InMemorySummarisationPlanStore();
-        store.AddPlan(new SummarisationPlan<YourEntity>(e => e.Id, ThresholdType.RawDifference, 1));
-        services.AddSingleton<ISummarisationPlanStore>(store);
+        var store = new InMemoryValidationPlanProvider();
+        store.AddPlan(new ValidationPlan<YourEntity>(e => e.Id, ThresholdType.RawDifference, 1));
+        services.AddSingleton<IValidationPlanProvider>(store);
         var builder = new SetupValidationBuilder()
             .UseSqlServer<YourDbContext>("DataSource=:memory:");
         builder.Apply(services);
@@ -27,9 +27,9 @@ public class SetupValidationBuilderTests
     public void UseMongo_ConfiguresMongoServices()
     {
         var services = new ServiceCollection();
-        var store = new InMemorySummarisationPlanStore();
-        store.AddPlan(new SummarisationPlan<YourEntity>(e => e.Id, ThresholdType.RawDifference, 1));
-        services.AddSingleton<ISummarisationPlanStore>(store);
+        var store = new InMemoryValidationPlanProvider();
+        store.AddPlan(new ValidationPlan<YourEntity>(e => e.Id, ThresholdType.RawDifference, 1));
+        services.AddSingleton<IValidationPlanProvider>(store);
         var builder = new SetupValidationBuilder()
             .UseMongo("mongodb://localhost:27017", "test");
         builder.Apply(services);

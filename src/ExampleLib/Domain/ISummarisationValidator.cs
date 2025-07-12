@@ -10,5 +10,5 @@ public interface ISummarisationValidator<T>
     /// Validates the current entity against the previous audit record using the provided summarisation plan.
     /// Returns true if validation passes (within thresholds), false if the change is out of bounds.
     /// </summary>
-    bool Validate(T currentEntity, SaveAudit previousAudit, SummarisationPlan<T> plan);
+    bool Validate(T currentEntity, SaveAudit previousAudit, ValidationPlan<T> plan);
 }

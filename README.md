@@ -35,7 +35,7 @@ behaviour.
 8. Register `AddDeleteValidation` or `AddDeleteCommit` to handle delete events.
 ## Validation Workflow
 
-Entity saves publish a `SaveRequested<T>` event. A `SaveValidationConsumer<T>` validates the save against a configurable `SummarisationPlan<T>` and records the result as a `SaveAudit`.
+Entity saves publish a `SaveRequested<T>` event. A `SaveValidationConsumer<T>` validates the save against a configurable `ValidationPlan<T>` and records the result as a `SaveAudit`.
 
 ```mermaid
 sequenceDiagram
@@ -80,7 +80,7 @@ services.AddSaveValidation<Order>(o => o.LineAmounts.Sum(), ThresholdType.Percen
 * These settings can also be supplied in a JSON file when using `AddValidationFlows`.
 * Audits of each save are stored in a `SaveAudit` table derived from `BaseEntity` so every entry has an integer key and validation flag.
 
-Override the plan later via `ISummarisationPlanStore`:
+Override the plan later via `IValidationPlanProvider`:
 
 ```csharp
 services.AddMetricsPipeline(
@@ -233,8 +233,8 @@ Create a MongoDB database and wire up the generic repository like so:
 ```csharp
 var client = new MongoClient("mongodb://localhost:27017");
 var database = client.GetDatabase("exampledb");
-var planStore = new InMemorySummarisationPlanStore();
-planStore.AddPlan(new SummarisationPlan<YourEntity>(e => e.Id, ThresholdType.RawDifference, 1));
+var planStore = new InMemoryValidationPlanProvider();
+planStore.AddPlan(new ValidationPlan<YourEntity>(e => e.Id, ThresholdType.RawDifference, 1));
 var uow = new MongoUnitOfWork(database, new MongoValidationService(database), planStore);
 var repo = uow.Repository<YourEntity>();
 ```
@@ -247,7 +247,7 @@ var repo = services.BuildServiceProvider()
     .GetRequiredService<IGenericRepository<YourEntity>>();
 ```
 
-Both helpers expect an `ISummarisationPlanStore` to be registered so `UnitOfWork` can resolve plans when saving.
+Both helpers expect an `IValidationPlanProvider` to be registered so `UnitOfWork` can resolve plans when saving.
 
 `AddSetupValidation` uses the same builder under the hood. When `UseMongo` is chosen the
 `MongoSaveAuditRepository` replaces the EF implementation automatically.
@@ -323,12 +323,12 @@ The latest summarised metric is stored in the `Nanny` table whenever entities ar
 
 ### Saving With Plans
 
-`SaveChangesWithPlanAsync<TEntity>()` looks up the registered `SummarisationPlan` for the entity type and automatically applies it. The plan selector, strategy and threshold are forwarded to the existing validation logic.
+`SaveChangesWithPlanAsync<TEntity>()` looks up the registered `ValidationPlan` for the entity type and automatically applies it. The plan selector, strategy and threshold are forwarded to the existing validation logic.
 
 ```csharp
 await uow.SaveChangesWithPlanAsync<YourEntity>();
 ```
-Inject `ISummarisationPlanStore` when constructing a unit of work so plans can be resolved on demand.
+Inject `IValidationPlanProvider` when constructing a unit of work so plans can be resolved on demand.
 
 ### Manual Validation Service
 
@@ -403,14 +403,14 @@ to recompute metrics on demand.
 
 A `ValidationPlan` describes how to validate an entity using a metric strategy. The default
 implementation relies on the count of records.
-`UnitOfWork` now depends on `ISummarisationPlanStore` so the generated plans can be applied when persisting entities.
-
-Use `ValidationPlanFactory.CreatePlans<T, V>(connectionString)` to instantiate the
-`DbContext` of type `V` and build a plan for each property type on `T`.
+`UnitOfWork` now depends on `IValidationPlanProvider` so the generated plans can be applied when persisting entities.
+Plans are registered manually or loaded from configuration depending on the application's needs.
 
 ```csharp
-var plans = ValidationPlanFactory.CreatePlans<MyComposite, YourDbContext>(
-    "DataSource=:memory:");
+var plans = new List<ValidationPlan>
+{
+    new(typeof(MyComposite))
+};
 ```
 
 If `MyComposite` has properties `Foo`, `Bar` and `Car`, three count based plans

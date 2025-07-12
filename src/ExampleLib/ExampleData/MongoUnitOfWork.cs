@@ -7,10 +7,10 @@ public class MongoUnitOfWork : IUnitOfWork
 {
     private readonly IMongoDatabase _database;
     private readonly IValidationService _validationService;
-    private readonly ExampleLib.Domain.ISummarisationPlanStore _planStore;
+    private readonly ExampleLib.IValidationPlanProvider _planStore;
 
     public MongoUnitOfWork(IMongoDatabase database, IValidationService validationService,
-        ExampleLib.Domain.ISummarisationPlanStore planStore)
+        ExampleLib.IValidationPlanProvider planStore)
     {
         _database = database;
         _validationService = validationService;

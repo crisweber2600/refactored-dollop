@@ -26,10 +26,10 @@ public class UnitOfWork<TContext> : IUnitOfWork where TContext : DbContext
 {
     private readonly TContext _context;
     private readonly IValidationService _validationService;
-    private readonly ExampleLib.Domain.ISummarisationPlanStore _planStore;
+    private readonly ExampleLib.IValidationPlanProvider _planStore;
 
     public UnitOfWork(TContext context, IValidationService validationService,
-        ExampleLib.Domain.ISummarisationPlanStore planStore)
+        ExampleLib.IValidationPlanProvider planStore)
     {
         _context = context;
         _validationService = validationService;
