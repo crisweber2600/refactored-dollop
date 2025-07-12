@@ -16,7 +16,7 @@ provides both the domain logic and data layer.
    workflow. The original runner project has been removed in favor of a leaner
    library.
 6. Execute the `run tests` task in VS Code to verify everything locally.
-7. Use `AddSetupValidation` to configure the data layer and a default plan in a single statement.
+7. Use `AddValidationForEfCore` or `AddValidationForMongo` to configure the data layer and a default plan in one call.
 8. Call `AddValidatorService` to enable manual rule checks during startup.
 9. Register `SaveCommitConsumer` using `AddSaveCommit` to audit committed saves.
 10. Use `SaveChangesWithPlanAsync` to automatically apply registered summarisation plans when saving entities.
@@ -112,23 +112,24 @@ The console host fetches a small set of metric values from an in-memory source, 
 
 ## Setup Validation
 
-`SetupValidation` performs a three phase configuration that mirrors the production startup. It adds basic framework services, registers the selected EF Core provider and optionally configures an `HttpClient` for validation routines.
+Use `AddValidationForEfCore` when working with a DbContext or `AddValidationForMongo` for MongoDB. Each helper registers the unit of work, repositories, interceptors and a default summarisation plan in one shot.
 
 ```csharp
-services.SetupValidation(o =>
-{
-    o.ConfigureDb = b => b.UseInMemoryDatabase("check");
-    o.ConfigureClient = (_, c) => c.Timeout = TimeSpan.FromSeconds(5);
-});
+services.AddValidationForEfCore<MyEntity, YourDbContext>(
+    "DataSource=:memory:",
+    e => e.Id);
 ```
 
-Custom validators can then be registered via `AddSetupValidation<T>` and resolve any configured clients or contexts:
+Switching to MongoDB simply changes the method:
 
 ```csharp
-services.AddSetupValidation<MyStartupValidator>();
+services.AddValidationForMongo<MyEntity>(
+    "mongodb://localhost:27017",
+    "exampledb",
+    e => e.Id);
 ```
 
-Validators derived from `SetupValidator` execute against the service provider so common setup logic is reusable across projects.
+These helpers keep startup code minimal while ensuring validation runs automatically.
 
 ## Commit Auditing
 
@@ -169,7 +170,7 @@ At a high level the pipeline flows through a fixed sequence of services coordina
 
 The `ExampleRunner` project wires the dependencies and shows the workflow end‑to‑end. Run the project and observe the console output for validation results. Inspect `ISaveAuditRepository` to review the stored audits. The runner now registers `SaveCommitConsumer` so committed saves are audited too.
 The `ExampleRunner` project wires the dependencies and shows the workflow end‑to‑end. Run the project and observe the console output for validation results. Inspect `ISaveAuditRepository` to review the stored audits.
-The runner now stores audits in a database when `AddSetupValidation` is used,
+The runner now stores audits in a database when `AddValidationForEfCore` is used,
 demonstrating how metrics persist between runs. Retrieve the latest audit like
 so:
 ```csharp
@@ -249,60 +250,25 @@ var repo = services.BuildServiceProvider()
 
 Both helpers expect an `ISummarisationPlanStore` to be registered so `UnitOfWork` can resolve plans when saving.
 
-`AddSetupValidation` uses the same builder under the hood. When `UseMongo` is chosen the
-`MongoSaveAuditRepository` replaces the EF implementation automatically.
+`AddValidationForMongo` swaps in `MongoSaveAuditRepository` automatically while `AddValidationForEfCore` wires the EF implementation.
 
 The helpers `AddExampleDataMongo` and `SetupMongoDatabase` register `MongoClient`,
 `IMongoDatabase`, the validation service and unit of work automatically.
 
 `SetupDatabase` configures the DbContext, validation service and generic repositories. Every repository works with the `Validated` soft delete filter enabled by default.
 
-### SetupValidationBuilder
-Use this fluent helper to collect configuration steps before applying them.
-It keeps your setup code compact and environment agnostic.
+### Validation Helpers
+
+`AddSaveValidation` is still available when you need more control. It registers the validator and in-memory audit store for the specified entity type:
 
 ```csharp
-var builder = new SetupValidationBuilder()
-    .UseSqlServer<YourDbContext>("DataSource=:memory:");
-builder.Apply(services);
-
-`EfSaveAuditRepository` is registered automatically when a SQL database is
-configured, so calling `GetLastAudit` later will query the table instead of the
-in-memory store.
-Likewise `UseMongo` registers `MongoSaveAuditRepository` so audits are persisted
-to your MongoDB instance.
+services.AddSaveValidation<Order>(o => o.LineAmounts.Sum());
 ```
 
-`UseMongo` can be substituted to register MongoDB instead. Chaining these calls keeps startup code tidy when switching providers.
+Combine this with `AddValidationForEfCore` or `AddValidationForMongo` to store audits in a real database.
 
-## Validation Helpers
 
-`SetupValidation` now accepts a lambda to configure the `SetupValidationBuilder`.
-Call it once during startup to set up the data layer:
 
-```csharp
-services.SetupValidation(b => b.UseSqlServer<YourDbContext>("DataSource=:memory:"));
-```
-
-After configuring the infrastructure you can register multiple plans using `AddSaveValidation`:
-
-```csharp
-services.AddSaveValidation<TasMetrics>(m => m.Value.Average(), ThresholdType.PercentChange, 0.25m);
-services.AddSaveValidation<TasAvailability>(a => a.Value.Average(), ThresholdType.Average, 1);
-```
-Both helpers return the service collection, so configuration can be chained fluently:
-
-```csharp
-services.SetupValidation(b => b.UseMongo("mongodb://localhost:27017", "demo"))
-        .AddSaveValidation<Order>(o => o.LineAmounts.Sum());
-```
-You can also perform both steps in one call using `AddSetupValidation`:
-
-```csharp
-services.AddSetupValidation<Order>(
-    b => b.UseSqlServer<YourDbContext>("DataSource=:memory:"),
-    o => o.LineAmounts.Sum());
-```
 
 ### ValidationRuleSet
 

@@ -1,4 +1,5 @@
 using ExampleLib.Domain;
+using ExampleData;
 using System.Collections.Generic;
 using System.Reflection;
 using MassTransit;
@@ -126,52 +127,39 @@ public static class ServiceCollectionExtensions
     }
 
     /// <summary>
-    /// Convenience helper combining <see cref="SetupValidation"/> and
-    /// <see cref="AddSaveValidation{T}"/>. The builder action configures the
-    /// data layer while a default summarisation plan is registered for
-    /// <typeparamref name="T"/>.
+    /// Register EF Core repositories and validation services in one call.
+    /// A default summarisation plan is created for <typeparamref name="T"/>.
     /// </summary>
-    /// <param name="services">The service collection.</param>
-    /// <param name="configure">Action configuring the setup builder.</param>
-    /// <param name="metricSelector">Metric selector for the plan.</param>
-    /// <param name="thresholdType">Threshold comparison type.</param>
-    /// <param name="thresholdValue">Allowed threshold value.</param>
-    public static IServiceCollection AddSetupValidation<T>(
+    public static IServiceCollection AddValidationForEfCore<T, TContext>(
         this IServiceCollection services,
-        Action<SetupValidationBuilder> configure,
+        string connectionString,
         Func<T, decimal>? metricSelector = null,
         ThresholdType thresholdType = ThresholdType.PercentChange,
         decimal thresholdValue = 0.1m)
+        where TContext : YourDbContext
     {
-        var builder = new SetupValidationBuilder();
-        configure(builder);
-        builder.Apply(services);
-
+        services.SetupDatabase<TContext>(connectionString);
         services.AddSaveValidation<T>(metricSelector, thresholdType, thresholdValue);
-        if (builder.UsesMongo)
-        {
-            services.AddScoped<ISaveAuditRepository, MongoSaveAuditRepository>();
-        }
-        else
-        {
-            services.AddScoped<ISaveAuditRepository, EfSaveAuditRepository>();
-        }
+        services.AddScoped<ISaveAuditRepository, EfSaveAuditRepository>();
         return services;
     }
 
     /// <summary>
-    /// Configure validation services using a fluent <see cref="SetupValidationBuilder"/>.
-    /// Recorded steps are applied to the service collection after <paramref name="configure"/> executes.
+    /// Register MongoDB repositories and validation services in one call.
+    /// A default summarisation plan is created for <typeparamref name="T"/>.
     /// </summary>
-    /// <param name="services">The service collection.</param>
-    /// <param name="configure">Action configuring the <see cref="SetupValidationBuilder"/>.</param>
-    public static IServiceCollection SetupValidation(
+    public static IServiceCollection AddValidationForMongo<T>(
         this IServiceCollection services,
-        Action<SetupValidationBuilder> configure)
+        string connectionString,
+        string databaseName,
+        Func<T, decimal>? metricSelector = null,
+        ThresholdType thresholdType = ThresholdType.PercentChange,
+        decimal thresholdValue = 0.1m)
     {
-        var builder = new SetupValidationBuilder();
-        configure(builder);
-        return builder.Apply(services);
+        services.SetupMongoDatabase(connectionString, databaseName);
+        services.AddSaveValidation<T>(metricSelector, thresholdType, thresholdValue);
+        services.AddScoped<ISaveAuditRepository, MongoSaveAuditRepository>();
+        return services;
     }
 
     private static decimal DefaultSelector<T>(T entity)

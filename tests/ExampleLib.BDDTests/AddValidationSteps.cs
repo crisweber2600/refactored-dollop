@@ -8,7 +8,7 @@ using Xunit;
 namespace ExampleLib.BDDTests;
 
 [Binding]
-public class AddSetupValidationSteps
+public class AddValidationSteps
 {
     private ServiceCollection? _services;
     private ServiceProvider? _provider;
@@ -19,20 +19,21 @@ public class AddSetupValidationSteps
         _services = new ServiceCollection();
     }
 
-    [When("AddSetupValidation is invoked")]
+    [When("AddValidationForEfCore is invoked")]
     public void WhenInvoked()
     {
-        _services!.AddSetupValidation<YourEntity>(
-            b => b.UseSqlServer<YourDbContext>("DataSource=:memory:"),
+        _services!.AddValidationForEfCore<YourEntity, YourDbContext>(
+            "DataSource=:memory:",
             e => e.Id);
         _provider = _services.BuildServiceProvider();
     }
 
-    [When("AddSetupValidation is invoked with Mongo")]
+    [When("AddValidationForMongo is invoked")]
     public void WhenInvokedMongo()
     {
-        _services!.AddSetupValidation<YourEntity>(
-            b => b.UseMongo("mongodb://localhost:27017", "bdd"),
+        _services!.AddValidationForMongo<YourEntity>(
+            "mongodb://localhost:27017",
+            "bdd",
             e => e.Id);
         _provider = _services.BuildServiceProvider();
     }

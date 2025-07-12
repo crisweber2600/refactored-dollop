@@ -12,9 +12,9 @@
             "command": "dotnet test --filter ValidationPlanFactory"
         },
         {
-            "label": "add setup validation scenario",
+            "label": "add validation scenario",
             "type": "shell",
-            "command": "dotnet test --filter AddSetupValidation"
+            "command": "dotnet test --filter AddValidationForEfCore"
         },
         {
             "label": "validation rule set scenario",

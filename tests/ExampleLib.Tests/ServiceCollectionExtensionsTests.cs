@@ -35,11 +35,11 @@ public class ServiceCollectionExtensionsTests
     }
 
     [Fact(Skip="Requires SQL Server provider")]
-    public async Task AddSetupValidation_WiresEndToEnd()
+    public async Task AddValidationForEfCore_WiresEndToEnd()
     {
         var services = new ServiceCollection();
-        services.AddSetupValidation<YourEntity>(
-            b => b.UseSqlServer<YourDbContext>("DataSource=:memory:"),
+        services.AddValidationForEfCore<YourEntity, YourDbContext>(
+            "DataSource=:memory:",
             e => e.Id);
         var provider = services.BuildServiceProvider();
         var bus = provider.GetRequiredService<IBusControl>();
@@ -60,38 +60,28 @@ public class ServiceCollectionExtensionsTests
     }
 
     [Fact]
-    public void AddSetupValidation_RegistersEfRepository()
+    public void AddValidationForEfCore_RegistersEfRepository()
     {
         var services = new ServiceCollection();
-        services.AddSetupValidation<YourEntity>(
-            b => b.UseSqlServer<YourDbContext>("DataSource=:memory:"),
+        services.AddValidationForEfCore<YourEntity, YourDbContext>(
+            "DataSource=:memory:",
             e => e.Id);
         var provider = services.BuildServiceProvider();
         Assert.IsType<EfSaveAuditRepository>(provider.GetRequiredService<ISaveAuditRepository>());
     }
 
     [Fact]
-    public void AddSetupValidation_RegistersMongoRepository()
+    public void AddValidationForMongo_RegistersMongoRepository()
     {
         var services = new ServiceCollection();
-        services.AddSetupValidation<YourEntity>(
-            b => b.UseMongo("mongodb://localhost:27017", "test"),
+        services.AddValidationForMongo<YourEntity>(
+            "mongodb://localhost:27017",
+            "test",
             e => e.Id);
         var provider = services.BuildServiceProvider();
         Assert.IsType<MongoSaveAuditRepository>(provider.GetRequiredService<ISaveAuditRepository>());
     }
 
-    [Fact]
-    public void SetupValidation_ExecutesBuilder()
-    {
-        var services = new ServiceCollection();
-        var store = new InMemorySummarisationPlanStore();
-        store.AddPlan(new SummarisationPlan<YourEntity>(e => e.Id, ThresholdType.RawDifference, 1));
-        services.AddSingleton<ISummarisationPlanStore>(store);
-        services.SetupValidation(b => b.UseSqlServer<YourDbContext>("DataSource=:memory:"));
-        var provider = services.BuildServiceProvider();
-        Assert.NotNull(provider.GetService<IUnitOfWork>());
-    }
 
     [Fact]
     public void SetupDatabase_RegistersDbContext()
