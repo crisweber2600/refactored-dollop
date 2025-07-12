@@ -24,8 +24,6 @@
   <ProjectReference Include="../../src/MetricsPipeline.Core/MetricsPipeline.Core.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\..\src\ExampleData\ExampleData.csproj" />
-  </ItemGroup>
+  <!-- ExampleData merged into ExampleLib -->
 
 </Project>
