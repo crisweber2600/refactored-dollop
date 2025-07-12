@@ -1,4 +1,5 @@
 using MongoDB.Driver;
+using ExampleLib.Domain;
 
 namespace ExampleData.Infrastructure;
 
@@ -26,24 +27,31 @@ public class MongoCollectionInterceptor<T> : IMongoCollectionInterceptor<T>
     where T : class, IValidatable, IBaseEntity, IRootEntity
 {
     private readonly IMongoCollection<T> _inner;
-    private readonly IUnitOfWork _uow;
+    private readonly IValidationService _validationService;
 
-    public MongoCollectionInterceptor(IMongoDatabase database, IUnitOfWork uow)
+    public MongoCollectionInterceptor(IMongoDatabase database, IValidationService validationService)
     {
         _inner = database.GetCollection<T>(typeof(T).Name);
-        _uow = uow;
+        _validationService = validationService;
     }
 
     public async Task InsertOneAsync(T document, CancellationToken cancellationToken = default)
     {
         await _inner.InsertOneAsync(document, cancellationToken: cancellationToken);
-        await _uow.SaveChangesWithPlanAsync<T>(cancellationToken);
+        await _validationService.ValidateAndSaveAsync(document, document.Id.ToString(), cancellationToken);
     }
 
     public async Task<UpdateResult> UpdateOneAsync(FilterDefinition<T> filter, UpdateDefinition<T> update, CancellationToken cancellationToken = default)
     {
         var result = await _inner.UpdateOneAsync(filter, update, cancellationToken: cancellationToken);
-        await _uow.SaveChangesWithPlanAsync<T>(cancellationToken);
+        if (result.ModifiedCount > 0)
+        {
+            var updated = await _inner.Find(filter).FirstOrDefaultAsync(cancellationToken);
+            if (updated != null)
+            {
+                await _validationService.ValidateAndSaveAsync(updated, updated.Id.ToString(), cancellationToken);
+            }
+        }
         return result;
     }
 
