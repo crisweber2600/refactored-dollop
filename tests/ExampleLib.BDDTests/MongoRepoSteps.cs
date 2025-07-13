@@ -39,6 +39,16 @@ public class MongoRepoSteps
         await _repository.AddAsync(new YourEntity { Name = "Test", Validated = true });
     }
 
+    [When("two mongo entities are bulk inserted")]
+    public async Task WhenTwoEntitiesBulkInserted()
+    {
+        await _repository.AddManyAsync(new[]
+        {
+            new YourEntity { Name = "One", Validated = true },
+            new YourEntity { Name = "Two", Validated = true }
+        });
+    }
+
     [Then("the mongo repository count should be (\\d+)")]
     public async Task ThenRepoCount(int count)
     {

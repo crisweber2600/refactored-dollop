@@ -2,6 +2,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using MongoDB.Driver;
 using ExampleData.Infrastructure;
+using System;
+using System.Linq;
 
 namespace ExampleData;
 
@@ -79,6 +81,30 @@ public static class ServiceCollectionExtensions
         services.AddScoped(typeof(IMongoCollectionInterceptor<>), typeof(MongoCollectionInterceptor<>));
         services.AddSingleton<ExampleLib.IValidationPlanProvider, ExampleData.Infrastructure.DataInMemoryValidationPlanProvider>();
         services.AddScoped(typeof(IGenericRepository<>), typeof(MongoGenericRepository<>));
+        return services;
+    }
+
+    /// <summary>
+    /// Decorate <see cref="IMongoDbService"/> so inserts automatically
+    /// trigger validation using registered plans.
+    /// </summary>
+    public static IServiceCollection AddMongoDbServiceValidation(this IServiceCollection services)
+    {
+        var descriptor = services.FirstOrDefault(d => d.ServiceType == typeof(IMongoDbService));
+        if (descriptor == null)
+            throw new InvalidOperationException("IMongoDbService not registered");
+
+        var lifetime = descriptor.Lifetime;
+        services.Remove(descriptor);
+        services.Add(new ServiceDescriptor(typeof(IMongoDbService), sp =>
+        {
+            IMongoDbService inner = descriptor.ImplementationInstance as IMongoDbService
+                ?? (descriptor.ImplementationFactory != null
+                    ? (IMongoDbService)descriptor.ImplementationFactory(sp)
+                    : (IMongoDbService)ActivatorUtilities.CreateInstance(sp, descriptor.ImplementationType!));
+            var uow = sp.GetRequiredService<IUnitOfWork>();
+            return new MongoDbServiceValidationDecorator(inner, uow);
+        }, lifetime));
         return services;
     }
 }
