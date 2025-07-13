@@ -3,7 +3,8 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace ExampleData;
 
-public class YourEntityConfiguration : IEntityTypeConfiguration<YourEntity>
+public class YourEntityConfiguration :
+    IEntityTypeConfiguration<YourEntity>
 {
     public void Configure(EntityTypeBuilder<YourEntity> builder)
     {
