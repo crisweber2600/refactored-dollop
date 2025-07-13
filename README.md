@@ -23,9 +23,12 @@ provides both the domain logic and data layer.
 11. Use `SetupDatabase<YourDbContext>` or `SetupMongoDatabase` to register the data layer in one line.
 12. Use `SaveChangesWithPlanAsync` to automatically apply registered summarisation plans when saving entities.
 13. Mongo repositories now trigger validation automatically via an interceptor so you rarely call `SaveChanges` yourself.
-14. Configure complex validation plans using `AddValidationFlows` and a JSON file.
-15. Use `MetricProperty`, `ThresholdType` and `ThresholdValue` keys to fine tune each registered entity.
-16. Coverage settings can be tweaked with `coverage.runsettings` if additional exclusions are required.
+14. Decorate custom `IMongoDbService` implementations with `AddMongoDbServiceValidation` to keep counts in sync.
+15. Repositories expose `AddManyAsync` for bulk inserts without extra wiring.
+16. `MongoCollectionInterceptor` intercepts `InsertManyAsync` to validate batches automatically.
+17. Configure complex validation plans using `AddValidationFlows` and a JSON file.
+18. Use `MetricProperty`, `ThresholdType` and `ThresholdValue` keys to fine tune each registered entity.
+19. Coverage settings can be tweaked with `coverage.runsettings` if additional exclusions are required.
 ```csharp
 // EF Core setup
 services.SetupDatabase<MyDbContext>("Server=. ;Database=example;");
@@ -431,7 +434,18 @@ can be swapped in if needed.
 services.SetupMongoDatabase("mongodb://localhost:27017", "exampledb");
 var repo = provider.GetRequiredService<IGenericRepository<YourEntity>>();
 await repo.AddAsync(new YourEntity()); // validation runs automatically
+await repo.AddManyAsync(new[] { new YourEntity() }); // bulk inserts validate too
 ```
+If you access MongoDB through a custom service, register
+`AddMongoDbServiceValidation` to decorate your implementation.
+The decorator calls `SaveChangesWithPlanAsync` for the inserted type
+so existing plans still apply without altering your code.
+
+```csharp
+services.AddSingleton<IMongoDbService>(new MongoDbService(cs, "example"))
+        .AddMongoDbServiceValidation();
+```
+InsertMany calls on the decorated service automatically update nanny counts.
 You can still invoke `SaveChangesWithPlanAsync` manually after bulk operations
 to recompute metrics on demand.
 

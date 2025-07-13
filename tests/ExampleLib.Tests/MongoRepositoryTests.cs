@@ -39,6 +39,18 @@ public class MongoRepositoryTests : IDisposable
     }
 
     [Fact(Skip="Requires MongoDB server")]
+    public async Task AddMany_Works()
+    {
+        await ResetAsync();
+        await _repo.AddManyAsync(new[]
+        {
+            new YourEntity { Name = "One", Validated = true },
+            new YourEntity { Name = "Two", Validated = true }
+        });
+        Assert.Equal(2, await _repo.CountAsync());
+    }
+
+    [Fact(Skip="Requires MongoDB server")]
     public async Task Delete_UnvalidatesEntity()
     {
         await ResetAsync();

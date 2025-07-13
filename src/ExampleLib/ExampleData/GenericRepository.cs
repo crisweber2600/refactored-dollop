@@ -8,6 +8,7 @@ public interface IGenericRepository<T>
     Task<T?> GetByIdAsync(int id, bool includeDeleted = false);
     Task<List<T>> GetAllAsync();
     Task AddAsync(T entity);
+    Task AddManyAsync(IEnumerable<T> entities);
     /// <summary>
     /// Deletes the given entity. When <paramref name="hardDelete"/> is
     /// <c>false</c>, the entity is soft deleted by unvalidating it
@@ -39,6 +40,11 @@ public class EfGenericRepository<T> : IGenericRepository<T>
     public Task<List<T>> GetAllAsync() => _set.ToListAsync();
 
     public Task AddAsync(T entity) => _set.AddAsync(entity).AsTask();
+
+    public async Task AddManyAsync(IEnumerable<T> entities)
+    {
+        await _set.AddRangeAsync(entities);
+    }
 
     public async Task DeleteAsync(T entity, bool hardDelete = false)
     {

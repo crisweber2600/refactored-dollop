@@ -10,6 +10,7 @@ public interface IMongoCollectionInterceptor<T>
     where T : class, IValidatable, IBaseEntity, IRootEntity
 {
     Task InsertOneAsync(T document, CancellationToken cancellationToken = default);
+    Task InsertManyAsync(IEnumerable<T> documents, CancellationToken cancellationToken = default);
     Task<UpdateResult> UpdateOneAsync(FilterDefinition<T> filter, UpdateDefinition<T> update, CancellationToken cancellationToken = default);
     Task<DeleteResult> DeleteOneAsync(FilterDefinition<T> filter, CancellationToken cancellationToken = default);
     IFindFluent<T, T> Find(FilterDefinition<T> filter);
@@ -37,6 +38,12 @@ public class MongoCollectionInterceptor<T> : IMongoCollectionInterceptor<T>
     public async Task InsertOneAsync(T document, CancellationToken cancellationToken = default)
     {
         await _inner.InsertOneAsync(document, cancellationToken: cancellationToken);
+        await _uow.SaveChangesWithPlanAsync<T>(cancellationToken);
+    }
+
+    public async Task InsertManyAsync(IEnumerable<T> documents, CancellationToken cancellationToken = default)
+    {
+        await _inner.InsertManyAsync(documents, cancellationToken: cancellationToken);
         await _uow.SaveChangesWithPlanAsync<T>(cancellationToken);
     }
 

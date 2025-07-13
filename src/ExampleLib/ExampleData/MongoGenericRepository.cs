@@ -37,6 +37,11 @@ public class MongoGenericRepository<T> : IGenericRepository<T>
         return _collection.InsertOneAsync(entity);
     }
 
+    public Task AddManyAsync(IEnumerable<T> entities)
+    {
+        return _collection.InsertManyAsync(entities);
+    }
+
     public async Task DeleteAsync(T entity, bool hardDelete = false)
     {
         var filter = Builders<T>.Filter.Eq(e => e.Id, entity.Id);

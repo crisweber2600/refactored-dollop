@@ -53,5 +53,21 @@ public class MongoInterceptorTests : IDisposable
         Assert.NotNull(nanny);
     }
 
+    [Fact(Skip="Requires MongoDB server")]
+    public async Task InsertManyAsync_TriggersSaveChanges()
+    {
+        await _repo.AddManyAsync(new[]
+        {
+            new YourEntity { Name = "One" },
+            new YourEntity { Name = "Two" }
+        });
+
+        var nanny = await _database.GetCollection<Nanny>(nameof(Nanny))
+            .Find(Builders<Nanny>.Filter.Empty)
+            .FirstOrDefaultAsync();
+
+        Assert.NotNull(nanny);
+    }
+
     public void Dispose() => _runner.Dispose();
 }
