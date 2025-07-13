@@ -61,6 +61,28 @@ public interface IGenericRepository<T>
 ```
 MongoDB uses `MongoGenericRepository` with similar behaviour.
 
+### Sample Foo Entity
+`Foo` lives only in the BDD test project and demonstrates a minimal entity used for repository scenarios.
+
+```csharp
+public class Foo : IValidatable, IBaseEntity, IRootEntity
+{
+    public int Id { get; set; }
+    public string Description { get; set; } = string.Empty;
+    public bool Validated { get; set; }
+}
+```
+
+The tests register a derived `TestDbContext` that exposes `DbSet<Foo> Foos` and configures the mapping via `OnModelCreating`.
+
+```csharp
+public class TestDbContext : YourDbContext
+{
+    public TestDbContext(DbContextOptions<YourDbContext> options) : base(options) { }
+    public DbSet<Foo> Foos => Set<Foo>();
+}
+```
+
 ## Configuring the Data Layer
 `SetupValidationBuilder` collects setup steps before applying them:
 ```csharp
