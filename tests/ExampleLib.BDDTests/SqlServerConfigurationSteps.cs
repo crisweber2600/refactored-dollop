@@ -22,7 +22,7 @@ public class SqlServerConfigurationSteps
     public void WhenAddExampleDataSqlServerInvoked()
     {
         _services!.AddExampleDataSqlServer("Server=(localdb)\\mssqllocaldb;Database=BDD;Trusted_Connection=True;");
-        _provider = _services.BuildServiceProvider();
+        _provider = _services!.BuildServiceProvider();
     }
 
     [Then("the DbContext should use SqlServer")]

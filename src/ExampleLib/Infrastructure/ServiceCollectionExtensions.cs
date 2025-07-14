@@ -143,15 +143,15 @@ public static class ServiceCollectionExtensions
         };
     }
 
-    private static readonly IDictionary<Type, List<Func<object, bool>>> _validatorRules = new Dictionary<Type, List<Func<object, bool>>>();
+    private static ManualValidatorService? _manualValidator;
 
     /// <summary>
     /// Register <see cref="ManualValidatorService"/> and the rule dictionary as singletons.
     /// </summary>
     public static IServiceCollection AddValidatorService(this IServiceCollection services)
     {
-        services.AddSingleton(_validatorRules);
-        services.AddSingleton<IManualValidatorService>(new ManualValidatorService(_validatorRules));
+        _manualValidator ??= new ManualValidatorService();
+        services.AddSingleton<IManualValidatorService>(_manualValidator);
         return services;
     }
 
@@ -160,10 +160,11 @@ public static class ServiceCollectionExtensions
     /// </summary>
     public static IServiceCollection AddValidatorRule<T>(this IServiceCollection services, Func<T, bool> rule)
     {
-        if (!_validatorRules.TryGetValue(typeof(T), out var list))
+        _manualValidator ??= new ManualValidatorService();
+        if (!_manualValidator.Rules.TryGetValue(typeof(T), out var list))
         {
             list = new List<Func<object, bool>>();
-            _validatorRules[typeof(T)] = list;
+            _manualValidator.Rules[typeof(T)] = list;
         }
         list.Add(o => rule((T)o));
         return services;

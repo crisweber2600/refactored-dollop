@@ -23,13 +23,13 @@ public class ExtensionRegistrationSteps
     public void WhenInvoked()
     {
         _services!.AddSaveValidation<YourEntity>(e => e.Id);
-        _provider = _services.BuildServiceProvider();
+        _provider = _services!.BuildServiceProvider();
     }
 
     [Then("a repository and validator can be resolved")]
     public void ThenServicesResolvable()
     {
         Assert.NotNull(_provider!.GetService<IEntityRepository<YourEntity>>());
-        Assert.NotNull(_provider.GetService<ISummarisationValidator<YourEntity>>());
+        Assert.NotNull(_provider!.GetService<ISummarisationValidator<YourEntity>>());
     }
 }

@@ -21,7 +21,7 @@ public class SetupMongoDatabaseSteps
     public void WhenSetupMongoDatabaseInvoked()
     {
         _services!.SetupMongoDatabase("mongodb://localhost:27017", "bdd");
-        _provider = _services.BuildServiceProvider();
+        _provider = _services!.BuildServiceProvider();
     }
 
     [Then("a Mongo unit of work can be resolved")]

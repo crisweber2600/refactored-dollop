@@ -22,14 +22,14 @@ public class AddValidatorServiceSteps
     public void WhenAddValidatorServiceInvoked()
     {
         _services!.AddValidatorService();
-        _provider = _services.BuildServiceProvider();
+        _provider = _services!.BuildServiceProvider();
     }
 
     [When("AddValidatorRule is invoked")]
     public void WhenAddValidatorRuleInvoked()
     {
         _services!.AddValidatorRule<object>(_ => true);
-        _provider = _services.BuildServiceProvider();
+        _provider = _services!.BuildServiceProvider();
     }
 
     [Then("the manual validator can be resolved")]

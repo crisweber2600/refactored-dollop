@@ -25,7 +25,7 @@ public class AddSetupValidationSteps
         _services!.AddSetupValidation<YourEntity>(
             b => b.UseSqlServer<YourDbContext>("DataSource=:memory:"),
             e => e.Id);
-        _provider = _services.BuildServiceProvider();
+        _provider = _services!.BuildServiceProvider();
     }
 
     [When("AddSetupValidation is invoked with Mongo")]
@@ -34,7 +34,7 @@ public class AddSetupValidationSteps
         _services!.AddSetupValidation<YourEntity>(
             b => b.UseMongo("mongodb://localhost:27017", "bdd"),
             e => e.Id);
-        _provider = _services.BuildServiceProvider();
+        _provider = _services!.BuildServiceProvider();
     }
 
     [Then("a repository and validator can be resolved")]
