@@ -23,6 +23,7 @@ public static class ServiceCollectionExtensions
         string connectionString)
     {
         services.AddDbContext<YourDbContext>(o => o.UseSqlServer(connectionString));
+        services.AddSingleton<IApplicationNameProvider>(new StaticApplicationNameProvider("ExampleTests"));
         services.AddScoped<ExampleLib.Domain.IValidationService, ExampleLib.Infrastructure.ValidationService>();
         services.AddScoped<IUnitOfWork, UnitOfWork<YourDbContext>>();
         return services;
@@ -40,6 +41,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton(new MongoClient(connectionString));
         services.AddSingleton<IMongoDatabase>(sp =>
             sp.GetRequiredService<MongoClient>().GetDatabase(databaseName));
+        services.AddSingleton<IApplicationNameProvider>(new StaticApplicationNameProvider("ExampleTests"));
         services.AddScoped<ExampleLib.Domain.IValidationService, ExampleLib.Infrastructure.ValidationService>();
         services.AddScoped<IUnitOfWork, MongoUnitOfWork>();
         services.AddScoped(typeof(IMongoCollectionInterceptor<>), typeof(MongoCollectionInterceptor<>));
@@ -56,6 +58,7 @@ public static class ServiceCollectionExtensions
         where TContext : YourDbContext
     {
         services.AddDbContext<TContext>(o => o.UseSqlServer(connectionString));
+        services.AddSingleton<IApplicationNameProvider>(new StaticApplicationNameProvider("ExampleTests"));
         services.AddScoped<ExampleLib.Domain.IValidationService, ExampleLib.Infrastructure.ValidationService>();
         services.AddScoped<IUnitOfWork, UnitOfWork<TContext>>();
         services.AddSingleton<ExampleLib.Domain.ISummarisationPlanStore, ExampleLib.Infrastructure.InMemorySummarisationPlanStore>();
@@ -75,6 +78,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton(new MongoClient(connectionString));
         services.AddSingleton<IMongoDatabase>(sp =>
             sp.GetRequiredService<MongoClient>().GetDatabase(databaseName));
+        services.AddSingleton<IApplicationNameProvider>(new StaticApplicationNameProvider("ExampleTests"));
         services.AddScoped<ExampleLib.Domain.IValidationService, ExampleLib.Infrastructure.ValidationService>();
         services.AddScoped<IUnitOfWork, MongoUnitOfWork>();
         services.AddScoped(typeof(IMongoCollectionInterceptor<>), typeof(MongoCollectionInterceptor<>));

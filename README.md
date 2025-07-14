@@ -48,11 +48,17 @@ public class SaveAudit
     public int Id { get; set; }
     public string EntityType { get; set; } = string.Empty;
     public string EntityId { get; set; } = string.Empty;
+    public string ApplicationName { get; set; } = string.Empty;
     public decimal MetricValue { get; set; }
     public int BatchSize { get; set; }
     public bool Validated { get; set; }
     public DateTimeOffset Timestamp { get; set; }
 }
+```
+Retrieve the last audit for an entity and inspect the application name:
+```csharp
+var last = repo.GetLastAudit("Order", "42");
+Console.WriteLine(last?.ApplicationName);
 ```
 Repositories implement `IGenericRepository<T>` for data access. Entity Framework and MongoDB variants provide the same interface for adding, updating and deleting entities.
 
@@ -65,6 +71,14 @@ services.AddExampleLib(builder =>
 });
 ```
 Switch to MongoDB by calling `UseMongo` instead. Both providers expose `AddBatchAudit` for summarising bulk saves.
+
+### Application Name Provider
+Audits are tagged with the application name to keep metrics separate. Register a provider at startup:
+```csharp
+services.AddSingleton<IApplicationNameProvider>(
+    new StaticApplicationNameProvider("MyApp"));
+```
+`ValidationService` uses this provider so all `SaveAudit` entries store the current application name.
 
 ## Validation Pipeline
 Entities are validated against a `SummarisationPlan` whenever they are saved. The Entity Framework unit of work exposes `SaveChangesWithPlanAsync<TEntity>()`, while the MongoDB implementation uses an interceptor to apply the same logic during inserts and updates.
@@ -144,6 +158,12 @@ For quick iterations run:
 dotnet test --no-build --no-restore
 ```
 
+If you change the EF models, create a new migration:
+```bash
+dotnet ef migrations add MyMigration -p tests/ExampleLib.Tests/ExampleLib.Tests.csproj \
+    -s tests/ExampleLib.Tests/ExampleLib.Tests.csproj -o ExampleData/Migrations
+```
+
 ## Why Choose RAGStart?
 - Provides a working example of event-driven validation with EF Core and MongoDB.
 - Shows how to separate validation rules from persistence logic.
@@ -152,6 +172,7 @@ dotnet test --no-build --no-restore
 - Demonstrates how to register per-entity rules using `AddSaveValidation`.
 - Features a clear folder structure that can be reused in other projects.
 - Unit tests illustrate validation runner usage for quick reference.
+- Save audits include the originating application name for multi-app scenarios.
 
 ## More Documentation
 Further information is available in the `docs` folder:

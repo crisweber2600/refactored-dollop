@@ -36,6 +36,7 @@ public class InMemorySaveAuditRepository : ISaveAuditRepository
         {
             EntityType = audit.EntityType,
             EntityId = BatchKey,
+            ApplicationName = audit.ApplicationName,
             MetricValue = audit.MetricValue,
             BatchSize = audit.BatchSize,
             Validated = audit.Validated,
