@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using ExampleData;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace ExampleLib.Infrastructure;
@@ -22,7 +22,7 @@ public class SetupValidationBuilder
     /// Record SQL Server configuration using the specified DbContext.
     /// </summary>
     public SetupValidationBuilder UseSqlServer<TContext>(string connectionString)
-        where TContext : YourDbContext
+        where TContext : DbContext
     {
         _steps.Add(s => s.SetupDatabase<TContext>(connectionString));
         _useMongo = false;

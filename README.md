@@ -27,9 +27,11 @@ RAGStart provides a reference implementation of an event‑driven validation pip
 9. Use `SequenceValidator` with a `SummarisationPlan` when the same threshold logic should apply across sequences.
 10. Centralise metric checks with `ThresholdValidator.IsWithinThreshold` for consistent results.
 11. Include the `ExampleLib.Domain` namespace when using this helper in your own code.
+12. Sample entities live under `tests/ExampleLib.Tests/ExampleData` for quick experimentation.
 
 ## Repository Layout
 - `src/ExampleLib` – domain models and infrastructure.
+- `tests/ExampleLib.Tests/ExampleData` – example entities and EF/Mongo setup used by the tests.
 - `tests/ExampleLib.Tests` – unit tests for repositories and validators.
 - `tests/ExampleLib.BDDTests` – Reqnroll scenarios demonstrating end‑to‑end behaviour.
 - `features` – `.feature` files used by the BDD tests.
@@ -144,7 +146,7 @@ public class TestDbContext : YourDbContext
 ```
 
 ## Configuring the Data Layer
-`SetupValidationBuilder` collects setup steps before applying them:
+`SetupValidationBuilder` collects setup steps before applying them. The sample types under `tests/ExampleLib.Tests/ExampleData` can be customised to match your schema.
 Both the EF Core and MongoDB repositories expose `AddManyAsync` so large lists can be inserted efficiently regardless of provider.
 ```csharp
 public class SetupValidationBuilder
@@ -153,7 +155,7 @@ public class SetupValidationBuilder
     private bool _useMongo;
     internal bool UsesMongo => _useMongo;
     public SetupValidationBuilder UseSqlServer<TContext>(string connectionString)
-        where TContext : YourDbContext
+        where TContext : DbContext
     {
         _steps.Add(s => s.SetupDatabase<TContext>(connectionString));
         _useMongo = false;
@@ -241,7 +243,7 @@ Validation flows may be loaded from JSON:
 ```json
 [
   {
-    "Type": "ExampleData.YourEntity, ExampleData",
+"Type": "ExampleData.YourEntity, ExampleLib.Tests",
     "SaveValidation": true,
     "MetricProperty": "Id",
     "ThresholdType": "RawDifference",
@@ -274,6 +276,7 @@ VS Code tasks under `.vscode/tasks.json` provide convenient shortcuts for valida
 - The new `RepositoryUpdate.feature` demonstrates updating entities via BDD tests.
 - `SequencePlan.feature` shows plan-based sequence validation in action.
 - `ThresholdValidator.cs` demonstrates consolidating change thresholds in one place.
+- `tests/ExampleLib.Tests/ExampleData` replaces the old `ExampleData` project for clarity.
 
 ## Troubleshooting
 - Ensure `DOTNET_ROLL_FORWARD=Major` is set when using .NET 9 runtimes.
@@ -286,4 +289,5 @@ VS Code tasks under `.vscode/tasks.json` provide convenient shortcuts for valida
 - If results from `SequenceValidator` seem incorrect, verify the items are ordered as intended.
 - When using a plan with `SequenceValidator`, ensure the threshold values match your expectations.
 - When writing custom comparisons, use `ThresholdValidator.IsWithinThreshold` so behaviour mirrors the built-in validators.
+- After upgrading, verify that paths referencing `ExampleData` now point to `tests/ExampleLib.Tests/ExampleData`.
 

@@ -1,7 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using MongoDB.Driver;
-using ExampleData.Infrastructure;
+using ExampleLib.Infrastructure;
+using ExampleLib.Domain;
 
 namespace ExampleData;
 

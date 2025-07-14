@@ -2,7 +2,7 @@ using System.Linq.Expressions;
 using MongoDB.Driver;
 using ExampleLib.Domain;
 
-namespace ExampleData;
+namespace ExampleLib.Infrastructure;
 
 public class MongoUnitOfWork : IUnitOfWork
 {

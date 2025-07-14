@@ -1,8 +1,7 @@
 using MongoDB.Driver;
-using ExampleData.Infrastructure;
 using ExampleLib.Domain;
 
-namespace ExampleData;
+namespace ExampleLib.Infrastructure;
 
 public class MongoGenericRepository<T> : IGenericRepository<T>
     where T : class, IValidatable, IBaseEntity, IRootEntity

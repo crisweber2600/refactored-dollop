@@ -1,6 +1,6 @@
 using System;
 
-namespace ExampleData;
+namespace ExampleLib.Domain;
 
 /// <summary>
 /// Describes how to validate an entity type using a specific strategy and threshold.

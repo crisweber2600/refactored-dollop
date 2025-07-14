@@ -1,4 +1,4 @@
-namespace ExampleData;
+namespace ExampleLib.Domain;
 
 public enum ValidationStrategy
 {
