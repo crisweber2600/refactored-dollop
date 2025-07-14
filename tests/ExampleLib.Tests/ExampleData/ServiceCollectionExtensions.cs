@@ -82,4 +82,22 @@ public static class ServiceCollectionExtensions
         services.AddScoped(typeof(IGenericRepository<>), typeof(MongoGenericRepository<>));
         return services;
     }
+
+    /// <summary>
+    /// Configure an in-memory database for testing scenarios.
+    /// Registers the DbContext, validation service and unit of work using the
+    /// EF Core in-memory provider.
+    /// </summary>
+    public static IServiceCollection SetupInMemoryDatabase<TContext>(
+        this IServiceCollection services)
+        where TContext : YourDbContext
+    {
+        services.AddDbContext<TContext>(o => o.UseInMemoryDatabase(Guid.NewGuid().ToString()));
+        services.AddScoped<ExampleLib.Domain.IValidationService, ExampleLib.Infrastructure.ValidationService>();
+        services.AddScoped<IUnitOfWork, UnitOfWork<TContext>>();
+        services.AddSingleton<ExampleLib.Domain.ISummarisationPlanStore, ExampleLib.Infrastructure.InMemorySummarisationPlanStore>();
+        services.AddScoped(typeof(IGenericRepository<>), typeof(EfGenericRepository<>));
+        services.AddSingleton<ISaveAuditRepository, InMemorySaveAuditRepository>();
+        return services;
+    }
 }

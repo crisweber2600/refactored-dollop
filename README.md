@@ -23,6 +23,7 @@ RAGStart provides a reference implementation of an event‑driven validation pip
 5. Use `AddManyAsync` for efficient seeding when populating test data.
 6. Call `UpdateAsync` or `UpdateManyAsync` to modify records without exposing EF Core or MongoDB types.
 7. Record bulk saves with `AddBatchAudit` so later validations know the previous batch size.
+8. Initialise BDD scenarios with `SetupInMemoryDatabase` to quickly configure an EF Core context for tests.
 8. Leverage `SequenceValidator` for on-the-fly comparisons between successive records.
 9. Use `SequenceValidator` with a `SummarisationPlan` when the same threshold logic should apply across sequences.
 10. Centralise metric checks with `ThresholdValidator.IsWithinThreshold` for consistent results.
@@ -33,10 +34,12 @@ RAGStart provides a reference implementation of an event‑driven validation pip
 - `src/ExampleLib` – domain models and infrastructure.
 - `tests/ExampleLib.Tests/ExampleData` – example entities and EF/Mongo setup used by the tests.
 - `tests/ExampleLib.Tests` – unit tests for repositories and validators.
-- `tests/ExampleLib.BDDTests` – Reqnroll scenarios demonstrating end‑to‑end behaviour.
-- `features` – `.feature` files used by the BDD tests.
-- `features/RepositoryUpdate.feature` – verifies that updates are persisted correctly.
-- `features/SequencePlan.feature` – shows how a summarisation plan works with the sequence validator.
+- `tests/ExampleLib.BDDTests` – Reqnroll scenarios demonstrating end‑to‑end behaviour. Feature files now live in `Features` with matching classes under `StepDefinitions`.
+- `tests/ExampleLib.BDDTests/Features` – `.feature` files executed by the BDD tests.
+- `tests/ExampleLib.BDDTests/Features/RepositoryUpdate.feature` – verifies that updates are persisted correctly.
+- `tests/ExampleLib.BDDTests/Features/SequencePlan.feature` – shows how a summarisation plan works with the sequence validator.
+- `tests/ExampleLib.BDDTests/StepDefinitions` – C# step classes consumed by Reqnroll.
+- Reqnroll scenarios resolve dependencies through `ExampleData.ServiceCollectionExtensions` using `SetupInMemoryDatabase` for fast in-memory contexts.
 - `docs` – supplementary guides including `EFCoreReplicationGuide.md`.
 
 ## Core Components
@@ -268,7 +271,7 @@ dotnet test --collect:"XPlat Code Coverage"
 Tests are compiled with warnings treated as errors. Any build warning will fail
 the run, so ensure packages resolve cleanly. The generated coverage report should
 exceed 80% when all tests pass.
-VS Code tasks under `.vscode/tasks.json` provide convenient shortcuts for validating specific scenarios.
+Reqnroll discovers scenarios in the `Features` folder and executes them with xUnit. VS Code tasks under `.vscode/tasks.json` provide convenient shortcuts for validating specific scenarios.
 
 ## Additional Guides
 - `docs/EFCoreReplicationGuide.md` explains how to replicate the EF Core setup in another project.
