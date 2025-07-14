@@ -1,6 +1,6 @@
 using ExampleData;
 
-namespace ExampleLib.BDDTests;
+namespace ExampleLib.Tests;
 
 public class Foo : IValidatable, IBaseEntity, IRootEntity
 {

@@ -13,6 +13,10 @@ public class SaveAudit
     public string EntityId { get; set; } = string.Empty;
     public decimal MetricValue { get; set; }
     /// <summary>
+    /// Additional metric used by svc2 comparisons.
+    /// </summary>
+    public decimal Jar { get; set; }
+    /// <summary>
     /// Number of entities processed in the related operation.
     /// </summary>
     public int BatchSize { get; set; }

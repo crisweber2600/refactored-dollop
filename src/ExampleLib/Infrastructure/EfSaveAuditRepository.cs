@@ -41,6 +41,7 @@ public class EfSaveAuditRepository : ISaveAuditRepository
         else
         {
             entity.MetricValue = audit.MetricValue;
+            entity.Jar = audit.Jar;
             entity.BatchSize = audit.BatchSize;
             entity.Timestamp = audit.Timestamp;
             entity.Validated = audit.Validated;
@@ -56,6 +57,7 @@ public class EfSaveAuditRepository : ISaveAuditRepository
             EntityType = audit.EntityType,
             EntityId = BatchKey,
             MetricValue = audit.MetricValue,
+            Jar = audit.Jar,
             BatchSize = audit.BatchSize,
             Validated = audit.Validated,
             Timestamp = audit.Timestamp

@@ -22,7 +22,13 @@ public static class Dependencies
         services.AddScoped<IUnitOfWork, UnitOfWork<YourDbContext>>();
         services.AddSingleton(typeof(ISummarisationValidator<>), typeof(SummarisationValidator<>));
         services.AddSingleton<ISummarisationPlanStore, InMemorySummarisationPlanStore>();
-        services.AddSingleton<ISaveAuditRepository, InMemorySaveAuditRepository>();
+
+        var repo = new InMemorySaveAuditRepository();
+        services.AddSingleton<ISaveAuditRepository>(repo);
+
+        services.AddValidatorService()
+                .AddValidatorRule<Foo>(new FooValidator(repo).Validate);
+
         return services;
     }
 }
