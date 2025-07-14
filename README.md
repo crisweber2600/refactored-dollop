@@ -9,10 +9,11 @@ RAGStart provides a reference implementation of an event‑driven validation pip
 4. [Configuring the Data Layer](#configuring-the-data-layer)
 5. [Validation Workflow](#validation-workflow)
 6. [Manual Validators](#manual-validators)
-7. [External Flow Configuration](#external-flow-configuration)
-8. [Running the Tests](#running-the-tests)
-9. [Additional Guides](#additional-guides)
-10. [Troubleshooting](#troubleshooting)
+7. [Sequence Validation](#sequence-validation)
+8. [External Flow Configuration](#external-flow-configuration)
+9. [Running the Tests](#running-the-tests)
+10. [Additional Guides](#additional-guides)
+11. [Troubleshooting](#troubleshooting)
 
 ## Quick Start
 1. Install the [.NET 9 SDK](https://dotnet.microsoft.com/en-us/download).
@@ -22,6 +23,7 @@ RAGStart provides a reference implementation of an event‑driven validation pip
 5. Use `AddManyAsync` for efficient seeding when populating test data.
 6. Call `UpdateAsync` or `UpdateManyAsync` to modify records without exposing EF Core or MongoDB types.
 7. Record bulk saves with `AddBatchAudit` so later validations know the previous batch size.
+8. Leverage `SequenceValidator` for on-the-fly comparisons between successive records.
 
 ## Repository Layout
 - `src/ExampleLib` – domain models and infrastructure.
@@ -194,6 +196,17 @@ services.AddValidatorService()
 ```
 The service evaluates every rule for the specified type and returns `true` only when all pass.
 
+## Sequence Validation
+`SequenceValidator` provides a lightweight way to compare successive records using lambda expressions. Specify a key selector and value selector; an optional delegate lets you control how values are compared.
+```csharp
+var ok = SequenceValidator.Validate(
+    items,
+    x => x.Server,
+    x => x.Value,
+    (cur, prev) => Math.Abs(cur - prev) < 10);
+```
+If you omit the last delegate, equality comparison on the selected value is used instead.
+
 ## External Flow Configuration
 Validation flows may be loaded from JSON:
 ```json
@@ -233,4 +246,5 @@ VS Code tasks under `.vscode/tasks.json` provide convenient shortcuts for valida
 - MongoDB tests rely on **Mongo2Go**; ensure the runner can download binaries through your network proxy.
 - If tests fail to compile, verify that all repositories implement the latest interface methods.
 - Missing batch audit data usually means `AddBatchAudit` was not invoked after bulk saves.
+- If results from `SequenceValidator` seem incorrect, verify the items are ordered as intended.
 
