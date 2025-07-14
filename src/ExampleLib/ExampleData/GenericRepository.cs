@@ -1,6 +1,4 @@
-using ExampleLib.Domain;
 using Microsoft.EntityFrameworkCore;
-using System.Linq;
 
 namespace ExampleData;
 
@@ -37,13 +35,11 @@ public class EfGenericRepository<T> : IGenericRepository<T>
 {
     private readonly YourDbContext _context;
     private readonly DbSet<T> _set;
-    private readonly IBatchValidationService _batchValidator;
 
-    public EfGenericRepository(YourDbContext context, IBatchValidationService batchValidator)
+    public EfGenericRepository(YourDbContext context)
     {
         _context = context;
         _set = _context.Set<T>();
-        _batchValidator = batchValidator;
     }
 
     public async Task<T?> GetByIdAsync(int id, bool includeDeleted = false)
@@ -56,12 +52,7 @@ public class EfGenericRepository<T> : IGenericRepository<T>
 
     public Task AddAsync(T entity) => _set.AddAsync(entity).AsTask();
 
-    public async Task AddManyAsync(IEnumerable<T> entities)
-    {
-        var list = entities.ToList();
-        await _set.AddRangeAsync(list);
-        _batchValidator.ValidateAndAudit<T>(list.Count);
-    }
+    public Task AddManyAsync(IEnumerable<T> entities) => _set.AddRangeAsync(entities);
 
     public Task UpdateAsync(T entity)
     {

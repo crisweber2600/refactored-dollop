@@ -35,7 +35,6 @@ public static class ServiceCollectionExtensions
         });
 
         services.AddScoped<IValidationService, ValidationService>();
-        services.AddScoped<IBatchValidationService, BatchValidationService>();
         return services;
     }
 
