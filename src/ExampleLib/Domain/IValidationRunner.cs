@@ -1,0 +1,13 @@
+namespace ExampleLib.Domain;
+
+/// <summary>
+/// Runs all registered validation services for an entity instance.
+/// </summary>
+public interface IValidationRunner
+{
+    /// <summary>
+    /// Validate and audit the specified entity.
+    /// Returns <c>true</c> when all validation services succeed.
+    /// </summary>
+    Task<bool> ValidateAsync<T>(T entity, string entityId, CancellationToken cancellationToken = default);
+}

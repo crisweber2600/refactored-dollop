@@ -34,9 +34,8 @@ services.AddMongoRepositories(options => options.ConnectionString = "mongodb://l
 ## Repository Structure
 - `src/ExampleLib` – the domain models and infrastructure code.
 - `tests/ExampleLib.Tests` – unit tests covering repositories and validators.
-- `tests/ExampleLib.BDDTests` – BDD scenarios implemented with Reqnroll.
 - `tests/ExampleLib.Tests/ExampleData` – sample entities and EF/Mongo configuration.
-- `features` – `.feature` files driving the BDD tests.
+- *(BDD tests have been removed for clarity.)*
 - `docs` – additional guides including `EFCoreReplicationGuide.md` and `Implementation.md`.
 
 ## Key Building Blocks
@@ -74,7 +73,15 @@ Entities are validated against a `SummarisationPlan` whenever they are saved. Th
 services.AddValidatorService()
         .AddValidatorRule<Order>(o => o.Total > 0);
 ```
-All rules for a type must pass for the service to return `true`. You can inspect and modify the registered predicates via dependency injection.
+All rules for a type must pass for the service to return `true`. You can inspect and modify the registered predicates via dependency injection. Combine manual predicates with summarisation rules using `AddSaveValidation`:
+```csharp
+services.AddSaveValidation<Order>(o => o.Total,
+    ThresholdType.RawDifference, 2m,
+    o => o.Status == "Open",
+    o => o.Total > 0);
+services.AddValidationRunner();
+```
+`AddValidationRunner` registers a single service that executes every validator so existing repositories can enable validation in one line.
 
 ## Validating Sequences
 `SequenceValidator` compares successive items in a sequence. Provide key and value selectors with an optional comparison delegate:
@@ -111,22 +118,19 @@ services.AddValidationFlows(options);
 This hook wires up save, commit and delete validations automatically.
 
 ## Running Tests
-Run all unit and BDD tests with coverage:
+Run the unit tests with coverage:
 ```bash
 dotnet test --collect:"XPlat Code Coverage"
-```
-You can run a specific BDD scenario with Reqnroll:
-```bash
-dotnet test --filter FullyQualifiedName~RepositoryUpdate
 ```
 The generated coverage report appears under `TestResults` and should exceed 80%.
 
 ## Why Choose RAGStart?
 - Provides a working example of event-driven validation with EF Core and MongoDB.
-- Demonstrates BDD testing with Reqnroll alongside conventional unit tests.
 - Shows how to separate validation rules from persistence logic.
+- Offers a one-line `AddValidationRunner` registration for existing repositories.
 - Includes helper methods such as `AddManyAsync`, `UpdateManyAsync` and `AddBatchAudit` for efficient bulk operations.
-- Offers a clear folder structure that can be reused in other projects.
+- Demonstrates how to register per-entity rules using `AddSaveValidation`.
+- Features a clear folder structure that can be reused in other projects.
 
 ## More Documentation
 Further information is available in the `docs` folder:
