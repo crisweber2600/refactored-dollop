@@ -114,11 +114,25 @@ bool ok = await runner.ValidateAsync(order, order.Id.ToString());
 `ok` indicates whether both summarisation and manual checks succeeded.
 
 ## Validating Sequences
-`SequenceValidator` compares successive items in a sequence. Provide key and value selectors with an optional comparison delegate:
+`SequenceValidator` compares successive items in a sequence. The validator keeps
+track of the last value seen for each discriminator key so that items are only
+compared against the most recent value with the **same** key. Provide key and
+value selectors with an optional comparison delegate:
 ```csharp
 var ok = SequenceValidator.Validate(items, x => x.Server, x => x.Value,
     (cur, prev) => Math.Abs(cur - prev) < 10);
 ```
+If the sequence returns to a previously seen key it will be compared with the
+value recorded for that key. For example:
+```csharp
+var servers = new[] { "ServerA", "ServerB", "ServerC", "ServerA" };
+var check = SequenceValidator.Validate(servers,
+    s => s,
+    s => s,
+    (cur, prev) => cur == prev);
+```
+The last `ServerA` item is checked against the first `ServerA` entry rather than
+`ServerC`. This key-based history ensures related items are validated together.
 You can also drive the comparison using a `SummarisationPlan`:
 ```csharp
 var plan = new SummarisationPlan<MyEntity>(e => e.Value, ThresholdType.RawDifference, 5);
