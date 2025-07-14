@@ -11,12 +11,18 @@ public class ValidationService : IValidationService
     private readonly ISummarisationPlanStore _planStore;
     private readonly ISaveAuditRepository _auditRepository;
     private readonly IServiceProvider _provider;
+    private readonly IApplicationNameProvider _appNameProvider;
 
-    public ValidationService(ISummarisationPlanStore planStore, ISaveAuditRepository auditRepository, IServiceProvider provider)
+    public ValidationService(
+        ISummarisationPlanStore planStore,
+        ISaveAuditRepository auditRepository,
+        IServiceProvider provider,
+        IApplicationNameProvider appNameProvider)
     {
         _planStore = planStore;
         _auditRepository = auditRepository;
         _provider = provider;
+        _appNameProvider = appNameProvider;
     }
 
     /// <inheritdoc />
@@ -31,6 +37,7 @@ public class ValidationService : IValidationService
         {
             EntityType = typeof(T).Name,
             EntityId = entityId,
+            ApplicationName = _appNameProvider.ApplicationName,
             MetricValue = plan.MetricSelector(entity!),
             BatchSize = 1,
             Validated = isValid,
