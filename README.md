@@ -25,6 +25,8 @@ RAGStart provides a reference implementation of an event‑driven validation pip
 7. Record bulk saves with `AddBatchAudit` so later validations know the previous batch size.
 8. Leverage `SequenceValidator` for on-the-fly comparisons between successive records.
 9. Use `SequenceValidator` with a `SummarisationPlan` when the same threshold logic should apply across sequences.
+10. Centralise metric checks with `ThresholdValidator.IsWithinThreshold` for consistent results.
+11. Include the `ExampleLib.Domain` namespace when using this helper in your own code.
 
 ## Repository Layout
 - `src/ExampleLib` – domain models and infrastructure.
@@ -216,6 +218,10 @@ The validator now checks every item against its immediate predecessor, ensuring
 that sequences with a single key are validated correctly. Use a summarisation
 plan whenever you need a consistent threshold across validations.
 
+`ThresholdValidator.IsWithinThreshold` exposes the same logic for custom
+scenarios. Pass `throwOnUnsupported: true` to surface unexpected values when
+validating your own data.
+
 ## External Flow Configuration
 Validation flows may be loaded from JSON:
 ```json
@@ -253,6 +259,7 @@ VS Code tasks under `.vscode/tasks.json` provide convenient shortcuts for valida
 - `Implementation.md` discusses designing class libraries at different maturity levels.
 - The new `RepositoryUpdate.feature` demonstrates updating entities via BDD tests.
 - `SequencePlan.feature` shows plan-based sequence validation in action.
+- `ThresholdValidator.cs` demonstrates consolidating change thresholds in one place.
 
 ## Troubleshooting
 - Ensure `DOTNET_ROLL_FORWARD=Major` is set when using .NET 9 runtimes.
@@ -264,4 +271,5 @@ VS Code tasks under `.vscode/tasks.json` provide convenient shortcuts for valida
 - Missing batch audit data usually means `AddBatchAudit` was not invoked after bulk saves.
 - If results from `SequenceValidator` seem incorrect, verify the items are ordered as intended.
 - When using a plan with `SequenceValidator`, ensure the threshold values match your expectations.
+- When writing custom comparisons, use `ThresholdValidator.IsWithinThreshold` so behaviour mirrors the built-in validators.
 

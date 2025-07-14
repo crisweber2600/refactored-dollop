@@ -42,4 +42,16 @@ public class SummarisationValidatorTests
 
         Assert.False(result);
     }
+
+    [Fact]
+    public void UnknownThresholdType_ReturnsTrue()
+    {
+        var plan = new SummarisationPlan<YourEntity>(e => e.Id, (ThresholdType)999, 1m);
+        var entity = new YourEntity { Id = 1 };
+        var previous = new SaveAudit { MetricValue = 1 };
+
+        var result = _validator.Validate(entity, previous, plan);
+
+        Assert.True(result);
+    }
 }

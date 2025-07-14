@@ -92,4 +92,19 @@ public class SequenceValidatorTests
 
         Assert.False(SequenceValidator.Validate(data, f => f.Jar, plan));
     }
+
+    [Fact]
+    public void Validate_WithUnsupportedPlanType_Throws()
+    {
+        var data = new List<Foo>
+        {
+            new Foo { Jar = "x", Car = 1 },
+            new Foo { Jar = "x", Car = 2 }
+        };
+
+        var plan = new SummarisationPlan<Foo>(f => f.Car, (ThresholdType)999, 0m);
+
+        Assert.Throws<NotSupportedException>(() =>
+            SequenceValidator.Validate(data, f => f.Jar, plan));
+    }
 }

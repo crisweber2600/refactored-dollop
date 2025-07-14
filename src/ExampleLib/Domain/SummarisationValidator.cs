@@ -26,25 +26,10 @@ public class SummarisationValidator<T> : ISummarisationValidator<T>
 
         decimal previousValue = previousAudit.MetricValue;
 
-        switch (plan.ThresholdType)
-        {
-            case ThresholdType.RawDifference:
-                var diff = currentValue - previousValue;
-                return Math.Abs(diff) <= plan.ThresholdValue;
-
-            case ThresholdType.PercentChange:
-                if (previousValue == 0)
-                {
-                    // If previous value was zero, treat any non-zero change as exceeding
-                    return currentValue == 0;
-                }
-
-                var changeFraction = Math.Abs((currentValue - previousValue) / previousValue);
-                return changeFraction <= plan.ThresholdValue;
-
-            default:
-                // Unknown threshold type - treat as valid
-                return true;
-        }
+        return ThresholdValidator.IsWithinThreshold(
+            currentValue,
+            previousValue,
+            plan.ThresholdType,
+            plan.ThresholdValue);
     }
 }
