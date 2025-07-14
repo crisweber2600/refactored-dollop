@@ -22,7 +22,8 @@ public static class ServiceCollectionExtensions
         this IServiceCollection services,
         Func<T, decimal>? metricSelector = null,
         ThresholdType thresholdType = ThresholdType.PercentChange,
-        decimal thresholdValue = 0.1m)
+        decimal thresholdValue = 0.1m,
+        params Func<T, bool>[] manualRules)
     {
         services.AddSingleton(typeof(ISummarisationValidator<>), typeof(SummarisationValidator<>));
         services.AddSingleton<ISaveAuditRepository, InMemorySaveAuditRepository>();
@@ -34,7 +35,14 @@ public static class ServiceCollectionExtensions
             return store;
         });
 
+        services.AddValidatorService();
+        foreach (var rule in manualRules)
+        {
+            services.AddValidatorRule(rule);
+        }
+
         services.AddScoped<IValidationService, ValidationService>();
+        services.AddScoped<IValidationRunner, ValidationRunner>();
         return services;
     }
 
@@ -79,13 +87,14 @@ public static class ServiceCollectionExtensions
         Action<SetupValidationBuilder> configure,
         Func<T, decimal>? metricSelector = null,
         ThresholdType thresholdType = ThresholdType.PercentChange,
-        decimal thresholdValue = 0.1m)
+        decimal thresholdValue = 0.1m,
+        params Func<T, bool>[] manualRules)
     {
         var builder = new SetupValidationBuilder();
         configure(builder);
         builder.Apply(services);
 
-        services.AddSaveValidation<T>(metricSelector, thresholdType, thresholdValue);
+        services.AddSaveValidation<T>(metricSelector, thresholdType, thresholdValue, manualRules);
         if (builder.UsesMongo)
         {
             services.AddScoped<ISaveAuditRepository, MongoSaveAuditRepository>();
@@ -152,6 +161,15 @@ public static class ServiceCollectionExtensions
     {
         _manualValidator ??= new ManualValidatorService();
         services.AddSingleton<IManualValidatorService>(_manualValidator);
+        return services;
+    }
+
+    /// <summary>
+    /// Register <see cref="ValidationRunner"/> for executing all validations.
+    /// </summary>
+    public static IServiceCollection AddValidationRunner(this IServiceCollection services)
+    {
+        services.AddScoped<IValidationRunner, ValidationRunner>();
         return services;
     }
 
