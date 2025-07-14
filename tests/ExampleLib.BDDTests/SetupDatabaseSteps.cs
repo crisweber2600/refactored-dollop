@@ -21,7 +21,7 @@ public class SetupDatabaseSteps
     public void WhenSetupDatabaseInvoked()
     {
         _services!.SetupDatabase<YourDbContext>("DataSource=:memory:");
-        _provider = _services.BuildServiceProvider();
+        _provider = _services!.BuildServiceProvider();
     }
 
     [Then("a unit of work can be resolved")]

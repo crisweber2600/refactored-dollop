@@ -22,7 +22,7 @@ public class MongoConfigurationSteps
     public void WhenAddExampleDataMongoInvoked()
     {
         _services!.AddExampleDataMongo("mongodb://localhost:27017", "bdd");
-        _provider = _services.BuildServiceProvider();
+        _provider = _services!.BuildServiceProvider();
     }
 
     [Then("the Mongo database should resolve")]
