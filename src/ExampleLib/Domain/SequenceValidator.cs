@@ -101,7 +101,7 @@ public static class SequenceValidator
                     var change = Math.Abs((cur - prev) / prev);
                     return change <= plan.ThresholdValue;
                 default:
-                    return true;
+                    throw new NotSupportedException($"Unsupported ThresholdType: {plan.ThresholdType}");
             }
         });
     }
