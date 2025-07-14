@@ -38,6 +38,27 @@ public class MongoGenericRepository<T> : IGenericRepository<T>
         return _collection.InsertOneAsync(entity);
     }
 
+    public async Task AddManyAsync(IEnumerable<T> entities)
+    {
+        foreach (var entity in entities)
+            await _collection.InsertOneAsync(entity);
+    }
+
+    public Task UpdateAsync(T entity)
+    {
+        var filter = Builders<T>.Filter.Eq(e => e.Id, entity.Id);
+        return _collection.ReplaceOneAsync(filter, entity);
+    }
+
+    public async Task UpdateManyAsync(IEnumerable<T> entities)
+    {
+        foreach (var entity in entities)
+        {
+            var filter = Builders<T>.Filter.Eq(e => e.Id, entity.Id);
+            await _collection.ReplaceOneAsync(filter, entity);
+        }
+    }
+
     public async Task DeleteAsync(T entity, bool hardDelete = false)
     {
         var filter = Builders<T>.Filter.Eq(e => e.Id, entity.Id);

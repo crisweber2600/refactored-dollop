@@ -12,6 +12,7 @@ public interface IMongoCollectionInterceptor<T>
 {
     Task InsertOneAsync(T document, CancellationToken cancellationToken = default);
     Task<UpdateResult> UpdateOneAsync(FilterDefinition<T> filter, UpdateDefinition<T> update, CancellationToken cancellationToken = default);
+    Task ReplaceOneAsync(FilterDefinition<T> filter, T replacement, CancellationToken cancellationToken = default);
     Task<DeleteResult> DeleteOneAsync(FilterDefinition<T> filter, CancellationToken cancellationToken = default);
     IFindFluent<T, T> Find(FilterDefinition<T> filter);
     Task<long> CountDocumentsAsync(FilterDefinition<T> filter,
@@ -53,6 +54,12 @@ public class MongoCollectionInterceptor<T> : IMongoCollectionInterceptor<T>
             }
         }
         return result;
+    }
+
+    public async Task ReplaceOneAsync(FilterDefinition<T> filter, T replacement, CancellationToken cancellationToken = default)
+    {
+        await _inner.ReplaceOneAsync(filter, replacement, cancellationToken: cancellationToken);
+        await _validationService.ValidateAndSaveAsync(replacement, replacement.Id.ToString(), cancellationToken);
     }
 
     public Task<DeleteResult> DeleteOneAsync(FilterDefinition<T> filter, CancellationToken cancellationToken = default)

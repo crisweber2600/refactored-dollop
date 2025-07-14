@@ -1,5 +1,8 @@
 using ExampleData;
 using Microsoft.EntityFrameworkCore;
+using System.Threading;
+using MongoDB.Driver;
+using ExampleData.Infrastructure;
 
 namespace ExampleLib.Tests;
 
@@ -74,5 +77,162 @@ public class RepositoryTests
         var result = await repo.GetByIdAsync(entity.Id, includeDeleted: true);
 
         Assert.NotNull(result);
+    }
+
+    [Fact]
+    public async Task AddMany_EF_AddsEntities()
+    {
+        var options = new DbContextOptionsBuilder<YourDbContext>()
+            .UseInMemoryDatabase("many-ef")
+            .Options;
+        using var context = new YourDbContext(options);
+        var repo = new EfGenericRepository<YourEntity>(context);
+
+        var entities = new[]
+        {
+            new YourEntity { Name = "Five", Validated = true },
+            new YourEntity { Name = "Six", Validated = true }
+        };
+        await repo.AddManyAsync(entities);
+        await context.SaveChangesAsync();
+
+        Assert.Equal(2, await repo.CountAsync());
+    }
+
+    [Fact]
+    public async Task Update_EF_PersistsChanges()
+    {
+        var options = new DbContextOptionsBuilder<YourDbContext>()
+            .UseInMemoryDatabase("update-ef")
+            .Options;
+        using var context = new YourDbContext(options);
+        var repo = new EfGenericRepository<YourEntity>(context);
+
+        var entity = new YourEntity { Name = "Old", Validated = true };
+        await repo.AddAsync(entity);
+        await context.SaveChangesAsync();
+
+        entity.Name = "New";
+        await repo.UpdateAsync(entity);
+        await context.SaveChangesAsync();
+
+        var reloaded = await repo.GetByIdAsync(entity.Id);
+        Assert.Equal("New", reloaded?.Name);
+    }
+
+    [Fact]
+    public async Task UpdateMany_EF_PersistsChanges()
+    {
+        var options = new DbContextOptionsBuilder<YourDbContext>()
+            .UseInMemoryDatabase("update-many-ef")
+            .Options;
+        using var context = new YourDbContext(options);
+        var repo = new EfGenericRepository<YourEntity>(context);
+
+        var entities = new[]
+        {
+            new YourEntity { Name = "Old1", Validated = true },
+            new YourEntity { Name = "Old2", Validated = true }
+        };
+        await repo.AddManyAsync(entities);
+        await context.SaveChangesAsync();
+
+        entities[0].Name = "New1";
+        entities[1].Name = "New2";
+        await repo.UpdateManyAsync(entities);
+        await context.SaveChangesAsync();
+
+        var list = await repo.GetAllAsync();
+        Assert.Contains(list, e => e.Name == "New1");
+        Assert.Contains(list, e => e.Name == "New2");
+    }
+
+    private class NoopValidationService : ExampleLib.Domain.IValidationService
+    {
+        public Task<bool> ValidateAndSaveAsync<T>(T entity, string entityId, CancellationToken cancellationToken = default)
+            => Task.FromResult(true);
+    }
+
+    private class FakeMongoCollection<T> : IMongoCollectionInterceptor<T>
+        where T : class, IValidatable, IBaseEntity, IRootEntity
+    {
+        public List<T> Items { get; } = new();
+
+        public Task InsertOneAsync(T document, CancellationToken cancellationToken = default)
+        {
+            Items.Add(document);
+            return Task.CompletedTask;
+        }
+
+        public Task<UpdateResult> UpdateOneAsync(FilterDefinition<T> filter, UpdateDefinition<T> update, CancellationToken cancellationToken = default)
+            => Task.FromResult((UpdateResult)UpdateResult.Unacknowledged.Instance);
+
+        public Task ReplaceOneAsync(FilterDefinition<T> filter, T replacement, CancellationToken cancellationToken = default)
+        {
+            var idx = Items.FindIndex(e => e.Id == replacement.Id);
+            if (idx >= 0)
+                Items[idx] = replacement;
+            return Task.CompletedTask;
+        }
+
+        public Task<DeleteResult> DeleteOneAsync(FilterDefinition<T> filter, CancellationToken cancellationToken = default)
+            => Task.FromResult((DeleteResult)DeleteResult.Unacknowledged.Instance);
+
+        public IFindFluent<T, T> Find(FilterDefinition<T> filter) => throw new NotImplementedException();
+
+        public Task<long> CountDocumentsAsync(FilterDefinition<T> filter, CountOptions? options = null, CancellationToken cancellationToken = default)
+            => Task.FromResult(Items.LongCount(e => e.Validated));
+    }
+
+    [Fact]
+    public async Task AddMany_Mongo_AddsEntities()
+    {
+        var collection = new FakeMongoCollection<YourEntity>();
+        var repo = new MongoGenericRepository<YourEntity>(collection);
+
+        var entities = new[]
+        {
+            new YourEntity { Name = "Seven", Validated = true },
+            new YourEntity { Name = "Eight", Validated = true }
+        };
+        await repo.AddManyAsync(entities);
+
+        Assert.Equal(2, collection.Items.Count);
+    }
+
+    [Fact]
+    public async Task Update_Mongo_PersistsChanges()
+    {
+        var collection = new FakeMongoCollection<YourEntity>();
+        var repo = new MongoGenericRepository<YourEntity>(collection);
+
+        var entity = new YourEntity { Id = 1, Name = "Old", Validated = true };
+        await repo.AddAsync(entity);
+
+        entity.Name = "New";
+        await repo.UpdateAsync(entity);
+
+        Assert.Equal("New", collection.Items.First().Name);
+    }
+
+    [Fact]
+    public async Task UpdateMany_Mongo_PersistsChanges()
+    {
+        var collection = new FakeMongoCollection<YourEntity>();
+        var repo = new MongoGenericRepository<YourEntity>(collection);
+
+        var entities = new[]
+        {
+            new YourEntity { Id = 1, Name = "Old1", Validated = true },
+            new YourEntity { Id = 2, Name = "Old2", Validated = true }
+        };
+        await repo.AddManyAsync(entities);
+
+        entities[0].Name = "New1";
+        entities[1].Name = "New2";
+        await repo.UpdateManyAsync(entities);
+
+        Assert.Contains(collection.Items, e => e.Name == "New1");
+        Assert.Contains(collection.Items, e => e.Name == "New2");
     }
 }
