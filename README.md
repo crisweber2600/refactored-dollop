@@ -21,6 +21,7 @@ RAGStart provides a reference implementation of an event‑driven validation pip
 4. Reference `ExampleLib` from your own project and register services using the extension methods shown below.
 5. Use `AddManyAsync` for efficient seeding when populating test data.
 6. Call `UpdateAsync` or `UpdateManyAsync` to modify records without exposing EF Core or MongoDB types.
+7. Record bulk saves with `AddBatchAudit` so later validations know the previous batch size.
 
 ## Repository Layout
 - `src/ExampleLib` – domain models and infrastructure.
@@ -31,7 +32,7 @@ RAGStart provides a reference implementation of an event‑driven validation pip
 - `docs` – supplementary guides including `EFCoreReplicationGuide.md`.
 
 ## Core Components
-`SaveAudit` stores the last metric and validation result for each entity instance:
+`SaveAudit` stores details about the most recent save for each entity. It now tracks the size of any batch operation as well:
 ```csharp
 public class SaveAudit
 {
@@ -39,8 +40,23 @@ public class SaveAudit
     public string EntityType { get; set; } = string.Empty;
     public string EntityId { get; set; } = string.Empty;
     public decimal MetricValue { get; set; }
+    // How many records were part of the operation
+    public int BatchSize { get; set; }
     public bool Validated { get; set; }
     public DateTimeOffset Timestamp { get; set; }
+}
+```
+
+### Batch Audits
+`ISaveAuditRepository` also exposes helpers for summarising larger save operations. Use `AddBatchAudit` when persisting many records at once and later retrieve the most recent summary via `GetLastBatchAudit`.
+```csharp
+public interface ISaveAuditRepository
+{
+    SaveAudit? GetLastAudit(string entityType, string entityId);
+    void AddAudit(SaveAudit audit);
+    // New helpers
+    SaveAudit? GetLastBatchAudit(string entityType);
+    void AddBatchAudit(SaveAudit audit);
 }
 ```
 `ISummarisationPlanStore` provides access to `SummarisationPlan` objects describing how each entity is validated:
@@ -82,6 +98,7 @@ Use `AddManyAsync` when seeding data or performing bulk inserts:
 var items = new[] { new Foo { Id = 1 }, new Foo { Id = 2 } };
 await repository.AddManyAsync(items);
 ```
+After inserting a collection, create a `SaveAudit` with the total count and call `AddBatchAudit` to persist the batch summary.
 
 To modify entities, use `UpdateAsync` or `UpdateManyAsync` before saving:
 
@@ -215,4 +232,5 @@ VS Code tasks under `.vscode/tasks.json` provide convenient shortcuts for valida
 - Remove `bin` and `obj` folders after SDK upgrades to avoid stale builds.
 - MongoDB tests rely on **Mongo2Go**; ensure the runner can download binaries through your network proxy.
 - If tests fail to compile, verify that all repositories implement the latest interface methods.
+- Missing batch audit data usually means `AddBatchAudit` was not invoked after bulk saves.
 

@@ -10,6 +10,7 @@ namespace ExampleLib.Infrastructure;
 public class InMemorySaveAuditRepository : ISaveAuditRepository
 {
     private readonly ConcurrentDictionary<(string, string), SaveAudit> _audits = new();
+    private const string BatchKey = "__batch__";
 
     /// <summary>
     /// Retrieve the most recent audit for an entity or null if none exists.
@@ -28,4 +29,21 @@ public class InMemorySaveAuditRepository : ISaveAuditRepository
         var key = (audit.EntityType, audit.EntityId);
         _audits[key] = audit;
     }
+
+    public void AddBatchAudit(SaveAudit audit)
+    {
+        var batch = new SaveAudit
+        {
+            EntityType = audit.EntityType,
+            EntityId = BatchKey,
+            MetricValue = audit.MetricValue,
+            BatchSize = audit.BatchSize,
+            Validated = audit.Validated,
+            Timestamp = audit.Timestamp
+        };
+        AddAudit(batch);
+    }
+
+    public SaveAudit? GetLastBatchAudit(string entityType)
+        => GetLastAudit(entityType, BatchKey);
 }

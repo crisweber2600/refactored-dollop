@@ -10,6 +10,7 @@ namespace ExampleLib.Infrastructure;
 public class MongoSaveAuditRepository : ISaveAuditRepository
 {
     private readonly IMongoCollection<SaveAudit> _collection;
+    private const string BatchKey = "__batch__";
 
     public MongoSaveAuditRepository(IMongoDatabase database)
     {
@@ -33,4 +34,21 @@ public class MongoSaveAuditRepository : ISaveAuditRepository
                      Builders<SaveAudit>.Filter.Eq(a => a.EntityId, audit.EntityId);
         _collection.ReplaceOne(filter, audit, new ReplaceOptions { IsUpsert = true });
     }
+
+    public void AddBatchAudit(SaveAudit audit)
+    {
+        var batch = new SaveAudit
+        {
+            EntityType = audit.EntityType,
+            EntityId = BatchKey,
+            MetricValue = audit.MetricValue,
+            BatchSize = audit.BatchSize,
+            Validated = audit.Validated,
+            Timestamp = audit.Timestamp
+        };
+        AddAudit(batch);
+    }
+
+    public SaveAudit? GetLastBatchAudit(string entityType)
+        => GetLastAudit(entityType, BatchKey);
 }

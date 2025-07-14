@@ -40,4 +40,31 @@ public class SaveAuditRepositoryTests
         Assert.Equal(2m, last!.MetricValue);
         Assert.False(last.Validated);
     }
+
+    [Fact]
+    public void AddBatchAudit_PersistsBatchSize()
+    {
+        var options = new DbContextOptionsBuilder<YourDbContext>()
+            .UseInMemoryDatabase("batch-audit")
+            .Options;
+
+        using var context = new YourDbContext(options);
+        context.Database.EnsureCreated();
+        var repo = new EfSaveAuditRepository(context);
+
+        var audit = new SaveAudit
+        {
+            EntityType = "User",
+            MetricValue = 3m,
+            BatchSize = 5,
+            Validated = true,
+            Timestamp = DateTimeOffset.UtcNow
+        };
+
+        repo.AddBatchAudit(audit);
+
+        var last = repo.GetLastBatchAudit("User");
+        Assert.NotNull(last);
+        Assert.Equal(5, last!.BatchSize);
+    }
 }

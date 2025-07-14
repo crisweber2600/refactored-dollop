@@ -26,4 +26,16 @@ public class InMemoryStoreTests
         var result = repo.GetLastAudit("User", "1");
         Assert.Equal(audit, result);
     }
+
+    [Fact]
+    public void BatchAudit_Persisted_AndReturned()
+    {
+        var repo = new InMemorySaveAuditRepository();
+        var audit = new SaveAudit { EntityType = "User", MetricValue = 2m, BatchSize = 4 };
+        repo.AddBatchAudit(audit);
+
+        var result = repo.GetLastBatchAudit("User");
+        Assert.NotNull(result);
+        Assert.Equal(4, result!.BatchSize);
+    }
 }
