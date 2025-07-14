@@ -4,6 +4,8 @@ using System.Threading;
 using MongoDB.Driver;
 using ExampleData.Infrastructure;
 
+using ExampleLib.Domain;
+using ExampleLib.Infrastructure;
 namespace ExampleLib.Tests;
 
 public class RepositoryTests
@@ -15,7 +17,7 @@ public class RepositoryTests
             .UseInMemoryDatabase("repo-test")
             .Options;
         using var context = new YourDbContext(options);
-        var repo = new EfGenericRepository<YourEntity>(context);
+        var repo = new EfGenericRepository<YourEntity>(context, new BatchValidationService(new InMemorySaveAuditRepository()));
 
         await repo.AddAsync(new YourEntity { Name = "One", Validated = true });
         await context.SaveChangesAsync();
@@ -30,7 +32,7 @@ public class RepositoryTests
             .UseInMemoryDatabase("delete-test")
             .Options;
         using var context = new YourDbContext(options);
-        var repo = new EfGenericRepository<YourEntity>(context);
+        var repo = new EfGenericRepository<YourEntity>(context, new BatchValidationService(new InMemorySaveAuditRepository()));
 
         var entity = new YourEntity { Name = "Two" };
         await repo.AddAsync(entity);
@@ -48,7 +50,7 @@ public class RepositoryTests
             .UseInMemoryDatabase("hard-delete-test")
             .Options;
         using var context = new YourDbContext(options);
-        var repo = new EfGenericRepository<YourEntity>(context);
+        var repo = new EfGenericRepository<YourEntity>(context, new BatchValidationService(new InMemorySaveAuditRepository()));
 
         var entity = new YourEntity { Name = "Three", Validated = true };
         await repo.AddAsync(entity);
@@ -66,7 +68,7 @@ public class RepositoryTests
             .UseInMemoryDatabase("include-deleted-test")
             .Options;
         using var context = new YourDbContext(options);
-        var repo = new EfGenericRepository<YourEntity>(context);
+        var repo = new EfGenericRepository<YourEntity>(context, new BatchValidationService(new InMemorySaveAuditRepository()));
 
         var entity = new YourEntity { Name = "Four", Validated = true };
         await repo.AddAsync(entity);
@@ -86,7 +88,7 @@ public class RepositoryTests
             .UseInMemoryDatabase("many-ef")
             .Options;
         using var context = new YourDbContext(options);
-        var repo = new EfGenericRepository<YourEntity>(context);
+        var repo = new EfGenericRepository<YourEntity>(context, new BatchValidationService(new InMemorySaveAuditRepository()));
 
         var entities = new[]
         {
@@ -106,7 +108,7 @@ public class RepositoryTests
             .UseInMemoryDatabase("update-ef")
             .Options;
         using var context = new YourDbContext(options);
-        var repo = new EfGenericRepository<YourEntity>(context);
+        var repo = new EfGenericRepository<YourEntity>(context, new BatchValidationService(new InMemorySaveAuditRepository()));
 
         var entity = new YourEntity { Name = "Old", Validated = true };
         await repo.AddAsync(entity);
@@ -127,7 +129,7 @@ public class RepositoryTests
             .UseInMemoryDatabase("update-many-ef")
             .Options;
         using var context = new YourDbContext(options);
-        var repo = new EfGenericRepository<YourEntity>(context);
+        var repo = new EfGenericRepository<YourEntity>(context, new BatchValidationService(new InMemorySaveAuditRepository()));
 
         var entities = new[]
         {
@@ -188,7 +190,7 @@ public class RepositoryTests
     public async Task AddMany_Mongo_AddsEntities()
     {
         var collection = new FakeMongoCollection<YourEntity>();
-        var repo = new MongoGenericRepository<YourEntity>(collection);
+        var repo = new MongoGenericRepository<YourEntity>(collection, new BatchValidationService(new InMemorySaveAuditRepository()));
 
         var entities = new[]
         {
@@ -204,7 +206,7 @@ public class RepositoryTests
     public async Task Update_Mongo_PersistsChanges()
     {
         var collection = new FakeMongoCollection<YourEntity>();
-        var repo = new MongoGenericRepository<YourEntity>(collection);
+        var repo = new MongoGenericRepository<YourEntity>(collection, new BatchValidationService(new InMemorySaveAuditRepository()));
 
         var entity = new YourEntity { Id = 1, Name = "Old", Validated = true };
         await repo.AddAsync(entity);
@@ -219,7 +221,7 @@ public class RepositoryTests
     public async Task UpdateMany_Mongo_PersistsChanges()
     {
         var collection = new FakeMongoCollection<YourEntity>();
-        var repo = new MongoGenericRepository<YourEntity>(collection);
+        var repo = new MongoGenericRepository<YourEntity>(collection, new BatchValidationService(new InMemorySaveAuditRepository()));
 
         var entities = new[]
         {
