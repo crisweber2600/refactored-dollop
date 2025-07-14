@@ -1,4 +1,5 @@
 using ExampleData;
+using ExampleLib.Domain;
 
 namespace ExampleLib.BDDTests;
 

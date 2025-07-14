@@ -15,13 +15,7 @@ public static class Dependencies
     public static IServiceCollection CreateServices()
     {
         var services = new ServiceCollection();
-        services.AddDbContext<YourDbContext, TestDbContext>(opts =>
-            opts.UseInMemoryDatabase(Guid.NewGuid().ToString()));
-        services.AddScoped(typeof(IGenericRepository<>), typeof(EfGenericRepository<>));
-        services.AddScoped<IValidationService, ValidationService>();
-        services.AddScoped<IUnitOfWork, UnitOfWork<YourDbContext>>();
-        services.AddSingleton(typeof(ISummarisationValidator<>), typeof(SummarisationValidator<>));
-        services.AddSingleton<ISummarisationPlanStore, InMemorySummarisationPlanStore>();
+        services.SetupInMemoryDatabase<TestDbContext>();
         services.AddSingleton<ISaveAuditRepository, InMemorySaveAuditRepository>();
         return services;
     }
