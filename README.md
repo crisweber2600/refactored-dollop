@@ -191,12 +191,19 @@ These helpers register the appropriate repositories and validation services for 
 Entities are validated against the registered `SummarisationPlan` each time a save occurs. The unit of work exposes `SaveChangesWithPlanAsync<TEntity>()` to automatically apply the plan when persisting data. Mongo collections use an interceptor to invoke the same logic whenever documents are inserted or updated.
 
 ## Manual Validators
-`ManualValidatorService` stores simple predicate rules per type. Register the service and rules during startup:
+`ManualValidatorService` exposes a public `Rules` dictionary of predicates keyed by type.
+Create and register the service during startup then add rules as needed:
 ```csharp
 services.AddValidatorService()
         .AddValidatorRule<Order>(o => o.Total > 0);
 ```
 The service evaluates every rule for the specified type and returns `true` only when all pass.
+
+- `AddValidatorService` registers a single `ManualValidatorService` instance.
+- Rules can be added for any type via `AddValidatorRule<T>()`.
+- Access `ManualValidatorService.Rules` from DI to inspect existing predicates.
+- Multiple rules for a type are evaluated sequentially.
+- When no rules exist the service simply returns `true`.
 
 ## Sequence Validation
 `SequenceValidator` provides a lightweight way to compare successive records using lambda expressions. Specify a key selector and value selector; an optional delegate lets you control how values are compared.

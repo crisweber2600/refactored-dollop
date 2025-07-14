@@ -9,11 +9,18 @@ namespace ExampleLib.Domain;
 /// </summary>
 public class ManualValidatorService : IManualValidatorService
 {
-    private readonly IDictionary<Type, List<Func<object, bool>>> _rules;
+    /// <summary>
+    /// Dictionary of validation rules keyed by the validated type.
+    /// </summary>
+    public IDictionary<Type, List<Func<object, bool>>> Rules { get; }
+
+    public ManualValidatorService() : this(new Dictionary<Type, List<Func<object, bool>>>())
+    {
+    }
 
     public ManualValidatorService(IDictionary<Type, List<Func<object, bool>>> rules)
     {
-        _rules = rules ?? throw new ArgumentNullException(nameof(rules));
+        Rules = rules ?? throw new ArgumentNullException(nameof(rules));
     }
 
     /// <inheritdoc />
@@ -21,7 +28,7 @@ public class ManualValidatorService : IManualValidatorService
     {
         if (instance == null) throw new ArgumentNullException(nameof(instance));
         var type = instance.GetType();
-        if (!_rules.TryGetValue(type, out var rules) || rules.Count == 0)
+        if (!Rules.TryGetValue(type, out var rules) || rules.Count == 0)
         {
             return true;
         }
