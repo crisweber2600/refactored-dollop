@@ -184,7 +184,7 @@ public static class ServiceCollectionExtensions
                 typeof(ServiceCollectionExtensions)
                     .GetMethod(nameof(AddSaveValidation))!
                     .MakeGenericMethod(type)
-                    .Invoke(null, new object[] { services, selector, flow.ThresholdType, flow.ThresholdValue });
+                    .Invoke(null, new object?[] { services, selector, flow.ThresholdType, flow.ThresholdValue });
             }
             if (flow.SaveCommit)
             {

@@ -212,6 +212,9 @@ If you omit the last delegate, equality comparison on the selected value is used
 var plan = new SummarisationPlan<MyEntity>(e => e.Value, ThresholdType.RawDifference, 5);
 bool passes = SequenceValidator.Validate(items, e => e.Server, plan);
 ```
+The validator now checks every item against its immediate predecessor, ensuring
+that sequences with a single key are validated correctly. Use a summarisation
+plan whenever you need a consistent threshold across validations.
 
 ## External Flow Configuration
 Validation flows may be loaded from JSON:
@@ -232,12 +235,17 @@ var json = File.ReadAllText("flows.json");
 var options = ValidationFlowOptions.Load(json);
 services.AddValidationFlows(options);
 ```
+This helper wires up save, commit and delete validations according to the JSON
+definition, reducing boilerplate service registrations.
 
 ## Running the Tests
 Run all unit and BDD tests with code coverage:
 ```bash
 dotnet test --collect:"XPlat Code Coverage"
 ```
+Tests are compiled with warnings treated as errors. Any build warning will fail
+the run, so ensure packages resolve cleanly. The generated coverage report should
+exceed 80% when all tests pass.
 VS Code tasks under `.vscode/tasks.json` provide convenient shortcuts for validating specific scenarios.
 
 ## Additional Guides
@@ -251,6 +259,7 @@ VS Code tasks under `.vscode/tasks.json` provide convenient shortcuts for valida
 - Run `dotnet restore` if packages fail to resolve.
 - Remove `bin` and `obj` folders after SDK upgrades to avoid stale builds.
 - MongoDB tests rely on **Mongo2Go**; ensure the runner can download binaries through your network proxy.
+- If packages resolve to different preview versions, update your project references to avoid NU1603 warnings.
 - If tests fail to compile, verify that all repositories implement the latest interface methods.
 - Missing batch audit data usually means `AddBatchAudit` was not invoked after bulk saves.
 - If results from `SequenceValidator` seem incorrect, verify the items are ordered as intended.
