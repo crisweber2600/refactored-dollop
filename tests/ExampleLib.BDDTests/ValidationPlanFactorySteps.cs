@@ -5,7 +5,6 @@ using System.Collections.Generic;
 
 namespace ExampleLib.BDDTests;
 
-public class Foo {}
 public class Bar {}
 public class Car {}
 

@@ -10,4 +10,10 @@ public interface ISaveAuditRepository
 
     /// <summary>Persist a new SaveAudit record.</summary>
     void AddAudit(SaveAudit audit);
+
+    /// <summary>Persist an audit summarising a batch save.</summary>
+    void AddBatchAudit(SaveAudit audit);
+
+    /// <summary>Retrieve the most recent batch audit for the given entity type.</summary>
+    SaveAudit? GetLastBatchAudit(string entityType);
 }

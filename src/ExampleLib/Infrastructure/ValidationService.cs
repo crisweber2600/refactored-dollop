@@ -32,6 +32,7 @@ public class ValidationService : IValidationService
             EntityType = typeof(T).Name,
             EntityId = entityId,
             MetricValue = plan.MetricSelector(entity!),
+            BatchSize = 1,
             Validated = isValid,
             Timestamp = DateTimeOffset.UtcNow
         };

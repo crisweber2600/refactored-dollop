@@ -10,6 +10,7 @@ namespace ExampleLib.Infrastructure;
 public class EfSaveAuditRepository : ISaveAuditRepository
 {
     private readonly YourDbContext _context;
+    private const string BatchKey = "__batch__";
 
     public EfSaveAuditRepository(YourDbContext context)
     {
@@ -40,10 +41,28 @@ public class EfSaveAuditRepository : ISaveAuditRepository
         else
         {
             entity.MetricValue = audit.MetricValue;
+            entity.BatchSize = audit.BatchSize;
             entity.Timestamp = audit.Timestamp;
             entity.Validated = audit.Validated;
             _context.SaveAudits.Update(entity);
         }
         _context.SaveChanges();
     }
+
+    public void AddBatchAudit(SaveAudit audit)
+    {
+        var batch = new SaveAudit
+        {
+            EntityType = audit.EntityType,
+            EntityId = BatchKey,
+            MetricValue = audit.MetricValue,
+            BatchSize = audit.BatchSize,
+            Validated = audit.Validated,
+            Timestamp = audit.Timestamp
+        };
+        AddAudit(batch);
+    }
+
+    public SaveAudit? GetLastBatchAudit(string entityType)
+        => GetLastAudit(entityType, BatchKey);
 }
