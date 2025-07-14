@@ -41,6 +41,8 @@ public class SaveAudit
     public string EntityType { get; set; } = string.Empty;
     public string EntityId { get; set; } = string.Empty;
     public decimal MetricValue { get; set; }
+    // Additional metric used by FooValidator
+    public decimal Jar { get; set; }
     // How many records were part of the operation
     public int BatchSize { get; set; }
     public bool Validated { get; set; }
@@ -198,6 +200,34 @@ services.AddValidatorService()
         .AddValidatorRule<Order>(o => o.Total > 0);
 ```
 The service evaluates every rule for the specified type and returns `true` only when all pass.
+
+### Custom rules
+Additional validators can be wired up with `AddValidatorRule<T>`. Below `FooValidator`
+checks that any `Foo` saved with description `"svc2"` reuses the previous `Jar` value:
+
+```csharp
+var repo = new InMemorySaveAuditRepository();
+services.AddValidatorService()
+        .AddValidatorRule<Foo>(new FooValidator(repo).Validate);
+services.AddSingleton<ISaveAuditRepository>(repo);
+```
+Every save stores the current `Jar` metric in `SaveAudit`. When another `Foo`
+with the same ID and description `"svc2"` is saved, the validator compares the
+new value to the last audit. A mismatch causes validation to fail.
+
+### Sequence Comparison Helper
+`SequenceValidator` evaluates transitions in a list using two property
+selectors. The first selector defines when comparisons occur while the second
+provides the numeric value:
+
+```csharp
+var isValid = SequenceValidator.Validate(foos,
+    x => x.Jar,
+    x => x.Car,
+    (cur, prev) => Math.Abs(cur - prev) <= 2);
+```
+Whenever the `Jar` key changes, the rule is applied to the current `Car` value
+and the last value from the previous group.
 
 ## External Flow Configuration
 Validation flows may be loaded from JSON:

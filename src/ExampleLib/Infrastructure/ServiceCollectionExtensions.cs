@@ -24,6 +24,7 @@ public static class ServiceCollectionExtensions
         ThresholdType thresholdType = ThresholdType.PercentChange,
         decimal thresholdValue = 0.1m)
     {
+        services.AddValidatorService();
         services.AddSingleton(typeof(ISummarisationValidator<>), typeof(SummarisationValidator<>));
         services.AddSingleton<ISaveAuditRepository, InMemorySaveAuditRepository>();
         services.AddSingleton<ISummarisationPlanStore>(sp =>
