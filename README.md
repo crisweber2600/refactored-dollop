@@ -19,12 +19,15 @@ RAGStart provides a reference implementation of an event‑driven validation pip
 2. Set `DOTNET_ROLL_FORWARD=Major` when running the solution on .NET 9 runtimes.
 3. Execute `dotnet build` followed by `dotnet test --collect:"XPlat Code Coverage"`.
 4. Reference `ExampleLib` from your own project and register services using the extension methods shown below.
+5. Use `AddManyAsync` for efficient seeding when populating test data.
+6. Call `UpdateAsync` or `UpdateManyAsync` to modify records without exposing EF Core or MongoDB types.
 
 ## Repository Layout
 - `src/ExampleLib` – domain models and infrastructure.
 - `tests/ExampleLib.Tests` – unit tests for repositories and validators.
 - `tests/ExampleLib.BDDTests` – Reqnroll scenarios demonstrating end‑to‑end behaviour.
 - `features` – `.feature` files used by the BDD tests.
+- `features/RepositoryUpdate.feature` – verifies that updates are persisted correctly.
 - `docs` – supplementary guides including `EFCoreReplicationGuide.md`.
 
 ## Core Components
@@ -55,11 +58,38 @@ public interface IGenericRepository<T>
     Task<T?> GetByIdAsync(int id, bool includeDeleted = false);
     Task<List<T>> GetAllAsync();
     Task AddAsync(T entity);
+    /// <summary>
+    /// Insert a collection of entities in one operation.
+    /// </summary>
+    Task AddManyAsync(IEnumerable<T> entities);
+    /// <summary>
+    /// Update a single entity already tracked.
+    /// </summary>
+    Task UpdateAsync(T entity);
+    /// <summary>
+    /// Apply updates to multiple entities at once.
+    /// </summary>
+    Task UpdateManyAsync(IEnumerable<T> entities);
     Task DeleteAsync(T entity, bool hardDelete = false);
     Task<int> CountAsync();
 }
 ```
 MongoDB uses `MongoGenericRepository` with similar behaviour.
+
+Use `AddManyAsync` when seeding data or performing bulk inserts:
+
+```csharp
+var items = new[] { new Foo { Id = 1 }, new Foo { Id = 2 } };
+await repository.AddManyAsync(items);
+```
+
+To modify entities, use `UpdateAsync` or `UpdateManyAsync` before saving:
+
+```csharp
+foo.Name = "Updated";
+await repository.UpdateAsync(foo);
+await context.SaveChangesAsync();
+```
 
 ### Sample Foo Entity
 `Foo` lives only in the BDD test project and demonstrates a minimal entity used for repository scenarios.
@@ -85,6 +115,7 @@ public class TestDbContext : YourDbContext
 
 ## Configuring the Data Layer
 `SetupValidationBuilder` collects setup steps before applying them:
+Both the EF Core and MongoDB repositories expose `AddManyAsync` so large lists can be inserted efficiently regardless of provider.
 ```csharp
 public class SetupValidationBuilder
 {
@@ -176,9 +207,12 @@ VS Code tasks under `.vscode/tasks.json` provide convenient shortcuts for valida
 ## Additional Guides
 - `docs/EFCoreReplicationGuide.md` explains how to replicate the EF Core setup in another project.
 - `Implementation.md` discusses designing class libraries at different maturity levels.
+- The new `RepositoryUpdate.feature` demonstrates updating entities via BDD tests.
 
 ## Troubleshooting
 - Ensure `DOTNET_ROLL_FORWARD=Major` is set when using .NET 9 runtimes.
 - Run `dotnet restore` if packages fail to resolve.
 - Remove `bin` and `obj` folders after SDK upgrades to avoid stale builds.
+- MongoDB tests rely on **Mongo2Go**; ensure the runner can download binaries through your network proxy.
+- If tests fail to compile, verify that all repositories implement the latest interface methods.
 
