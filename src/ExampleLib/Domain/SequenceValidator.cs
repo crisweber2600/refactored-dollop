@@ -31,37 +31,17 @@ public static class SequenceValidator
             return true;
 
         var lastItem = enumerator.Current;
-        var lastKey = wheneverSelector(lastItem);
         var lastValue = valueSelector(lastItem);
-        T lastDifferentItem = lastItem;
-        TValue lastDifferentValue = lastValue;
-        TKey lastDifferentKey = lastKey;
-        bool hasLastDifferent = false;
 
         while (enumerator.MoveNext())
         {
             var current = enumerator.Current;
-            var currentKey = wheneverSelector(current);
             var currentValue = valueSelector(current);
 
-            if (!EqualityComparer<TKey>.Default.Equals(currentKey, lastKey))
-            {
-                if (!validationFunc(currentValue, lastValue))
-                    return false;
-
-                lastDifferentItem = lastItem;
-                lastDifferentValue = lastValue;
-                lastDifferentKey = lastKey;
-                hasLastDifferent = true;
-            }
-            else if (hasLastDifferent)
-            {
-                if (!validationFunc(currentValue, lastDifferentValue))
-                    return false;
-            }
+            if (!validationFunc(currentValue, lastValue))
+                return false;
 
             lastItem = current;
-            lastKey = currentKey;
             lastValue = currentValue;
         }
 

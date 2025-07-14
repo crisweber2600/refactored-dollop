@@ -10,7 +10,7 @@ namespace ExampleLib.Domain;
 public class SummarisationValidator<T> : ISummarisationValidator<T>
 {
     /// <inheritdoc />
-    public bool Validate(T currentEntity, SaveAudit previousAudit, SummarisationPlan<T> plan)
+    public bool Validate(T currentEntity, SaveAudit? previousAudit, SummarisationPlan<T> plan)
     {
         if (plan == null) throw new ArgumentNullException(nameof(plan));
         if (currentEntity == null) throw new ArgumentNullException(nameof(currentEntity));
