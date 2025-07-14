@@ -22,7 +22,6 @@ RAGStart provides a reference implementation of an event‑driven validation pip
 5. Use `AddManyAsync` for efficient seeding when populating test data.
 6. Call `UpdateAsync` or `UpdateManyAsync` to modify records without exposing EF Core or MongoDB types.
 7. Record bulk saves with `AddBatchAudit` so later validations know the previous batch size.
-8. Unexpected batch sizes trigger `BatchValidationService` which enforces a ±10% rule.
 
 ## Repository Layout
 - `src/ExampleLib` – domain models and infrastructure.
@@ -47,7 +46,6 @@ public class SaveAudit
     public DateTimeOffset Timestamp { get; set; }
 }
 ```
-`BatchValidationService` relies on `BatchSize` to detect unusual spikes in insert volume.
 
 ### Batch Audits
 `ISaveAuditRepository` also exposes helpers for summarising larger save operations. Use `AddBatchAudit` when persisting many records at once and later retrieve the most recent summary via `GetLastBatchAudit`.
@@ -61,9 +59,6 @@ public interface ISaveAuditRepository
     void AddBatchAudit(SaveAudit audit);
 }
 ```
-`BatchValidationService` builds on these helpers to monitor the typical size of bulk inserts.
-Each new batch is compared with the last recorded count and is only accepted when the
-difference stays within ±10 percent. Successful checks automatically record a new batch audit.
 `ISummarisationPlanStore` provides access to `SummarisationPlan` objects describing how each entity is validated:
 ```csharp
 public interface ISummarisationPlanStore
@@ -101,9 +96,9 @@ Use `AddManyAsync` when seeding data or performing bulk inserts:
 
 ```csharp
 var items = new[] { new Foo { Id = 1 }, new Foo { Id = 2 } };
-await repository.AddManyAsync(items); // automatically validated
+await repository.AddManyAsync(items);
 ```
-`BatchValidationService` runs here behind the scenes and stores an audit when the batch size matches expectations.
+After inserting a collection, create a `SaveAudit` with the total count and call `AddBatchAudit` to persist the batch summary.
 
 To modify entities, use `UpdateAsync` or `UpdateManyAsync` before saving:
 
@@ -238,5 +233,4 @@ VS Code tasks under `.vscode/tasks.json` provide convenient shortcuts for valida
 - MongoDB tests rely on **Mongo2Go**; ensure the runner can download binaries through your network proxy.
 - If tests fail to compile, verify that all repositories implement the latest interface methods.
 - Missing batch audit data usually means `AddBatchAudit` was not invoked after bulk saves.
-- Unexpected validation failures can occur if the batch size deviates by more than 10% from the previous run.
 

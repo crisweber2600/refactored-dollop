@@ -28,19 +28,16 @@ public class UnitOfWork<TContext> : IUnitOfWork where TContext : DbContext
     private readonly TContext _context;
     private readonly IValidationService _validationService;
     private readonly ExampleLib.Domain.ISummarisationPlanStore _planStore;
-    private readonly IBatchValidationService _batchValidator;
 
     public UnitOfWork(TContext context, IValidationService validationService,
-        ExampleLib.Domain.ISummarisationPlanStore planStore,
-        IBatchValidationService batchValidator)
+        ExampleLib.Domain.ISummarisationPlanStore planStore)
     {
         _context = context;
         _validationService = validationService;
         _planStore = planStore;
-        _batchValidator = batchValidator;
     }
 
-    public IGenericRepository<T> Repository<T>() where T : class, IValidatable, IBaseEntity, IRootEntity => new EfGenericRepository<T>((YourDbContext)(DbContext)_context, _batchValidator);
+    public IGenericRepository<T> Repository<T>() where T : class, IValidatable, IBaseEntity, IRootEntity => new EfGenericRepository<T>((YourDbContext)(DbContext)_context);
 
     public Task<int> SaveChangesAsync() => _context.SaveChangesAsync();
 

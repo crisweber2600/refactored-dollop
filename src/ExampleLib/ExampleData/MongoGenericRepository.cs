@@ -2,23 +2,20 @@ using MongoDB.Driver;
 using ExampleData.Infrastructure;
 using ExampleLib.Domain;
 
-using System.Linq;
 namespace ExampleData;
 
 public class MongoGenericRepository<T> : IGenericRepository<T>
     where T : class, IValidatable, IBaseEntity, IRootEntity
 {
     private readonly IMongoCollectionInterceptor<T> _collection;
-    private readonly IBatchValidationService _batchValidator;
 
-    public MongoGenericRepository(IMongoCollectionInterceptor<T> collection, IBatchValidationService batchValidator)
+    public MongoGenericRepository(IMongoCollectionInterceptor<T> collection)
     {
         _collection = collection;
-        _batchValidator = batchValidator;
     }
 
-    public MongoGenericRepository(IMongoDatabase database, IValidationService validationService, IBatchValidationService batchValidator)
-        : this(new MongoCollectionInterceptor<T>(database, validationService), batchValidator)
+    public MongoGenericRepository(IMongoDatabase database, IValidationService validationService)
+        : this(new MongoCollectionInterceptor<T>(database, validationService))
     {
     }
 
@@ -43,10 +40,8 @@ public class MongoGenericRepository<T> : IGenericRepository<T>
 
     public async Task AddManyAsync(IEnumerable<T> entities)
     {
-        var list = entities.ToList();
-        foreach (var entity in list)
+        foreach (var entity in entities)
             await _collection.InsertOneAsync(entity);
-        _batchValidator.ValidateAndAudit<T>(list.Count);
     }
 
     public Task UpdateAsync(T entity)
