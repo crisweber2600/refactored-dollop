@@ -22,15 +22,17 @@ public class SqlServerConfigurationSteps
     public void WhenAddExampleDataSqlServerInvoked()
     {
         _services!.AddExampleDataSqlServer("Server=(localdb)\\mssqllocaldb;Database=BDD;Trusted_Connection=True;");
-        _provider = _services.BuildServiceProvider();
+        _provider = _services!.BuildServiceProvider();
     }
 
     [Then("the DbContext should use SqlServer")]
     public void ThenDbContextUsesSqlServer()
     {
         var ctx = _provider!.GetRequiredService<YourDbContext>();
+#pragma warning disable EF1001
         var ext = ctx.GetService<IDbContextOptions>()
             .FindExtension<Microsoft.EntityFrameworkCore.SqlServer.Infrastructure.Internal.SqlServerOptionsExtension>();
+#pragma warning restore EF1001
         Assert.NotNull(ext);
     }
 }

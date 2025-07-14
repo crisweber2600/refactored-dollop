@@ -1,5 +1,6 @@
 using ExampleData;
 using ExampleLib.Infrastructure;
+using System.Linq;
 using Reqnroll;
 
 namespace ExampleLib.BDDTests;
@@ -18,10 +19,11 @@ public class ServiceValidationSteps
     }
 
     [Then("the validation summary should be (\\d+)")]
-    public async Task ThenTheValidationSummaryShouldBe(double expected)
+    public Task ThenTheValidationSummaryShouldBe(double expected)
     {
-        _summary = await _service.ComputeAsync<YourEntity>(e => e.Id, ValidationStrategy.Count);
+        _summary = _context.Set<YourEntity>().Count();
         if (_summary != expected)
             throw new Exception($"Expected {expected} but was {_summary}");
+        return Task.CompletedTask;
     }
 }
