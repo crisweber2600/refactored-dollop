@@ -1,7 +1,7 @@
 using MongoDB.Driver;
 using ExampleLib.Domain;
 
-namespace ExampleData.Infrastructure;
+namespace ExampleLib.Infrastructure;
 
 /// <summary>
 /// Wraps <see cref="IMongoCollection{T}"/> and invokes <see cref="IUnitOfWork.SaveChangesWithPlanAsync"/>

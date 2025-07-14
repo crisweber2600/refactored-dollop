@@ -3,7 +3,7 @@ using System.Linq;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 
-namespace ExampleData;
+namespace ExampleLib.Domain;
 
 /// <summary>
 /// Helper methods for building validation plans from entity types.

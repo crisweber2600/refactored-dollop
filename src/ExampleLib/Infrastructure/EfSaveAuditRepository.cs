@@ -1,4 +1,3 @@
-using ExampleData;
 using ExampleLib.Domain;
 using Microsoft.EntityFrameworkCore;
 
@@ -9,10 +8,10 @@ namespace ExampleLib.Infrastructure;
 /// </summary>
 public class EfSaveAuditRepository : ISaveAuditRepository
 {
-    private readonly YourDbContext _context;
+    private readonly DbContext _context;
     private const string BatchKey = "__batch__";
 
-    public EfSaveAuditRepository(YourDbContext context)
+    public EfSaveAuditRepository(DbContext context)
     {
         _context = context;
     }
@@ -20,7 +19,7 @@ public class EfSaveAuditRepository : ISaveAuditRepository
     /// <inheritdoc />
     public SaveAudit? GetLastAudit(string entityType, string entityId)
     {
-        var entity = _context.SaveAudits
+        var entity = _context.Set<SaveAudit>()
             .AsNoTracking()
             .IgnoreQueryFilters()
             .Where(a => a.EntityType == entityType && a.EntityId == entityId)
@@ -33,10 +32,11 @@ public class EfSaveAuditRepository : ISaveAuditRepository
     /// <inheritdoc />
     public void AddAudit(SaveAudit audit)
     {
-        var entity = _context.SaveAudits.FirstOrDefault(a => a.EntityType == audit.EntityType && a.EntityId == audit.EntityId);
+        var audits = _context.Set<SaveAudit>();
+        var entity = audits.FirstOrDefault(a => a.EntityType == audit.EntityType && a.EntityId == audit.EntityId);
         if (entity == null)
         {
-            _context.SaveAudits.Add(audit);
+            audits.Add(audit);
         }
         else
         {
@@ -44,7 +44,7 @@ public class EfSaveAuditRepository : ISaveAuditRepository
             entity.BatchSize = audit.BatchSize;
             entity.Timestamp = audit.Timestamp;
             entity.Validated = audit.Validated;
-            _context.SaveAudits.Update(entity);
+            audits.Update(entity);
         }
         _context.SaveChanges();
     }

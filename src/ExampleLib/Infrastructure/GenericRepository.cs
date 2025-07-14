@@ -1,44 +1,15 @@
 using Microsoft.EntityFrameworkCore;
+using ExampleLib.Domain;
 
-namespace ExampleData;
-
-public interface IGenericRepository<T>
-    where T : class, IValidatable, IBaseEntity, IRootEntity
-{
-    Task<T?> GetByIdAsync(int id, bool includeDeleted = false);
-    Task<List<T>> GetAllAsync();
-    Task AddAsync(T entity);
-    /// <summary>
-    /// Add a batch of <paramref name="entities"/> in a single call.
-    /// </summary>
-    Task AddManyAsync(IEnumerable<T> entities);
-    /// <summary>
-    /// Update the given entity without committing changes.
-    /// </summary>
-    Task UpdateAsync(T entity);
-    /// <summary>
-    /// Update multiple <paramref name="entities"/> in one operation.
-    /// </summary>
-    Task UpdateManyAsync(IEnumerable<T> entities);
-    /// <summary>
-    /// Deletes the given entity.
-    /// When <paramref name="hardDelete"/> is <c>true</c> the record is
-    /// permanently removed from storage. Otherwise a soft delete is
-    /// performed by unvalidating the entity &mdash; setting
-    /// <see cref="IValidatable.Validated"/> to <c>false</c> &mdash;
-    /// rather than toggling an <c>IsDeleted</c> flag.
-    /// </summary>
-    Task DeleteAsync(T entity, bool hardDelete = false);
-    Task<int> CountAsync();
-}
+namespace ExampleLib.Infrastructure;
 
 public class EfGenericRepository<T> : IGenericRepository<T>
     where T : class, IValidatable, IBaseEntity, IRootEntity
 {
-    private readonly YourDbContext _context;
+    private readonly DbContext _context;
     private readonly DbSet<T> _set;
 
-    public EfGenericRepository(YourDbContext context)
+    public EfGenericRepository(DbContext context)
     {
         _context = context;
         _set = _context.Set<T>();

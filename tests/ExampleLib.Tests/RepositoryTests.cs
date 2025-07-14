@@ -2,7 +2,8 @@ using ExampleData;
 using Microsoft.EntityFrameworkCore;
 using System.Threading;
 using MongoDB.Driver;
-using ExampleData.Infrastructure;
+using ExampleLib.Infrastructure;
+using ExampleLib.Domain;
 
 namespace ExampleLib.Tests;
 

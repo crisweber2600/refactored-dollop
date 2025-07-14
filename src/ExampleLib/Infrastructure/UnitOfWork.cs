@@ -3,25 +3,7 @@ using System.Linq.Expressions;
 using System.Linq;
 using ExampleLib.Domain;
 
-namespace ExampleData;
-
-public interface IUnitOfWork
-{
-    IGenericRepository<T> Repository<T>() where T : class, IValidatable, IBaseEntity, IRootEntity;
-    Task<int> SaveChangesAsync();
-    Task<int> SaveChangesAsync<TEntity>(Expression<Func<TEntity, double>> selector,
-        ValidationStrategy strategy,
-        double threshold,
-        CancellationToken cancellationToken = default)
-        where TEntity : class, IValidatable, IBaseEntity, IRootEntity;
-
-    /// <summary>
-    /// Validate and save changes using the summarisation plan registered for
-    /// <typeparamref name="TEntity"/>.
-    /// </summary>
-    Task<int> SaveChangesWithPlanAsync<TEntity>(CancellationToken cancellationToken = default)
-        where TEntity : class, IValidatable, IBaseEntity, IRootEntity;
-}
+namespace ExampleLib.Infrastructure;
 
 public class UnitOfWork<TContext> : IUnitOfWork where TContext : DbContext
 {
@@ -37,7 +19,7 @@ public class UnitOfWork<TContext> : IUnitOfWork where TContext : DbContext
         _planStore = planStore;
     }
 
-    public IGenericRepository<T> Repository<T>() where T : class, IValidatable, IBaseEntity, IRootEntity => new EfGenericRepository<T>((YourDbContext)(DbContext)_context);
+    public IGenericRepository<T> Repository<T>() where T : class, IValidatable, IBaseEntity, IRootEntity => new EfGenericRepository<T>(_context);
 
     public Task<int> SaveChangesAsync() => _context.SaveChangesAsync();
 

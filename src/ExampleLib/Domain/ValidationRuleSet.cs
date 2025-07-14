@@ -1,6 +1,6 @@
 using System.Linq.Expressions;
 
-namespace ExampleData;
+namespace ExampleLib.Domain;
 
 /// <summary>
 /// Represents a set of validation rules applied using the same metric selector.
