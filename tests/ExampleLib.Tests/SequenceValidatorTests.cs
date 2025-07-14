@@ -51,7 +51,7 @@ public class SequenceValidatorTests
         {
             new Foo { Jar = "server2", Car = 5 },
             new Foo { Jar = "server1", Car = 50 },
-            new Foo { Jar = "server2", Car = 12 }
+            new Foo { Jar = "server2", Car = 50 }
         };
 
         var result = SequenceValidator.Validate(
@@ -61,6 +61,26 @@ public class SequenceValidatorTests
             (current, previous) => Math.Abs(current - previous) <= 10);
 
         Assert.False(result);
+    }
+
+    [Fact]
+    public void Validate_UsesLastValuePerKey()
+    {
+        var data = new List<Foo>
+        {
+            new Foo { Jar = "ServerA", Car = 1 },
+            new Foo { Jar = "ServerB", Car = 10 },
+            new Foo { Jar = "ServerC", Car = 20 },
+            new Foo { Jar = "ServerA", Car = 5 }
+        };
+
+        var result = SequenceValidator.Validate(
+            data,
+            x => x.Jar,
+            x => x.Car,
+            (current, previous) => Math.Abs(current - previous) <= 10);
+
+        Assert.True(result);
     }
 
     [Fact]

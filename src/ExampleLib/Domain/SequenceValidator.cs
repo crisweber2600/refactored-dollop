@@ -9,7 +9,8 @@ namespace ExampleLib.Domain;
 public static class SequenceValidator
 {
     /// <summary>
-    /// Validates a sequence by comparing the selected value of each item to the most recent prior item with a different key.
+    /// Validates a sequence by comparing the selected value of each item to the most
+    /// recent prior item with the **same** discriminator key.
     /// </summary>
     /// <param name="items">Items to validate in order.</param>
     /// <param name="wheneverSelector">Selects a discriminator key.</param>
@@ -20,29 +21,27 @@ public static class SequenceValidator
         Func<T, TKey> wheneverSelector,
         Func<T, TValue> valueSelector,
         Func<TValue, TValue, bool> validationFunc)
+        where TKey : notnull
     {
         if (items == null) throw new ArgumentNullException(nameof(items));
         if (wheneverSelector == null) throw new ArgumentNullException(nameof(wheneverSelector));
         if (valueSelector == null) throw new ArgumentNullException(nameof(valueSelector));
         if (validationFunc == null) throw new ArgumentNullException(nameof(validationFunc));
 
-        using var enumerator = items.GetEnumerator();
-        if (!enumerator.MoveNext())
-            return true;
+        var lastValues = new Dictionary<TKey, TValue>();
 
-        var lastItem = enumerator.Current;
-        var lastValue = valueSelector(lastItem);
-
-        while (enumerator.MoveNext())
+        foreach (var item in items)
         {
-            var current = enumerator.Current;
-            var currentValue = valueSelector(current);
+            var key = wheneverSelector(item);
+            var value = valueSelector(item);
 
-            if (!validationFunc(currentValue, lastValue))
-                return false;
+            if (lastValues.TryGetValue(key, out var previous))
+            {
+                if (!validationFunc(value, previous))
+                    return false;
+            }
 
-            lastItem = current;
-            lastValue = currentValue;
+            lastValues[key] = value;
         }
 
         return true;
@@ -55,6 +54,7 @@ public static class SequenceValidator
         IEnumerable<T> items,
         Func<T, TKey> wheneverSelector,
         Func<T, TValue> valueSelector)
+        where TKey : notnull
     {
         return Validate(items, wheneverSelector, valueSelector, (c, p) => EqualityComparer<TValue>.Default.Equals(c, p));
     }
@@ -67,6 +67,7 @@ public static class SequenceValidator
         IEnumerable<T> items,
         Func<T, TKey> wheneverSelector,
         SummarisationPlan<T> plan)
+        where TKey : notnull
     {
         if (plan == null) throw new ArgumentNullException(nameof(plan));
 
