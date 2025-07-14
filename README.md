@@ -42,7 +42,10 @@ services.AddMongoRepositories(options => options.ConnectionString = "mongodb://l
 - `docs` – additional guides including `EFCoreReplicationGuide.md` and `Implementation.md`.
 
 ## Key Building Blocks
-`SaveAudit` records details of each save, including the size of bulk operations:
+`SaveAudit` records details of each save, including the size of bulk operations.
+Entities participating in validation must implement `IValidatable`,
+`IBaseEntity` and `IRootEntity` so the framework can obtain their identifier and
+store audits correctly:
 ```csharp
 public class SaveAudit
 {
@@ -56,6 +59,8 @@ public class SaveAudit
     public DateTimeOffset Timestamp { get; set; }
 }
 ```
+The `ApplicationName` property records which application performed the save. If multiple services share the database, provide a distinct name so audits are kept separate.
+
 Retrieve the last audit for an entity and inspect the application name:
 ```csharp
 var last = repo.GetLastAudit("Order", "42");
@@ -119,12 +124,15 @@ bool ok = await runner.ValidateAsync(order);
 ```
 `ok` indicates whether both summarisation and manual checks succeeded.
 
-`ValidateAsync` now derives the identifier from `order.Id`, so callers no longer need to pass an explicit string.
+`ValidateAsync` now derives the identifier from `order.Id`, so callers no longer
+need to pass an explicit string. The example above shows the new simplified
+call signature.
 
 ## Validating Sequences
-`SequenceValidator` compares successive items in a sequence. The validator keeps
-track of the last value seen for each discriminator key so that items are only
-compared against the most recent value with the **same** key. Provide key and
+`SequenceValidator` compares successive items in a sequence. Always supply a
+*key selector* so the validator can maintain a per-key history. Each item is
+compared with the last value for that discriminator key, ensuring metrics from
+different sources don't interfere. Provide key and
 value selectors with an optional comparison delegate:
 ```csharp
 var ok = SequenceValidator.Validate(items, x => x.Server, x => x.Value,
@@ -209,5 +217,6 @@ Further information is available in the `docs` folder:
 - MongoDB tests rely on **Mongo2Go**; check that the runner can download binaries through your proxy.
 - If tests fail to compile, verify that all repositories implement the latest interface methods.
 - Register `AddValidationRunner` after configuring validation services to avoid missing service errors.
+- If validation results seem off, ensure the application name provided at startup matches the name used when audits were recorded. Mismatched names cause incorrect history.
 
 
