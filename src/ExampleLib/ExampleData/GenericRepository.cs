@@ -21,10 +21,12 @@ public interface IGenericRepository<T>
     /// </summary>
     Task UpdateManyAsync(IEnumerable<T> entities);
     /// <summary>
-    /// Deletes the given entity. When <paramref name="hardDelete"/> is
-    /// <c>false</c>, the entity is soft deleted by unvalidating it
-    /// (setting <see cref="IValidatable.Validated"/> to <c>false</c>)
-    /// instead of toggling an <c>IsDeleted</c> flag.
+    /// Deletes the given entity.
+    /// When <paramref name="hardDelete"/> is <c>true</c> the record is
+    /// permanently removed from storage. Otherwise a soft delete is
+    /// performed by unvalidating the entity &mdash; setting
+    /// <see cref="IValidatable.Validated"/> to <c>false</c> &mdash;
+    /// rather than toggling an <c>IsDeleted</c> flag.
     /// </summary>
     Task DeleteAsync(T entity, bool hardDelete = false);
     Task<int> CountAsync();
