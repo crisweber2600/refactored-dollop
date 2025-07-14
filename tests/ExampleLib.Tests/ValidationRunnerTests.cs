@@ -12,6 +12,7 @@ public class ValidationRunnerTests
     public async Task ValidateAsync_ReturnsTrue_WhenRulesPass()
     {
         var services = new ServiceCollection();
+        services.AddSingleton<IApplicationNameProvider>(new StaticApplicationNameProvider("Tests"));
         services.AddDbContext<YourDbContext>(o => o.UseInMemoryDatabase("valid-pass"));
         services.AddSaveValidation<YourEntity>(e => e.Id, ThresholdType.RawDifference, 5m,
             e => !string.IsNullOrWhiteSpace(e.Name));
@@ -34,6 +35,7 @@ public class ValidationRunnerTests
     public async Task ValidateAsync_ReturnsFalse_WhenManualRuleFails()
     {
         var services = new ServiceCollection();
+        services.AddSingleton<IApplicationNameProvider>(new StaticApplicationNameProvider("Tests"));
         services.AddDbContext<YourDbContext>(o => o.UseInMemoryDatabase("manual-fail"));
         services.AddSaveValidation<YourEntity>(e => e.Id, ThresholdType.RawDifference, 5m,
             e => !string.IsNullOrWhiteSpace(e.Name));
@@ -55,7 +57,13 @@ public class ValidationRunnerTests
     public async Task ValidateAsync_ReturnsFalse_WhenSummarisationRuleFails()
     {
         var services = new ServiceCollection();
+<<<<<< codex/update-validation-runner-interface-and-usage
         services.AddSaveValidation<YourEntity>(e => (decimal)e.Timestamp.Ticks, ThresholdType.RawDifference, 1m,
+=====
+        services.AddSingleton<IApplicationNameProvider>(new StaticApplicationNameProvider("Tests"));
+        services.AddDbContext<YourDbContext>(o => o.UseInMemoryDatabase("summary-fail"));
+        services.AddSaveValidation<YourEntity>(e => e.Id, ThresholdType.RawDifference, 1m,
+>>>>>> Restructure
             e => true);
         services.AddValidationRunner();
         var provider = services.BuildServiceProvider();

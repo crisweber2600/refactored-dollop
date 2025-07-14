@@ -10,6 +10,7 @@ public class SaveAuditRepositoryTests
     [Fact]
     public void GetLastAudit_ReturnsLatestEntry()
     {
+        const string app = "TestApp";
         var options = new DbContextOptionsBuilder<YourDbContext>()
             .UseInMemoryDatabase("audit-repo-test")
             .Options;
@@ -20,6 +21,7 @@ public class SaveAuditRepositoryTests
         {
             EntityType = "User",
             EntityId = "1",
+            ApplicationName = app,
             MetricValue = 1m,
             Validated = true,
             Timestamp = DateTimeOffset.UtcNow.AddMinutes(-5)
@@ -28,6 +30,7 @@ public class SaveAuditRepositoryTests
         {
             EntityType = "User",
             EntityId = "1",
+            ApplicationName = app,
             MetricValue = 2m,
             Validated = false,
             Timestamp = DateTimeOffset.UtcNow
@@ -39,11 +42,13 @@ public class SaveAuditRepositoryTests
         Assert.NotNull(last);
         Assert.Equal(2m, last!.MetricValue);
         Assert.False(last.Validated);
+        Assert.Equal(app, last.ApplicationName);
     }
 
     [Fact]
     public void AddBatchAudit_PersistsBatchSize()
     {
+        const string app = "TestApp";
         var options = new DbContextOptionsBuilder<YourDbContext>()
             .UseInMemoryDatabase("batch-audit")
             .Options;
@@ -55,6 +60,7 @@ public class SaveAuditRepositoryTests
         var audit = new SaveAudit
         {
             EntityType = "User",
+            ApplicationName = app,
             MetricValue = 3m,
             BatchSize = 5,
             Validated = true,
@@ -66,5 +72,6 @@ public class SaveAuditRepositoryTests
         var last = repo.GetLastBatchAudit("User");
         Assert.NotNull(last);
         Assert.Equal(5, last!.BatchSize);
+        Assert.Equal(app, last.ApplicationName);
     }
 }

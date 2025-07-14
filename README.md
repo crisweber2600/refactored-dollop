@@ -49,11 +49,17 @@ public class SaveAudit
     public int Id { get; set; }
     public string EntityType { get; set; } = string.Empty;
     public string EntityId { get; set; } = string.Empty;
+    public string ApplicationName { get; set; } = string.Empty;
     public decimal MetricValue { get; set; }
     public int BatchSize { get; set; }
     public bool Validated { get; set; }
     public DateTimeOffset Timestamp { get; set; }
 }
+```
+Retrieve the last audit for an entity and inspect the application name:
+```csharp
+var last = repo.GetLastAudit("Order", "42");
+Console.WriteLine(last?.ApplicationName);
 ```
 Repositories implement `IGenericRepository<T>` for data access. Entity Framework and MongoDB variants provide the same interface for adding, updating and deleting entities.
 
@@ -67,6 +73,14 @@ services.AddExampleLib(builder =>
 ```
 Replace `"connection"` with your actual connection string. For SQLite or PostgreSQL simply call the corresponding `Use*` method on the builder.
 Switch to MongoDB by calling `UseMongo` instead. Both providers expose `AddBatchAudit` for summarising bulk saves.
+
+### Application Name Provider
+Audits are tagged with the application name to keep metrics separate. Register a provider at startup:
+```csharp
+services.AddSingleton<IApplicationNameProvider>(
+    new StaticApplicationNameProvider("MyApp"));
+```
+`ValidationService` uses this provider so all `SaveAudit` entries store the current application name.
 
 ## Validation Pipeline
 Entities are validated against a `SummarisationPlan` whenever they are saved. The Entity Framework unit of work exposes `SaveChangesWithPlanAsync<TEntity>()`, while the MongoDB implementation uses an interceptor to apply the same logic during inserts and updates.
@@ -108,11 +122,25 @@ bool ok = await runner.ValidateAsync(order);
 `ValidateAsync` now derives the identifier from `order.Id`, so callers no longer need to pass an explicit string.
 
 ## Validating Sequences
-`SequenceValidator` compares successive items in a sequence. Provide key and value selectors with an optional comparison delegate:
+`SequenceValidator` compares successive items in a sequence. The validator keeps
+track of the last value seen for each discriminator key so that items are only
+compared against the most recent value with the **same** key. Provide key and
+value selectors with an optional comparison delegate:
 ```csharp
 var ok = SequenceValidator.Validate(items, x => x.Server, x => x.Value,
     (cur, prev) => Math.Abs(cur - prev) < 10);
 ```
+If the sequence returns to a previously seen key it will be compared with the
+value recorded for that key. For example:
+```csharp
+var servers = new[] { "ServerA", "ServerB", "ServerC", "ServerA" };
+var check = SequenceValidator.Validate(servers,
+    s => s,
+    s => s,
+    (cur, prev) => cur == prev);
+```
+The last `ServerA` item is checked against the first `ServerA` entry rather than
+`ServerC`. This key-based history ensures related items are validated together.
 You can also drive the comparison using a `SummarisationPlan`:
 ```csharp
 var plan = new SummarisationPlan<MyEntity>(e => e.Value, ThresholdType.RawDifference, 5);
@@ -153,6 +181,12 @@ For quick iterations run:
 dotnet test --no-build --no-restore
 ```
 
+If you change the EF models, create a new migration:
+```bash
+dotnet ef migrations add MyMigration -p tests/ExampleLib.Tests/ExampleLib.Tests.csproj \
+    -s tests/ExampleLib.Tests/ExampleLib.Tests.csproj -o ExampleData/Migrations
+```
+
 ## Why Choose RAGStart?
 - Provides a working example of event-driven validation with EF Core and MongoDB.
 - Shows how to separate validation rules from persistence logic.
@@ -161,6 +195,7 @@ dotnet test --no-build --no-restore
 - Demonstrates how to register per-entity rules using `AddSaveValidation`.
 - Features a clear folder structure that can be reused in other projects.
 - Unit tests illustrate validation runner usage for quick reference.
+- Save audits include the originating application name for multi-app scenarios.
 
 ## More Documentation
 Further information is available in the `docs` folder:

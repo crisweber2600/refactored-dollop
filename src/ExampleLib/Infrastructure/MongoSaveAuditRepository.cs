@@ -31,7 +31,8 @@ public class MongoSaveAuditRepository : ISaveAuditRepository
     public void AddAudit(SaveAudit audit)
     {
         var filter = Builders<SaveAudit>.Filter.Eq(a => a.EntityType, audit.EntityType) &
-                     Builders<SaveAudit>.Filter.Eq(a => a.EntityId, audit.EntityId);
+                     Builders<SaveAudit>.Filter.Eq(a => a.EntityId, audit.EntityId) &
+                     Builders<SaveAudit>.Filter.Eq(a => a.ApplicationName, audit.ApplicationName);
         _collection.ReplaceOne(filter, audit, new ReplaceOptions { IsUpsert = true });
     }
 
@@ -41,6 +42,7 @@ public class MongoSaveAuditRepository : ISaveAuditRepository
         {
             EntityType = audit.EntityType,
             EntityId = BatchKey,
+            ApplicationName = audit.ApplicationName,
             MetricValue = audit.MetricValue,
             BatchSize = audit.BatchSize,
             Validated = audit.Validated,
