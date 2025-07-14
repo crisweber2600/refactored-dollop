@@ -9,12 +9,13 @@ RAGStart showcases an event-driven validation pipeline built with .NET. The proj
 4. [Configuring the Data Layer](#configuring-the-data-layer)
 5. [Validation Pipeline](#validation-pipeline)
 6. [Manual Validation Service](#manual-validation-service)
-7. [Validating Sequences](#validating-sequences)
-8. [Loading Validation Flows](#loading-validation-flows)
-9. [Running Tests](#running-tests)
-10. [Why Choose RAGStart?](#why-choose-ragstart)
-11. [More Documentation](#more-documentation)
-12. [Troubleshooting](#troubleshooting)
+7. [Using ValidationRunner](#using-validationrunner)
+8. [Validating Sequences](#validating-sequences)
+9. [Loading Validation Flows](#loading-validation-flows)
+10. [Running Tests](#running-tests)
+11. [Why Choose RAGStart?](#why-choose-ragstart)
+12. [More Documentation](#more-documentation)
+13. [Troubleshooting](#troubleshooting)
 
 ## Getting Started
 1. Install the [.NET&nbsp;9 SDK](https://dotnet.microsoft.com/en-us/download).
@@ -35,6 +36,7 @@ services.AddMongoRepositories(options => options.ConnectionString = "mongodb://l
 - `src/ExampleLib` – the domain models and infrastructure code.
 - `tests/ExampleLib.Tests` – unit tests covering repositories and validators.
 - `tests/ExampleLib.Tests/ExampleData` – sample entities and EF/Mongo configuration.
+- `ExampleData` doubles as a reference implementation when wiring up the library.
 - *(BDD tests have been removed for clarity.)*
 - `docs` – additional guides including `EFCoreReplicationGuide.md` and `Implementation.md`.
 
@@ -83,6 +85,20 @@ services.AddValidationRunner();
 ```
 `AddValidationRunner` registers a single service that executes every validator so existing repositories can enable validation in one line.
 
+## Using ValidationRunner
+Once registered, request `IValidationRunner` from the service provider and call `ValidateAsync`
+before persisting changes. This integrates validation with any repository:
+```csharp
+var provider = services.BuildServiceProvider();
+var runner = provider.GetRequiredService<IValidationRunner>();
+var repo = new EfGenericRepository<Order>(provider.GetRequiredService<DbContext>());
+var order = new Order { Id = 1, Total = 5, Status = "Open", Validated = true };
+await repo.AddAsync(order);
+await provider.GetRequiredService<DbContext>().SaveChangesAsync();
+bool ok = await runner.ValidateAsync(order, order.Id.ToString());
+```
+`ok` indicates whether both summarisation and manual checks succeeded.
+
 ## Validating Sequences
 `SequenceValidator` compares successive items in a sequence. Provide key and value selectors with an optional comparison delegate:
 ```csharp
@@ -123,6 +139,10 @@ Run the unit tests with coverage:
 dotnet test --collect:"XPlat Code Coverage"
 ```
 The generated coverage report appears under `TestResults` and should exceed 80%.
+For quick iterations run:
+```bash
+dotnet test --no-build --no-restore
+```
 
 ## Why Choose RAGStart?
 - Provides a working example of event-driven validation with EF Core and MongoDB.
@@ -131,6 +151,7 @@ The generated coverage report appears under `TestResults` and should exceed 80%.
 - Includes helper methods such as `AddManyAsync`, `UpdateManyAsync` and `AddBatchAudit` for efficient bulk operations.
 - Demonstrates how to register per-entity rules using `AddSaveValidation`.
 - Features a clear folder structure that can be reused in other projects.
+- Unit tests illustrate validation runner usage for quick reference.
 
 ## More Documentation
 Further information is available in the `docs` folder:
@@ -143,5 +164,6 @@ Further information is available in the `docs` folder:
 - Delete `bin` and `obj` directories after SDK upgrades to avoid stale builds.
 - MongoDB tests rely on **Mongo2Go**; check that the runner can download binaries through your proxy.
 - If tests fail to compile, verify that all repositories implement the latest interface methods.
+- Register `AddValidationRunner` after configuring validation services to avoid missing service errors.
 
 
