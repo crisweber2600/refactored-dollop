@@ -71,18 +71,11 @@ public static class SequenceValidator
         if (plan == null) throw new ArgumentNullException(nameof(plan));
 
         return Validate(items, wheneverSelector, plan.MetricSelector, (cur, prev) =>
-        {
-            switch (plan.ThresholdType)
-            {
-                case ThresholdType.RawDifference:
-                    return Math.Abs(cur - prev) <= plan.ThresholdValue;
-                case ThresholdType.PercentChange:
-                    if (prev == 0) return cur == 0;
-                    var change = Math.Abs((cur - prev) / prev);
-                    return change <= plan.ThresholdValue;
-                default:
-                    throw new NotSupportedException($"Unsupported ThresholdType: {plan.ThresholdType}");
-            }
-        });
+            ThresholdValidator.IsWithinThreshold(
+                cur,
+                prev,
+                plan.ThresholdType,
+                plan.ThresholdValue,
+                throwOnUnsupported: true));
     }
 }
