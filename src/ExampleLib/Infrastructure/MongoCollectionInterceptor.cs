@@ -39,7 +39,7 @@ public class MongoCollectionInterceptor<T> : IMongoCollectionInterceptor<T>
     public async Task InsertOneAsync(T document, CancellationToken cancellationToken = default)
     {
         await _inner.InsertOneAsync(document, cancellationToken: cancellationToken);
-        await _validationService.ValidateAndSaveAsync(document, document.Id.ToString(), cancellationToken);
+        await _validationService.ValidateAndSaveAsync(document, cancellationToken);
     }
 
     public async Task<UpdateResult> UpdateOneAsync(FilterDefinition<T> filter, UpdateDefinition<T> update, CancellationToken cancellationToken = default)
@@ -50,7 +50,7 @@ public class MongoCollectionInterceptor<T> : IMongoCollectionInterceptor<T>
             var updated = await _inner.Find(filter).FirstOrDefaultAsync(cancellationToken);
             if (updated != null)
             {
-                await _validationService.ValidateAndSaveAsync(updated, updated.Id.ToString(), cancellationToken);
+                await _validationService.ValidateAndSaveAsync(updated, cancellationToken);
             }
         }
         return result;
@@ -59,7 +59,7 @@ public class MongoCollectionInterceptor<T> : IMongoCollectionInterceptor<T>
     public async Task ReplaceOneAsync(FilterDefinition<T> filter, T replacement, CancellationToken cancellationToken = default)
     {
         await _inner.ReplaceOneAsync(filter, replacement, cancellationToken: cancellationToken);
-        await _validationService.ValidateAndSaveAsync(replacement, replacement.Id.ToString(), cancellationToken);
+        await _validationService.ValidateAndSaveAsync(replacement, cancellationToken);
     }
 
     public Task<DeleteResult> DeleteOneAsync(FilterDefinition<T> filter, CancellationToken cancellationToken = default)

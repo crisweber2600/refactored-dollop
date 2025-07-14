@@ -9,5 +9,6 @@ public interface IValidationRunner
     /// Validate and audit the specified entity.
     /// Returns <c>true</c> when all validation services succeed.
     /// </summary>
-    Task<bool> ValidateAsync<T>(T entity, string entityId, CancellationToken cancellationToken = default);
+    Task<bool> ValidateAsync<T>(T entity, CancellationToken cancellationToken = default)
+        where T : IValidatable, IBaseEntity, IRootEntity;
 }

@@ -26,8 +26,10 @@ public class ValidationService : IValidationService
     }
 
     /// <inheritdoc />
-    public Task<bool> ValidateAndSaveAsync<T>(T entity, string entityId, CancellationToken cancellationToken = default)
+    public Task<bool> ValidateAndSaveAsync<T>(T entity, CancellationToken cancellationToken = default)
+        where T : IValidatable, IBaseEntity, IRootEntity
     {
+        var entityId = entity!.Id.ToString();
         var plan = _planStore.GetPlan<T>();
         var validator = _provider.GetRequiredService<ISummarisationValidator<T>>();
         var previous = _auditRepository.GetLastAudit(typeof(T).Name, entityId);

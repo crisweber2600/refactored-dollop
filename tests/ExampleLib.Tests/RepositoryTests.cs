@@ -150,7 +150,8 @@ public class RepositoryTests
 
     private class NoopValidationService : ExampleLib.Domain.IValidationService
     {
-        public Task<bool> ValidateAndSaveAsync<T>(T entity, string entityId, CancellationToken cancellationToken = default)
+        public Task<bool> ValidateAndSaveAsync<T>(T entity, CancellationToken cancellationToken = default)
+            where T : IValidatable, IBaseEntity, IRootEntity
             => Task.FromResult(true);
     }
 

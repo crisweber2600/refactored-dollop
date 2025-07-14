@@ -45,7 +45,7 @@ public class UnitOfWork<TContext> : IUnitOfWork where TContext : DbContext
         foreach (var entry in _context.ChangeTracker.Entries<TEntity>()
                      .Where(e => e.State == EntityState.Added || e.State == EntityState.Modified))
         {
-            var isValid = await _validationService.ValidateAndSaveAsync(entry.Entity, entry.Entity.Id.ToString(), cancellationToken);
+            var isValid = await _validationService.ValidateAndSaveAsync(entry.Entity, cancellationToken);
             entry.Entity.Validated = isValid;
         }
 
@@ -58,7 +58,7 @@ public class UnitOfWork<TContext> : IUnitOfWork where TContext : DbContext
         foreach (var entry in _context.ChangeTracker.Entries<TEntity>()
                      .Where(e => e.State == EntityState.Added || e.State == EntityState.Modified))
         {
-            var isValid = await _validationService.ValidateAndSaveAsync(entry.Entity, entry.Entity.Id.ToString(), cancellationToken);
+            var isValid = await _validationService.ValidateAndSaveAsync(entry.Entity, cancellationToken);
             entry.Entity.Validated = isValid;
         }
 

@@ -17,9 +17,10 @@ public class ValidationRunner : IValidationRunner
     }
 
     /// <inheritdoc />
-    public async Task<bool> ValidateAsync<T>(T entity, string entityId, CancellationToken cancellationToken = default)
+    public async Task<bool> ValidateAsync<T>(T entity, CancellationToken cancellationToken = default)
+        where T : IValidatable, IBaseEntity, IRootEntity
     {
-        var summaryValid = await _validationService.ValidateAndSaveAsync(entity!, entityId, cancellationToken);
+        var summaryValid = await _validationService.ValidateAndSaveAsync(entity!, cancellationToken);
         var manualValid = _manualValidator.Validate(entity!);
         return summaryValid && manualValid;
     }

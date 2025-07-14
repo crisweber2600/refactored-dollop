@@ -9,5 +9,6 @@ public interface IValidationService
     /// Validate the entity and persist an audit entry.
     /// Returns <c>true</c> when the entity passes validation.
     /// </summary>
-    Task<bool> ValidateAndSaveAsync<T>(T entity, string entityId, CancellationToken cancellationToken = default);
+    Task<bool> ValidateAndSaveAsync<T>(T entity, CancellationToken cancellationToken = default)
+        where T : IValidatable, IBaseEntity, IRootEntity;
 }
