@@ -78,4 +78,31 @@ public static class SequenceValidator
     {
         return Validate(items, wheneverSelector, valueSelector, (c, p) => EqualityComparer<TValue>.Default.Equals(c, p));
     }
+
+    /// <summary>
+    /// Validates a sequence using a <see cref="SummarisationPlan{T}"/>. Metric values
+    /// are compared according to the plan's threshold rules.
+    /// </summary>
+    public static bool Validate<T, TKey>(
+        IEnumerable<T> items,
+        Func<T, TKey> wheneverSelector,
+        SummarisationPlan<T> plan)
+    {
+        if (plan == null) throw new ArgumentNullException(nameof(plan));
+
+        return Validate(items, wheneverSelector, plan.MetricSelector, (cur, prev) =>
+        {
+            switch (plan.ThresholdType)
+            {
+                case ThresholdType.RawDifference:
+                    return Math.Abs(cur - prev) <= plan.ThresholdValue;
+                case ThresholdType.PercentChange:
+                    if (prev == 0) return cur == 0;
+                    var change = Math.Abs((cur - prev) / prev);
+                    return change <= plan.ThresholdValue;
+                default:
+                    throw new NotSupportedException($"Unsupported ThresholdType: {plan.ThresholdType}");
+            }
+        });
+    }
 }

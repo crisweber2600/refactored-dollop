@@ -62,4 +62,34 @@ public class SequenceValidatorTests
 
         Assert.False(result);
     }
+
+    [Fact]
+    public void Validate_WithPlan_Passes()
+    {
+        var data = new List<Foo>
+        {
+            new Foo { Jar = "a", Car = 10 },
+            new Foo { Jar = "a", Car = 15 },
+            new Foo { Jar = "a", Car = 18 }
+        };
+
+        var plan = new SummarisationPlan<Foo>(f => f.Car, ThresholdType.RawDifference, 5);
+
+        Assert.True(SequenceValidator.Validate(data, f => f.Jar, plan));
+    }
+
+    [Fact]
+    public void Validate_WithPlan_Fails()
+    {
+        var data = new List<Foo>
+        {
+            new Foo { Jar = "a", Car = 10 },
+            new Foo { Jar = "a", Car = 20 },
+            new Foo { Jar = "a", Car = 18 }
+        };
+
+        var plan = new SummarisationPlan<Foo>(f => f.Car, ThresholdType.RawDifference, 5);
+
+        Assert.False(SequenceValidator.Validate(data, f => f.Jar, plan));
+    }
 }
