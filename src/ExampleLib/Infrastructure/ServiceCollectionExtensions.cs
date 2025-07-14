@@ -24,6 +24,7 @@ public static class ServiceCollectionExtensions
         ThresholdType thresholdType = ThresholdType.PercentChange,
         decimal thresholdValue = 0.1m,
         params Func<T, bool>[] manualRules)
+        where T : class, IValidatable, IBaseEntity, IRootEntity
     {
         services.AddSingleton(typeof(ISummarisationValidator<>), typeof(SummarisationValidator<>));
         services.AddSingleton<ISaveAuditRepository, InMemorySaveAuditRepository>();
@@ -50,6 +51,7 @@ public static class ServiceCollectionExtensions
     /// Placeholder for backwards compatibility. Currently performs no registration.
     /// </summary>
     public static IServiceCollection AddSaveCommit<T>(this IServiceCollection services)
+        where T : class, IValidatable, IBaseEntity, IRootEntity
     {
         return services;
     }
@@ -58,6 +60,7 @@ public static class ServiceCollectionExtensions
     /// Register the services required to validate delete requests for <typeparamref name="T"/>.
     /// </summary>
     public static IServiceCollection AddDeleteValidation<T>(this IServiceCollection services)
+        where T : class, IValidatable, IBaseEntity, IRootEntity
     {
         services.AddValidatorService();
         return services;
@@ -67,6 +70,7 @@ public static class ServiceCollectionExtensions
     /// Register the services required to commit deletes for <typeparamref name="T"/>.
     /// </summary>
     public static IServiceCollection AddDeleteCommit<T>(this IServiceCollection services)
+        where T : class, IValidatable, IBaseEntity, IRootEntity
     {
         return services;
     }
@@ -89,6 +93,7 @@ public static class ServiceCollectionExtensions
         ThresholdType thresholdType = ThresholdType.PercentChange,
         decimal thresholdValue = 0.1m,
         params Func<T, bool>[] manualRules)
+        where T : class, IValidatable, IBaseEntity, IRootEntity
     {
         var builder = new SetupValidationBuilder();
         configure(builder);
@@ -177,6 +182,7 @@ public static class ServiceCollectionExtensions
     /// Add a manual validation rule for the specified type.
     /// </summary>
     public static IServiceCollection AddValidatorRule<T>(this IServiceCollection services, Func<T, bool> rule)
+        where T : class, IValidatable, IBaseEntity, IRootEntity
     {
         _manualValidator ??= new ManualValidatorService();
         if (!_manualValidator.Rules.TryGetValue(typeof(T), out var list))

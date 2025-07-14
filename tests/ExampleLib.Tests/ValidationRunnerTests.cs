@@ -26,7 +26,7 @@ public class ValidationRunnerTests
         await repo.AddAsync(entity);
         await provider.GetRequiredService<YourDbContext>().SaveChangesAsync();
 
-        var result = await runner.ValidateAsync(entity, entity.Id.ToString());
+        var result = await runner.ValidateAsync(entity);
         Assert.True(result);
     }
 
@@ -47,7 +47,7 @@ public class ValidationRunnerTests
         await repo.AddAsync(entity);
         await provider.GetRequiredService<YourDbContext>().SaveChangesAsync();
 
-        var result = await runner.ValidateAsync(entity, entity.Id.ToString());
+        var result = await runner.ValidateAsync(entity);
         Assert.False(result);
     }
 
@@ -55,24 +55,17 @@ public class ValidationRunnerTests
     public async Task ValidateAsync_ReturnsFalse_WhenSummarisationRuleFails()
     {
         var services = new ServiceCollection();
-        services.AddDbContext<YourDbContext>(o => o.UseInMemoryDatabase("summary-fail"));
-        services.AddSaveValidation<YourEntity>(e => e.Id, ThresholdType.RawDifference, 1m,
+        services.AddSaveValidation<YourEntity>(e => (decimal)e.Timestamp.Ticks, ThresholdType.RawDifference, 1m,
             e => true);
         services.AddValidationRunner();
         var provider = services.BuildServiceProvider();
-        var context = provider.GetRequiredService<YourDbContext>();
-        var repo = new EfGenericRepository<YourEntity>(context);
         var runner = provider.GetRequiredService<IValidationRunner>();
 
-        var first = new YourEntity { Id = 1, Name = "One", Validated = true };
-        await repo.AddAsync(first);
-        await provider.GetRequiredService<YourDbContext>().SaveChangesAsync();
-        await runner.ValidateAsync(first, "X");
+        var entity = new YourEntity { Id = 1, Name = "One", Timestamp = DateTime.UtcNow, Validated = true };
+        await runner.ValidateAsync(entity);
 
-        var second = new YourEntity { Id = 5, Name = "Two", Validated = true };
-        await repo.AddAsync(second);
-        await provider.GetRequiredService<YourDbContext>().SaveChangesAsync();
-        var result = await runner.ValidateAsync(second, "X");
+        entity.Timestamp = entity.Timestamp.AddMinutes(5);
+        var result = await runner.ValidateAsync(entity);
 
         Assert.False(result);
     }

@@ -20,6 +20,7 @@ RAGStart showcases an event-driven validation pipeline built with .NET. The proj
 ## Getting Started
 1. Install the [.NET&nbsp;9 SDK](https://dotnet.microsoft.com/en-us/download).
 2. Set the environment variable `DOTNET_ROLL_FORWARD=Major` when using .NET 9 runtimes.
+   On Linux you can export this in your shell profile so builds are consistent.
 3. Run `dotnet build` then `dotnet test --collect:"XPlat Code Coverage"` to compile and execute all tests.
 4. Reference `ExampleLib` in your own project and register services as shown below.
 5. Use `AddManyAsync` and `UpdateManyAsync` for efficient bulk operations.
@@ -64,10 +65,13 @@ services.AddExampleLib(builder =>
     builder.UseEf<TestDbContext>(options => options.UseSqlServer("connection"));
 });
 ```
+Replace `"connection"` with your actual connection string. For SQLite or PostgreSQL simply call the corresponding `Use*` method on the builder.
 Switch to MongoDB by calling `UseMongo` instead. Both providers expose `AddBatchAudit` for summarising bulk saves.
 
 ## Validation Pipeline
 Entities are validated against a `SummarisationPlan` whenever they are saved. The Entity Framework unit of work exposes `SaveChangesWithPlanAsync<TEntity>()`, while the MongoDB implementation uses an interceptor to apply the same logic during inserts and updates.
+
+You can register multiple plans if different thresholds are needed. Each plan captures the metric selector and allowed variance for a specific entity type.
 
 ## Manual Validation Service
 `ManualValidatorService` lets you register predicates to run against specific types:
@@ -85,6 +89,8 @@ services.AddValidationRunner();
 ```
 `AddValidationRunner` registers a single service that executes every validator so existing repositories can enable validation in one line.
 
+`AddValidatorRule` requires entities to implement `IValidatable`, `IBaseEntity` and `IRootEntity` ensuring only valid domain models can be registered.
+
 ## Using ValidationRunner
 Once registered, request `IValidationRunner` from the service provider and call `ValidateAsync`
 before persisting changes. This integrates validation with any repository:
@@ -95,9 +101,11 @@ var repo = new EfGenericRepository<Order>(provider.GetRequiredService<DbContext>
 var order = new Order { Id = 1, Total = 5, Status = "Open", Validated = true };
 await repo.AddAsync(order);
 await provider.GetRequiredService<DbContext>().SaveChangesAsync();
-bool ok = await runner.ValidateAsync(order, order.Id.ToString());
+bool ok = await runner.ValidateAsync(order);
 ```
 `ok` indicates whether both summarisation and manual checks succeeded.
+
+`ValidateAsync` now derives the identifier from `order.Id`, so callers no longer need to pass an explicit string.
 
 ## Validating Sequences
 `SequenceValidator` compares successive items in a sequence. Provide key and value selectors with an optional comparison delegate:
@@ -139,6 +147,7 @@ Run the unit tests with coverage:
 dotnet test --collect:"XPlat Code Coverage"
 ```
 The generated coverage report appears under `TestResults` and should exceed 80%.
+Open the `.cobertura.xml` file in Visual Studio Code with the C# extension to visualise line-by-line results.
 For quick iterations run:
 ```bash
 dotnet test --no-build --no-restore
