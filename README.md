@@ -96,6 +96,13 @@ public interface IGenericRepository<T>
 ```
 MongoDB uses `MongoGenericRepository` with similar behaviour.
 
+### Deleting Entities
+- Call `DeleteAsync(entity)` to perform a soft delete.
+- Soft deletes mark the entity as unvalidated by setting `Validated` to false.
+- Pass `hardDelete: true` to remove the record permanently.
+- Deleted records can be retrieved with `includeDeleted: true` when using `GetByIdAsync`.
+- Both repository implementations follow this pattern.
+
 Use `AddManyAsync` when seeding data or performing bulk inserts:
 
 ```csharp
