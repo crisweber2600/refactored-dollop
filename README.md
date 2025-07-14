@@ -24,6 +24,7 @@ RAGStart provides a reference implementation of an event‑driven validation pip
 6. Call `UpdateAsync` or `UpdateManyAsync` to modify records without exposing EF Core or MongoDB types.
 7. Record bulk saves with `AddBatchAudit` so later validations know the previous batch size.
 8. Leverage `SequenceValidator` for on-the-fly comparisons between successive records.
+9. Use `SequenceValidator` with a `SummarisationPlan` when the same threshold logic should apply across sequences.
 
 ## Repository Layout
 - `src/ExampleLib` – domain models and infrastructure.
@@ -31,6 +32,7 @@ RAGStart provides a reference implementation of an event‑driven validation pip
 - `tests/ExampleLib.BDDTests` – Reqnroll scenarios demonstrating end‑to‑end behaviour.
 - `features` – `.feature` files used by the BDD tests.
 - `features/RepositoryUpdate.feature` – verifies that updates are persisted correctly.
+- `features/SequencePlan.feature` – shows how a summarisation plan works with the sequence validator.
 - `docs` – supplementary guides including `EFCoreReplicationGuide.md`.
 
 ## Core Components
@@ -205,7 +207,11 @@ var ok = SequenceValidator.Validate(
     x => x.Value,
     (cur, prev) => Math.Abs(cur - prev) < 10);
 ```
-If you omit the last delegate, equality comparison on the selected value is used instead.
+If you omit the last delegate, equality comparison on the selected value is used instead. A summarisation plan can also drive the comparison logic:
+```csharp
+var plan = new SummarisationPlan<MyEntity>(e => e.Value, ThresholdType.RawDifference, 5);
+bool passes = SequenceValidator.Validate(items, e => e.Server, plan);
+```
 
 ## External Flow Configuration
 Validation flows may be loaded from JSON:
@@ -238,6 +244,7 @@ VS Code tasks under `.vscode/tasks.json` provide convenient shortcuts for valida
 - `docs/EFCoreReplicationGuide.md` explains how to replicate the EF Core setup in another project.
 - `Implementation.md` discusses designing class libraries at different maturity levels.
 - The new `RepositoryUpdate.feature` demonstrates updating entities via BDD tests.
+- `SequencePlan.feature` shows plan-based sequence validation in action.
 
 ## Troubleshooting
 - Ensure `DOTNET_ROLL_FORWARD=Major` is set when using .NET 9 runtimes.
@@ -247,4 +254,5 @@ VS Code tasks under `.vscode/tasks.json` provide convenient shortcuts for valida
 - If tests fail to compile, verify that all repositories implement the latest interface methods.
 - Missing batch audit data usually means `AddBatchAudit` was not invoked after bulk saves.
 - If results from `SequenceValidator` seem incorrect, verify the items are ordered as intended.
+- When using a plan with `SequenceValidator`, ensure the threshold values match your expectations.
 
