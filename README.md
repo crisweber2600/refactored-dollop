@@ -1,46 +1,46 @@
 # RAGStart
 
-RAGStart provides a reference implementation of an event‑driven validation pipeline using .NET. The solution exposes reusable helpers under **ExampleLib** for validating and persisting entities with either Entity Framework Core or MongoDB.
+RAGStart showcases an event-driven validation pipeline built with .NET. The project exposes a small library called **ExampleLib** which demonstrates persisting and validating entities using either Entity Framework Core or MongoDB. The solution is intended as a reference for structuring data access, validation rules and test automation.
 
 ## Table of Contents
-1. [Quick Start](#quick-start)
-2. [Repository Layout](#repository-layout)
-3. [Core Components](#core-components)
+1. [Getting Started](#getting-started)
+2. [Repository Structure](#repository-structure)
+3. [Key Building Blocks](#key-building-blocks)
 4. [Configuring the Data Layer](#configuring-the-data-layer)
-5. [Validation Workflow](#validation-workflow)
-6. [Manual Validators](#manual-validators)
-7. [Sequence Validation](#sequence-validation)
-8. [External Flow Configuration](#external-flow-configuration)
-9. [Running the Tests](#running-the-tests)
-10. [Additional Guides](#additional-guides)
-11. [Troubleshooting](#troubleshooting)
+5. [Validation Pipeline](#validation-pipeline)
+6. [Manual Validation Service](#manual-validation-service)
+7. [Validating Sequences](#validating-sequences)
+8. [Loading Validation Flows](#loading-validation-flows)
+9. [Running Tests](#running-tests)
+10. [Why Choose RAGStart?](#why-choose-ragstart)
+11. [More Documentation](#more-documentation)
+12. [Troubleshooting](#troubleshooting)
 
-## Quick Start
-1. Install the [.NET 9 SDK](https://dotnet.microsoft.com/en-us/download).
-2. Set `DOTNET_ROLL_FORWARD=Major` when running the solution on .NET 9 runtimes.
-3. Execute `dotnet build` followed by `dotnet test --collect:"XPlat Code Coverage"`.
-4. Reference `ExampleLib` from your own project and register services using the extension methods shown below.
-5. Use `AddManyAsync` for efficient seeding when populating test data.
-6. Call `UpdateAsync` or `UpdateManyAsync` to modify records without exposing EF Core or MongoDB types.
-7. Record bulk saves with `AddBatchAudit` so later validations know the previous batch size.
-8. Leverage `SequenceValidator` for on-the-fly comparisons between successive records.
-9. Use `SequenceValidator` with a `SummarisationPlan` when the same threshold logic should apply across sequences.
-10. Centralise metric checks with `ThresholdValidator.IsWithinThreshold` for consistent results.
-11. Include the `ExampleLib.Domain` namespace when using this helper in your own code.
-12. Sample entities live under `tests/ExampleLib.Tests/ExampleData` for quick experimentation.
+## Getting Started
+1. Install the [.NET&nbsp;9 SDK](https://dotnet.microsoft.com/en-us/download).
+2. Set the environment variable `DOTNET_ROLL_FORWARD=Major` when using .NET 9 runtimes.
+3. Run `dotnet build` then `dotnet test --collect:"XPlat Code Coverage"` to compile and execute all tests.
+4. Reference `ExampleLib` in your own project and register services as shown below.
+5. Use `AddManyAsync` and `UpdateManyAsync` for efficient bulk operations.
 
-## Repository Layout
-- `src/ExampleLib` – domain models and infrastructure.
-- `tests/ExampleLib.Tests/ExampleData` – example entities and EF/Mongo setup used by the tests.
-- `tests/ExampleLib.Tests` – unit tests for repositories and validators.
-- `tests/ExampleLib.BDDTests` – Reqnroll scenarios demonstrating end‑to‑end behaviour.
-- `features` – `.feature` files used by the BDD tests.
-- `features/RepositoryUpdate.feature` – verifies that updates are persisted correctly.
-- `features/SequencePlan.feature` – shows how a summarisation plan works with the sequence validator.
-- `docs` – supplementary guides including `EFCoreReplicationGuide.md`.
+### Building with Different Providers
+The solution supports Entity Framework Core or MongoDB. Configure the provider during startup:
+```csharp
+services.AddEfCoreRepositories<TestDbContext>();
+// or
+services.AddMongoRepositories(options => options.ConnectionString = "mongodb://localhost");
+```
 
-## Core Components
-`SaveAudit` stores details about the most recent save for each entity. It now tracks the size of any batch operation as well:
+## Repository Structure
+- `src/ExampleLib` – the domain models and infrastructure code.
+- `tests/ExampleLib.Tests` – unit tests covering repositories and validators.
+- `tests/ExampleLib.BDDTests` – BDD scenarios implemented with Reqnroll.
+- `tests/ExampleLib.Tests/ExampleData` – sample entities and EF/Mongo configuration.
+- `features` – `.feature` files driving the BDD tests.
+- `docs` – additional guides including `EFCoreReplicationGuide.md` and `Implementation.md`.
+
+## Key Building Blocks
+`SaveAudit` records details of each save, including the size of bulk operations:
 ```csharp
 public class SaveAudit
 {
@@ -48,202 +48,53 @@ public class SaveAudit
     public string EntityType { get; set; } = string.Empty;
     public string EntityId { get; set; } = string.Empty;
     public decimal MetricValue { get; set; }
-    // How many records were part of the operation
     public int BatchSize { get; set; }
     public bool Validated { get; set; }
     public DateTimeOffset Timestamp { get; set; }
 }
 ```
-
-### Batch Audits
-`ISaveAuditRepository` also exposes helpers for summarising larger save operations. Use `AddBatchAudit` when persisting many records at once and later retrieve the most recent summary via `GetLastBatchAudit`.
-```csharp
-public interface ISaveAuditRepository
-{
-    SaveAudit? GetLastAudit(string entityType, string entityId);
-    void AddAudit(SaveAudit audit);
-    // New helpers
-    SaveAudit? GetLastBatchAudit(string entityType);
-    void AddBatchAudit(SaveAudit audit);
-}
-```
-`ISummarisationPlanStore` provides access to `SummarisationPlan` objects describing how each entity is validated:
-```csharp
-public interface ISummarisationPlanStore
-{
-    SummarisationPlan<T> GetPlan<T>();
-}
-```
-Repositories implement `IGenericRepository<T>` for EF Core and MongoDB. The EF variant updates the soft delete flag when deleting records:
-```csharp
-public interface IGenericRepository<T>
-    where T : class, IValidatable, IBaseEntity, IRootEntity
-{
-    Task<T?> GetByIdAsync(int id, bool includeDeleted = false);
-    Task<List<T>> GetAllAsync();
-    Task AddAsync(T entity);
-    /// <summary>
-    /// Insert a collection of entities in one operation.
-    /// </summary>
-    Task AddManyAsync(IEnumerable<T> entities);
-    /// <summary>
-    /// Update a single entity already tracked.
-    /// </summary>
-    Task UpdateAsync(T entity);
-    /// <summary>
-    /// Apply updates to multiple entities at once.
-    /// </summary>
-    Task UpdateManyAsync(IEnumerable<T> entities);
-    Task DeleteAsync(T entity, bool hardDelete = false);
-    Task<int> CountAsync();
-}
-```
-MongoDB uses `MongoGenericRepository` with similar behaviour.
-
-### Deleting Entities
-- Call `DeleteAsync(entity)` to perform a soft delete.
-- Soft deletes mark the entity as unvalidated by setting `Validated` to false.
-- Pass `hardDelete: true` to remove the record permanently.
-- Deleted records can be retrieved with `includeDeleted: true` when using `GetByIdAsync`.
-- Both repository implementations follow this pattern.
-
-Use `AddManyAsync` when seeding data or performing bulk inserts:
-
-```csharp
-var items = new[] { new Foo { Id = 1 }, new Foo { Id = 2 } };
-await repository.AddManyAsync(items);
-```
-After inserting a collection, create a `SaveAudit` with the total count and call `AddBatchAudit` to persist the batch summary.
-
-To modify entities, use `UpdateAsync` or `UpdateManyAsync` before saving:
-
-```csharp
-foo.Name = "Updated";
-await repository.UpdateAsync(foo);
-await context.SaveChangesAsync();
-```
-
-### Sample Foo Entity
-`Foo` lives only in the BDD test project and demonstrates a minimal entity used for repository scenarios.
-
-```csharp
-public class Foo : IValidatable, IBaseEntity, IRootEntity
-{
-    public int Id { get; set; }
-    public string Description { get; set; } = string.Empty;
-    public bool Validated { get; set; }
-}
-```
-
-The tests register a derived `TestDbContext` that exposes `DbSet<Foo> Foos` and configures the mapping via `OnModelCreating`.
-
-```csharp
-public class TestDbContext : YourDbContext
-{
-    public TestDbContext(DbContextOptions<YourDbContext> options) : base(options) { }
-    public DbSet<Foo> Foos => Set<Foo>();
-}
-```
+Repositories implement `IGenericRepository<T>` for data access. Entity Framework and MongoDB variants provide the same interface for adding, updating and deleting entities.
 
 ## Configuring the Data Layer
-`SetupValidationBuilder` collects setup steps before applying them. The sample types under `tests/ExampleLib.Tests/ExampleData` can be customised to match your schema.
-Both the EF Core and MongoDB repositories expose `AddManyAsync` so large lists can be inserted efficiently regardless of provider.
+The library registers services through extension methods. Use `AddExampleLib` to set up validation and data access in one step:
 ```csharp
-public class SetupValidationBuilder
+services.AddExampleLib(builder =>
 {
-    private readonly List<Action<IServiceCollection>> _steps = new();
-    private bool _useMongo;
-    internal bool UsesMongo => _useMongo;
-    public SetupValidationBuilder UseSqlServer<TContext>(string connectionString)
-        where TContext : DbContext
-    {
-        _steps.Add(s => s.SetupDatabase<TContext>(connectionString));
-        _useMongo = false;
-        return this;
-    }
-    public SetupValidationBuilder UseMongo(string connectionString, string databaseName)
-    {
-        _steps.Add(s => s.SetupMongoDatabase(connectionString, databaseName));
-        _useMongo = true;
-        return this;
-    }
-    public IServiceCollection Apply(IServiceCollection services)
-    {
-        foreach (var step in _steps)
-            step(services);
-        return services;
-    }
-}
+    builder.UseEf<TestDbContext>(options => options.UseSqlServer("connection"));
+});
 ```
-Combine setup and plan registration with `AddSetupValidation<T>`:
-```csharp
-public static IServiceCollection AddSetupValidation<T>(
-    this IServiceCollection services,
-    Action<SetupValidationBuilder> configure,
-    Func<T, decimal>? metricSelector = null,
-    ThresholdType thresholdType = ThresholdType.PercentChange,
-    decimal thresholdValue = 0.1m)
-{
-    var builder = new SetupValidationBuilder();
-    configure(builder);
-    builder.Apply(services);
+Switch to MongoDB by calling `UseMongo` instead. Both providers expose `AddBatchAudit` for summarising bulk saves.
 
-    services.AddSaveValidation<T>(metricSelector, thresholdType, thresholdValue);
-    if (builder.UsesMongo)
-        services.AddScoped<ISaveAuditRepository, MongoSaveAuditRepository>();
-    else
-        services.AddScoped<ISaveAuditRepository, EfSaveAuditRepository>();
-    return services;
-}
-```
-These helpers register the appropriate repositories and validation services for EF Core or MongoDB based on the builder configuration.
+## Validation Pipeline
+Entities are validated against a `SummarisationPlan` whenever they are saved. The Entity Framework unit of work exposes `SaveChangesWithPlanAsync<TEntity>()`, while the MongoDB implementation uses an interceptor to apply the same logic during inserts and updates.
 
-## Validation Workflow
-Entities are validated against the registered `SummarisationPlan` each time a save occurs. The unit of work exposes `SaveChangesWithPlanAsync<TEntity>()` to automatically apply the plan when persisting data. Mongo collections use an interceptor to invoke the same logic whenever documents are inserted or updated.
-
-## Manual Validators
-`ManualValidatorService` exposes a public `Rules` dictionary of predicates keyed by type.
-Create and register the service during startup then add rules as needed:
+## Manual Validation Service
+`ManualValidatorService` lets you register predicates to run against specific types:
 ```csharp
 services.AddValidatorService()
         .AddValidatorRule<Order>(o => o.Total > 0);
 ```
-The service evaluates every rule for the specified type and returns `true` only when all pass.
+All rules for a type must pass for the service to return `true`. You can inspect and modify the registered predicates via dependency injection.
 
-- `AddValidatorService` registers a single `ManualValidatorService` instance.
-- Rules can be added for any type via `AddValidatorRule<T>()`.
-- Access `ManualValidatorService.Rules` from DI to inspect existing predicates.
-- Multiple rules for a type are evaluated sequentially.
-- When no rules exist the service simply returns `true`.
-
-## Sequence Validation
-`SequenceValidator` provides a lightweight way to compare successive records using lambda expressions. Specify a key selector and value selector; an optional delegate lets you control how values are compared.
+## Validating Sequences
+`SequenceValidator` compares successive items in a sequence. Provide key and value selectors with an optional comparison delegate:
 ```csharp
-var ok = SequenceValidator.Validate(
-    items,
-    x => x.Server,
-    x => x.Value,
+var ok = SequenceValidator.Validate(items, x => x.Server, x => x.Value,
     (cur, prev) => Math.Abs(cur - prev) < 10);
 ```
-If you omit the last delegate, equality comparison on the selected value is used instead. A summarisation plan can also drive the comparison logic:
+You can also drive the comparison using a `SummarisationPlan`:
 ```csharp
 var plan = new SummarisationPlan<MyEntity>(e => e.Value, ThresholdType.RawDifference, 5);
 bool passes = SequenceValidator.Validate(items, e => e.Server, plan);
 ```
-The validator now checks every item against its immediate predecessor, ensuring
-that sequences with a single key are validated correctly. Use a summarisation
-plan whenever you need a consistent threshold across validations.
+Use `ThresholdValidator.IsWithinThreshold` in custom checks to maintain consistent logic.
 
-`ThresholdValidator.IsWithinThreshold` exposes the same logic for custom
-scenarios. Pass `throwOnUnsupported: true` to surface unexpected values when
-validating your own data.
-
-## External Flow Configuration
-Validation flows may be loaded from JSON:
+## Loading Validation Flows
+Validation rules can be configured from JSON:
 ```json
 [
   {
-"Type": "ExampleData.YourEntity, ExampleLib.Tests",
+    "Type": "ExampleData.YourEntity, ExampleLib.Tests",
     "SaveValidation": true,
     "MetricProperty": "Id",
     "ThresholdType": "RawDifference",
@@ -251,43 +102,42 @@ Validation flows may be loaded from JSON:
   }
 ]
 ```
-Load and register the configuration at startup:
+Register the configuration at startup:
 ```csharp
 var json = File.ReadAllText("flows.json");
 var options = ValidationFlowOptions.Load(json);
 services.AddValidationFlows(options);
 ```
-This helper wires up save, commit and delete validations according to the JSON
-definition, reducing boilerplate service registrations.
+This hook wires up save, commit and delete validations automatically.
 
-## Running the Tests
-Run all unit and BDD tests with code coverage:
+## Running Tests
+Run all unit and BDD tests with coverage:
 ```bash
 dotnet test --collect:"XPlat Code Coverage"
 ```
-Tests are compiled with warnings treated as errors. Any build warning will fail
-the run, so ensure packages resolve cleanly. The generated coverage report should
-exceed 80% when all tests pass.
-VS Code tasks under `.vscode/tasks.json` provide convenient shortcuts for validating specific scenarios.
+You can run a specific BDD scenario with Reqnroll:
+```bash
+dotnet test --filter FullyQualifiedName~RepositoryUpdate
+```
+The generated coverage report appears under `TestResults` and should exceed 80%.
 
-## Additional Guides
-- `docs/EFCoreReplicationGuide.md` explains how to replicate the EF Core setup in another project.
-- `Implementation.md` discusses designing class libraries at different maturity levels.
-- The new `RepositoryUpdate.feature` demonstrates updating entities via BDD tests.
-- `SequencePlan.feature` shows plan-based sequence validation in action.
-- `ThresholdValidator.cs` demonstrates consolidating change thresholds in one place.
-- `tests/ExampleLib.Tests/ExampleData` replaces the old `ExampleData` project for clarity.
+## Why Choose RAGStart?
+- Provides a working example of event-driven validation with EF Core and MongoDB.
+- Demonstrates BDD testing with Reqnroll alongside conventional unit tests.
+- Shows how to separate validation rules from persistence logic.
+- Includes helper methods such as `AddManyAsync`, `UpdateManyAsync` and `AddBatchAudit` for efficient bulk operations.
+- Offers a clear folder structure that can be reused in other projects.
+
+## More Documentation
+Further information is available in the `docs` folder:
+- `EFCoreReplicationGuide.md` explains how to replicate the EF Core configuration.
+- `Implementation.md` discusses class library design at different maturity levels.
 
 ## Troubleshooting
-- Ensure `DOTNET_ROLL_FORWARD=Major` is set when using .NET 9 runtimes.
+- Ensure `DOTNET_ROLL_FORWARD=Major` is set when targeting .NET 9.
 - Run `dotnet restore` if packages fail to resolve.
-- Remove `bin` and `obj` folders after SDK upgrades to avoid stale builds.
-- MongoDB tests rely on **Mongo2Go**; ensure the runner can download binaries through your network proxy.
-- If packages resolve to different preview versions, update your project references to avoid NU1603 warnings.
+- Delete `bin` and `obj` directories after SDK upgrades to avoid stale builds.
+- MongoDB tests rely on **Mongo2Go**; check that the runner can download binaries through your proxy.
 - If tests fail to compile, verify that all repositories implement the latest interface methods.
-- Missing batch audit data usually means `AddBatchAudit` was not invoked after bulk saves.
-- If results from `SequenceValidator` seem incorrect, verify the items are ordered as intended.
-- When using a plan with `SequenceValidator`, ensure the threshold values match your expectations.
-- When writing custom comparisons, use `ThresholdValidator.IsWithinThreshold` so behaviour mirrors the built-in validators.
-- After upgrading, verify that paths referencing `ExampleData` now point to `tests/ExampleLib.Tests/ExampleData`.
+
 
