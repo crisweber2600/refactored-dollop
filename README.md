@@ -12,10 +12,11 @@ RAGStart showcases an event-driven validation pipeline built with .NET. The proj
 7. [Using ValidationRunner](#using-validationrunner)
 8. [Validating Sequences](#validating-sequences)
 9. [Loading Validation Flows](#loading-validation-flows)
-10. [Running Tests](#running-tests)
-11. [Why Choose RAGStart?](#why-choose-ragstart)
-12. [More Documentation](#more-documentation)
-13. [Troubleshooting](#troubleshooting)
+10. [Validation Details](#validation-details)
+11. [Running Tests](#running-tests)
+12. [Why Choose RAGStart?](#why-choose-ragstart)
+13. [More Documentation](#more-documentation)
+14. [Troubleshooting](#troubleshooting)
 
 ## Getting Started
 1. Install the [.NET&nbsp;9 SDK](https://dotnet.microsoft.com/en-us/download).
@@ -177,6 +178,76 @@ services.AddValidationFlows(options);
 ```
 This hook wires up save, commit and delete validations automatically.
 
+## Validation Details
+Below is a deeper look at the validation system and how it integrates with the data layer.
+
+### How each validation works
+- **Summarisation validators** inspect metrics and use `ThresholdValidator` to determine if new values fall within the configured threshold.
+- **Manual validators** are predicates registered via `ManualValidatorService` and run alongside summarisation checks.
+- **Sequence validators** keep the last value per key so sequential data from different sources is compared correctly.
+
+### Dependency injection
+- Validators are added through `AddSaveValidation` or `AddValidationRunner` and resolved from the DI container.
+- `IValidationRunner` and repository instances are requested through constructor injection in your services.
+
+### Generic repository pattern
+- All repositories implement `IGenericRepository<T>` to expose common CRUD operations.
+- EF Core and Mongo variants share this interface so switching providers requires no code changes.
+
+### MongoDB support
+- Call `services.AddMongoRepositories` to register Mongo repositories and the validation interceptor.
+- Mongo operations record `SaveAudit` entries and trigger validation on inserts and updates.
+
+### EF Core support
+- Call `services.AddEfCoreRepositories<TestDbContext>` to register EF repositories.
+- `SaveChangesWithPlanAsync` ensures validations run before the EF transaction commits.
+
+### Integrating existing repositories
+Implement `IGenericRepository<T>` in your repositories to connect to the pipeline.
+1. Keep your existing data access logic and wrap it with the interface methods.
+2. Inject `IValidationRunner` so each operation can run the configured rules.
+3. Register the repository along with `AddValidationRunner` during startup.
+
+#### Example
+```csharp
+public class CustomOrderRepository : IGenericRepository<Order>
+{
+    private readonly MyDbContext _db;
+    private readonly IValidationRunner _runner;
+
+    public CustomOrderRepository(MyDbContext db, IValidationRunner runner)
+    {
+        _db = db;
+        _runner = runner;
+    }
+
+    public async Task AddAsync(Order order)
+    {
+        await _runner.ValidateAsync(order);
+        _db.Orders.Add(order);
+        await _db.SaveChangesAsync();
+    }
+
+    // implement the remaining CRUD methods...
+}
+```
+
+
+### Saving audit data
+- Each save creates a `SaveAudit` record containing batch size, metric value, timestamp and application name.
+- Both providers call `AddBatchAudit` so audits are persisted automatically.
+
+### Additional notes
+- Validation flows can be loaded from JSON at startup.
+- Audits store timestamps to track when saves occurred.
+- Register `IApplicationNameProvider` to separate metrics per application.
+- Use `AddManyAsync` and `UpdateManyAsync` for efficient bulk operations.
+- MongoDB tests run under **Mongo2Go** to avoid external dependencies.
+- Sequence validation prevents cross-server metric interference.
+- `ThresholdValidator.IsWithinThreshold` provides consistent checks across rules.
+- Entities must implement `IValidatable`, `IBaseEntity` and `IRootEntity`.
+- ValidationRunner returns `true` only if all rules succeed.
+- Unit tests maintain coverage above 80% and treat warnings as errors.
 ## Running Tests
 Run the unit tests with coverage:
 ```bash
