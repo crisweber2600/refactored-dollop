@@ -1,3 +1,6 @@
+using MongoDB.Bson;
+using MongoDB.Bson.Serialization.Attributes;
+
 namespace ExampleLib.Domain;
 
 /// <summary>
@@ -7,7 +10,12 @@ namespace ExampleLib.Domain;
 public class SaveAudit
 {
     /// <summary>Database identifier used by EF Core.</summary>
+    [BsonIgnore] // Ignore for MongoDB, used only by EF
     public int Id { get; set; }
+
+    [BsonId] // Use this as the MongoDB _id
+    [BsonRepresentation(BsonType.ObjectId)]
+    public string? MongoId { get; set; }
 
     public string EntityType { get; set; } = string.Empty;
     public string EntityId { get; set; } = string.Empty;

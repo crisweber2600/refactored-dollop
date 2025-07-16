@@ -8,60 +8,86 @@ using ExampleLib.Domain;
 
 var builder = Host.CreateApplicationBuilder(args);
 
+// Create and register a single InMemorySummarisationPlanStore instance
+var summarisationPlanStore = new InMemorySummarisationPlanStore();
+builder.Services.AddSingleton<ISummarisationPlanStore>(summarisationPlanStore);
+
+// Register SummarisationPlans for SampleEntity and OtherEntity directly
+summarisationPlanStore.AddPlan(new SummarisationPlan<WorkerService1.Models.SampleEntity>(
+    entity => (decimal)entity.Value,
+    ThresholdType.RawDifference,
+    0.0m
+));
+summarisationPlanStore.AddPlan(new SummarisationPlan<WorkerService1.Models.OtherEntity>(
+    entity => entity.Amount,
+    ThresholdType.RawDifference,
+    1.0m
+));
+
+// Register manual validation rules
+builder.Services.AddValidatorService();
+builder.Services.AddValidatorRule<WorkerService1.Models.SampleEntity>(entity => !string.IsNullOrWhiteSpace(entity.Name));
+builder.Services.AddValidatorRule<WorkerService1.Models.SampleEntity>(entity => entity.Value >= 0);
+builder.Services.AddValidatorRule<WorkerService1.Models.SampleEntity>(entity => entity.Validated);
+builder.Services.AddValidatorRule<WorkerService1.Models.OtherEntity>(entity => !string.IsNullOrWhiteSpace(entity.Code));
+builder.Services.AddValidatorRule<WorkerService1.Models.OtherEntity>(entity => entity.Amount > 0);
+builder.Services.AddValidatorRule<WorkerService1.Models.OtherEntity>(entity => entity.IsActive);
+builder.Services.AddValidatorRule<WorkerService1.Models.OtherEntity>(entity => entity.Validated);
+
+// Register IValidationService implementation for DI
+builder.Services.AddScoped<ExampleLib.Domain.IValidationService, ExampleLib.Infrastructure.ValidationService>();
+// Register ISummarisationValidator<T> open generic for DI
+builder.Services.AddSingleton(typeof(ExampleLib.Domain.ISummarisationValidator<>), typeof(ExampleLib.Domain.SummarisationValidator<>));
+
+// Register ValidationRunner
+builder.Services.AddValidationRunner();
+
 builder.AddServiceDefaults();
 
 // SQL Server Aspire connection
 builder.AddSqlServerDbContext<SampleDbContext>("Sql");
 builder.AddSqlServerDbContext<TheNannyDbContext>("Sql");
 
-// --- VALIDATION PIPELINE SETUP ---
-// 1. Summarisation validation (AddSaveValidation)
-builder.Services.AddSaveValidation<WorkerService1.Models.SampleEntity>(
-    entity => (decimal)entity.Value, // metric selector for validation
-    ThresholdType.RawDifference,    // example threshold type
-    0.0m,                           // example threshold value (customize as needed)
-    entity => !string.IsNullOrWhiteSpace(entity.Name), // manual rule: Name must not be empty
-    entity => entity.Value >= 0 // manual rule: Value must be non-negative
-);
-
-// 2. Manual validation service (AddValidatorService + AddValidatorRule)
-builder.Services.AddValidatorService();
-builder.Services.AddValidatorRule<WorkerService1.Models.SampleEntity>(entity => entity.Validated);
-
-// 3. ValidationRunner (AddValidationRunner)
-builder.Services.AddValidationRunner();
-
-// 4. Validation flows from config (AddValidationFlows)
-// Example: load flows from a JSON file (uncomment and provide path if needed)
-// var flowsJson = File.ReadAllText("flows.json");
-// var flowOptions = ExampleLib.Infrastructure.ValidationFlowOptions.Load(flowsJson);
-// builder.Services.AddValidationFlows(flowOptions);
-
-// 5. SequenceValidator usage: (not DI, but available for use in code)
-// Example usage:
-// var valid = ExampleLib.Domain.SequenceValidator.Validate(
-//     items,
-//     x => x.Server, // key selector
-//     x => x.Value,  // value selector
-//     (cur, prev) => Math.Abs(cur - prev) < 10 // custom comparison
-// );
-// --- END VALIDATION PIPELINE SETUP ---
-
 // Register EfSaveAuditRepository for audit persistence (EF)
 // builder.Services.AddScoped<ISaveAuditRepository, ExampleLib.Infrastructure.EfSaveAuditRepository>();
 
-builder.Services.AddScoped<ISampleRepository<WorkerService1.Models.SampleEntity>, EfSampleRepository>();
+// Register generic EF repositories for DI using SampleDbContext
+builder.Services.AddScoped<IRepository<WorkerService1.Models.SampleEntity>>(sp =>
+    new WorkerService1.Repositories.EfRepository<WorkerService1.Models.SampleEntity>(
+        sp.GetRequiredService<WorkerService1.Repositories.SampleDbContext>(),
+        sp.GetRequiredService<ExampleLib.Domain.IValidationRunner>()));
+builder.Services.AddScoped<IRepository<WorkerService1.Models.OtherEntity>>(sp =>
+    new WorkerService1.Repositories.EfRepository<WorkerService1.Models.OtherEntity>(
+        sp.GetRequiredService<WorkerService1.Repositories.SampleDbContext>(),
+        sp.GetRequiredService<ExampleLib.Domain.IValidationRunner>()));
 
 // MongoDB Aspire connection
 builder.AddMongoDBClient("mongodb");
-builder.Services.AddScoped<MongoSampleRepository>();
-builder.Services.AddScoped<ISampleRepository<WorkerService1.Models.SampleEntity>, EfSampleRepository>();
+// Register generic Mongo repositories for DI
+builder.Services.AddScoped<IRepository<WorkerService1.Models.SampleEntity>>(sp =>
+    new WorkerService1.Repositories.MongoRepository<WorkerService1.Models.SampleEntity>(
+        sp.GetRequiredService<MongoDB.Driver.IMongoClient>(),
+        sp.GetRequiredService<ExampleLib.Domain.IValidationRunner>(),
+        "SampleEntities", "SampleEntities"));
+builder.Services.AddScoped<IRepository<WorkerService1.Models.OtherEntity>>(sp =>
+    new WorkerService1.Repositories.MongoRepository<WorkerService1.Models.OtherEntity>(
+        sp.GetRequiredService<MongoDB.Driver.IMongoClient>(),
+        sp.GetRequiredService<ExampleLib.Domain.IValidationRunner>(),
+        "OtherEntities", "OtherEntities"));
+
 // Register ExampleLib validation pipeline for SampleEntity (Mongo)
-builder.Services.AddSaveValidation<WorkerService1.Models.SampleEntity>(
-    entity => (decimal)entity.Value, // metric selector for validation
-    ThresholdType.RawDifference,
-    0.0m
-);
+// Removed AddSaveValidation to prevent overriding the singleton ISummarisationPlanStore
+// builder.Services.AddSaveValidation<WorkerService1.Models.SampleEntity>(
+//     entity => (decimal)entity.Value, // metric selector for validation
+//     ThresholdType.RawDifference,
+//     0.0m
+// );
+// Register ExampleLib validation pipeline for OtherEntity (Mongo)
+// builder.Services.AddSaveValidation<WorkerService1.Models.OtherEntity>(
+//     entity => entity.Amount,
+//     ThresholdType.RawDifference,
+//     1.0m
+// );
 // Register MongoSaveAuditRepository for audit persistence (Mongo)
 builder.Services.AddScoped<ExampleLib.Domain.ISaveAuditRepository, ExampleLib.Infrastructure.MongoSaveAuditRepository>();
 
@@ -74,9 +100,12 @@ builder.Services.AddHostedService<MigrationWorker>();
 
 builder.Services.AddHostedService<Worker>();
 builder.Services.AddHostedService<MongoWorker>();
+builder.Services.AddHostedService<OtherWorker>();
+builder.Services.AddHostedService<MongoOtherWorker>();
 
-// Register ISampleEntityService
+// Register ISampleEntityService and IOtherEntityService
 builder.Services.AddScoped<ISampleEntityService, SampleEntityService>();
+builder.Services.AddScoped<IOtherEntityService, OtherEntityService>();
 
 var host = builder.Build();
 host.Run();
