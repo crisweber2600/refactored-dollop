@@ -1,12 +1,20 @@
 using ExampleLib.Domain;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace WorkerService1.Models
 {
     public class SampleEntity : IValidatable, IBaseEntity, IRootEntity
     {
-        public int Id { get; set; } 
+        [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        [BsonId]
+        /// <summary>
+        /// Do not set this property manually. It is set by the database or MongoDB.
+        /// </summary>
+        public int Id { get; set; }
         public string Name { get; set; } = string.Empty;
         public double Value { get; set; } // Numeric value for validation
         public bool Validated { get; set; } // Required by IValidatable
@@ -14,6 +22,12 @@ namespace WorkerService1.Models
 
     public class OtherEntity : IValidatable, IBaseEntity, IRootEntity
     {
+        [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        [BsonId]
+        /// <summary>
+        /// Do not set this property manually. It is set by the database or MongoDB.
+        /// </summary>
         public int Id { get; set; }
         public string Code { get; set; } = string.Empty;
         public int Amount { get; set; }

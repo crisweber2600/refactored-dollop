@@ -1,4 +1,5 @@
 using ExampleLib.Domain;
+using MongoDB.Bson;
 using MongoDB.Driver;
 
 namespace ExampleLib.Infrastructure;
@@ -34,6 +35,22 @@ public class MongoSaveAuditRepository : ISaveAuditRepository
         var filter = Builders<SaveAudit>.Filter.Eq(a => a.EntityType, audit.EntityType) &
                      Builders<SaveAudit>.Filter.Eq(a => a.EntityId, audit.EntityId) &
                      Builders<SaveAudit>.Filter.Eq(a => a.ApplicationName, audit.ApplicationName);
+
+        // Try to find an existing document
+        var existing = _collection.Find(filter).FirstOrDefault();
+        if (existing != null)
+        {
+            // Keep the existing MongoId to avoid immutable _id error
+            audit.MongoId = existing.MongoId;
+        }
+        else
+        {
+            // New document, generate a new MongoId if not set
+            if (string.IsNullOrEmpty(audit.MongoId))
+            {
+                audit.MongoId = ObjectId.GenerateNewId().ToString();
+            }
+        }
         _collection.ReplaceOne(filter, audit, new ReplaceOptions { IsUpsert = true });
     }
 
