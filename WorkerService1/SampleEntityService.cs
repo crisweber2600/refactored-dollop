@@ -25,9 +25,13 @@ namespace WorkerService1.Services
         Task<(bool AllUpdated, int ValidCount, int InvalidCount)> UpdateManyAndCheckAsync(Dictionary<int, (string code, int amount, bool isActive)> updates);
     }
 
+    /// <summary>
+    /// Service implementation showing how to use repositories with integrated ExampleLib validation.
+    /// </summary>
     public class SampleEntityService : ISampleEntityService
     {
         private readonly IRepository<SampleEntity> _repo;
+        
         public SampleEntityService(IRepository<SampleEntity> repo)
         {
             _repo = repo;
@@ -36,8 +40,12 @@ namespace WorkerService1.Services
         public async Task<(bool Success, int Count)> AddAndCountAsync(string name, double value)
         {
             var entity = new SampleEntity { Name = name, Value = value };
+            
+            // The repository will automatically call ValidationRunner.ValidateAsync
+            // which includes manual validation, summarisation validation, and sequence validation
             var isValid = await _repo.ValidateAsync(entity);
             if (!isValid) return (false, 0);
+            
             await _repo.AddAsync(entity);
             var all = await _repo.GetAllAsync();
             return (true, all.Count);
@@ -125,9 +133,13 @@ namespace WorkerService1.Services
         }
     }
 
+    /// <summary>
+    /// Service implementation showing how to use repositories with integrated ExampleLib validation.
+    /// </summary>
     public class OtherEntityService : IOtherEntityService
     {
         private readonly IRepository<OtherEntity> _repo;
+        
         public OtherEntityService(IRepository<OtherEntity> repo)
         {
             _repo = repo;
@@ -136,8 +148,12 @@ namespace WorkerService1.Services
         public async Task<(bool Success, int Count)> AddAndCountAsync(string code, int amount, bool isActive)
         {
             var entity = new OtherEntity { Code = code, Amount = amount, IsActive = isActive };
+            
+            // The repository will automatically call ValidationRunner.ValidateAsync
+            // which includes manual validation, summarisation validation, and sequence validation
             var isValid = await _repo.ValidateAsync(entity);
             if (!isValid) return (false, 0);
+            
             await _repo.AddAsync(entity);
             var all = await _repo.GetAllAsync();
             return (true, all.Count);

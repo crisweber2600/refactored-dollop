@@ -8,120 +8,94 @@ using WorkerService1.Services;
 
 var builder = Host.CreateApplicationBuilder(args);
 
-// Create and register a single InMemorySummarisationPlanStore instance
-var summarisationPlanStore = new InMemorySummarisationPlanStore();
-builder.Services.AddSingleton<ISummarisationPlanStore>(summarisationPlanStore);
-
-// Register SummarisationPlans for SampleEntity and OtherEntity directly
-summarisationPlanStore.AddPlan(new SummarisationPlan<SampleEntity>(
-    entity => (decimal)entity.Value,
-    ThresholdType.RawDifference,
-    0.0m
-));
-summarisationPlanStore.AddPlan(new SummarisationPlan<OtherEntity>(
-    entity => entity.Amount,
-    ThresholdType.RawDifference,
-    1.0m
-));
-
-// Register manual validation rules
-builder.Services.AddValidatorService();
-builder.Services.AddValidatorRule<SampleEntity>(entity => !string.IsNullOrWhiteSpace(entity.Name));
-builder.Services.AddValidatorRule<SampleEntity>(entity => entity.Value >= 0);
-builder.Services.AddValidatorRule<SampleEntity>(entity => entity.Validated);
-builder.Services.AddValidatorRule<OtherEntity>(entity => !string.IsNullOrWhiteSpace(entity.Code));
-builder.Services.AddValidatorRule<OtherEntity>(entity => entity.Amount > 0);
-builder.Services.AddValidatorRule<OtherEntity>(entity => entity.IsActive);
-builder.Services.AddValidatorRule<OtherEntity>(entity => entity.Validated);
-
-// Register configurable EntityIdProvider for SequenceValidator compatibility
-builder.Services.AddConfigurableEntityIdProvider(provider =>
+// STEP 1: Configure ExampleLib validation services using fluent configuration
+// This shows how easy it is to add ExampleLib to an existing application
+builder.Services.ConfigureExampleLib(config =>
 {
-    // Register custom selectors for different entity types
-    provider.RegisterSelector<SampleEntity>(entity => entity.Name);
-    provider.RegisterSelector<OtherEntity>(entity => entity.Code);
+    config.WithApplicationName(builder.Environment.ApplicationName)
+          .UseEntityFramework() // Primary data store
+          .WithConfigurableEntityIds(provider =>
+          {
+              // Register custom selectors for different entity types
+              provider.RegisterSelector<SampleEntity>(entity => entity.Name);
+              provider.RegisterSelector<OtherEntity>(entity => entity.Code);
+          })
+          .AddSummarisationPlan<SampleEntity>(
+              entity => (decimal)entity.Value,
+              ThresholdType.RawDifference,
+              0.0m)
+          .AddSummarisationPlan<OtherEntity>(
+              entity => entity.Amount,
+              ThresholdType.RawDifference,
+              1.0m)
+          .AddValidationPlan<SampleEntity>(threshold: 5.0, ValidationStrategy.Count)
+          .AddValidationPlan<OtherEntity>(threshold: 1.0, ValidationStrategy.Count)
+          .AddValidationRules<SampleEntity>(
+              entity => !string.IsNullOrWhiteSpace(entity.Name),
+              entity => entity.Value >= 0,
+              entity => entity.Validated)
+          .AddValidationRules<OtherEntity>(
+              entity => !string.IsNullOrWhiteSpace(entity.Code),
+              entity => entity.Amount > 0,
+              entity => entity.IsActive,
+              entity => entity.Validated);
 });
 
-// Register IValidationService implementation for DI (custom implementation for SequenceValidator compatibility)
-builder.Services.AddScoped<IValidationService, ValidationService>();
-// Register ISummarisationValidator<T> open generic for DI
-builder.Services.AddSingleton(typeof(ISummarisationValidator<>), typeof(SummarisationValidator<>));
-// Remove invalid registration for SequenceValidator<T> as it is a static class and cannot be registered for DI
-// builder.Services.AddScoped(typeof(SequenceValidator<>));
-
-// Register ValidationRunner
-builder.Services.AddValidationRunner();
+// Remove default ISaveAuditRepository registration from ExampleLib
+var defaultAuditDescriptor = builder.Services.FirstOrDefault(d => d.ServiceType == typeof(ISaveAuditRepository));
+if (defaultAuditDescriptor != null)
+{
+    builder.Services.Remove(defaultAuditDescriptor);
+}
 
 builder.AddServiceDefaults();
 
-// SQL Server Aspire connection
+// STEP 2: Configure your existing database contexts
 builder.AddSqlServerDbContext<SampleDbContext>("Sql");
 builder.AddSqlServerDbContext<TheNannyDbContext>("Sql");
+builder.AddMongoDBClient("mongodb");
 
-// Register EfSaveAuditRepository for audit persistence using TheNannyDbContext
+// STEP 3: Register ExampleLib audit repository
+// Register EfSaveAuditRepository as the ISaveAuditRepository implementation using TheNannyDbContext
 builder.Services.AddScoped<ISaveAuditRepository>(sp =>
     new EfSaveAuditRepository(sp.GetRequiredService<TheNannyDbContext>()));
 
-// Register generic EF repositories for DI using SampleDbContext
-builder.Services.AddScoped<IRepository<SampleEntity>>(sp =>
-    new EfRepository<SampleEntity>(
+// STEP 4: Register EF repositories WITH ValidationRunner integration as primary implementation
+// This shows how to modify existing repository registrations to include validation
+builder.Services.AddScoped<WorkerService1.Repositories.IRepository<SampleEntity>>(sp =>
+    new WorkerService1.Repositories.EfRepository<SampleEntity>(
         sp.GetRequiredService<SampleDbContext>(),
-        sp.GetRequiredService<IValidationRunner>()));
-builder.Services.AddScoped<IRepository<OtherEntity>>(sp =>
-    new EfRepository<OtherEntity>(
+        sp.GetRequiredService<IValidationRunner>())); // <- ADD ValidationRunner to existing repositories
+
+builder.Services.AddScoped<WorkerService1.Repositories.IRepository<OtherEntity>>(sp =>
+    new WorkerService1.Repositories.EfRepository<OtherEntity>(
         sp.GetRequiredService<SampleDbContext>(),
-        sp.GetRequiredService<IValidationRunner>()));
+        sp.GetRequiredService<IValidationRunner>())); // <- ADD ValidationRunner to existing repositories
 
-// MongoDB Aspire connection
-builder.AddMongoDBClient("mongodb");
-// Register generic Mongo repositories for DI
-builder.Services.AddScoped<IRepository<SampleEntity>>(sp =>
-    new MongoRepository<SampleEntity>(
+// STEP 5: Register MongoDB repositories as additional implementations for specific scenarios
+// Note: These are used by specific workers that request MongoDB explicitly
+builder.Services.AddScoped<WorkerService1.Repositories.MongoRepository<SampleEntity>>(sp =>
+    new WorkerService1.Repositories.MongoRepository<SampleEntity>(
         sp.GetRequiredService<IMongoClient>(),
-        sp.GetRequiredService<IValidationRunner>(),
-        "SampleEntities", "SampleEntities"));
-builder.Services.AddScoped<IRepository<OtherEntity>>(sp =>
-    new MongoRepository<OtherEntity>(
+        sp.GetRequiredService<IValidationRunner>(), // <- ADD ValidationRunner to existing repositories
+        "WorkerService", "SampleEntities"));
+
+builder.Services.AddScoped<WorkerService1.Repositories.MongoRepository<OtherEntity>>(sp =>
+    new WorkerService1.Repositories.MongoRepository<OtherEntity>(
         sp.GetRequiredService<IMongoClient>(),
-        sp.GetRequiredService<IValidationRunner>(),
-        "OtherEntities", "OtherEntities"));
+        sp.GetRequiredService<IValidationRunner>(), // <- ADD ValidationRunner to existing repositories
+        "WorkerService", "OtherEntities"));
 
-// Register ExampleLib validation pipeline for SampleEntity (Mongo)
-// Removed AddSaveValidation to prevent overriding the singleton ISummarisationPlanStore
-// builder.Services.AddSaveValidation<WorkerService1.Models.SampleEntity>(
-//     entity => (decimal)entity.Value, // metric selector for validation
-//     ThresholdType.RawDifference,
-//     0.0m
-// );
-// Register ExampleLib validation pipeline for OtherEntity (Mongo)
-// builder.Services.AddSaveValidation<WorkerService1.Models.OtherEntity>(
-//     entity => entity.Amount,
-//     ThresholdType.RawDifference,
-//     1.0m
-// );
-// Register MongoSaveAuditRepository for audit persistence (Mongo)
-builder.Services.AddScoped<ISaveAuditRepository, MongoSaveAuditRepository>();
-
-// Register a static application name provider for validation/audit services
-builder.Services.AddSingleton<IApplicationNameProvider>(
-    new StaticApplicationNameProvider(builder.Environment.ApplicationName));
-
-// Register migration worker FIRST to ensure migrations run before other workers
+// Register existing application services (unchanged)
 builder.Services.AddHostedService<MigrationWorker>();
 builder.Services.AddHostedService<Worker>();
 builder.Services.AddHostedService<MongoWorker>();
 builder.Services.AddHostedService<OtherWorker>();
 builder.Services.AddHostedService<MongoOtherWorker>();
-// Register ValidationDemoWorker for demoing SequenceValidator with ValidationPlan
 builder.Services.AddHostedService<ValidationDemoWorker>();
 
-// Register ISampleEntityService and IOtherEntityService
 builder.Services.AddScoped<ISampleEntityService, SampleEntityService>();
 builder.Services.AddScoped<IOtherEntityService, OtherEntityService>();
-
-// Register a ValidationPlan for SampleEntity with specific threshold for SequenceValidator demo
-var sampleEntityValidationPlan = new ValidationPlan(typeof(SampleEntity), threshold: 5.0, ValidationStrategy.Count);
-builder.Services.AddSingleton(sampleEntityValidationPlan);
 
 var host = builder.Build();
 host.Run();

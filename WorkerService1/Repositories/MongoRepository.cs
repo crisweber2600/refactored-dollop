@@ -1,16 +1,20 @@
 using ExampleLib.Domain;
+using ExampleLib.Infrastructure;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Driver;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace WorkerService1.Repositories
 {
+    /// <summary>
+    /// MongoDB repository implementation showing how to integrate ExampleLib.Infrastructure.ValidationRunner.
+    /// This demonstrates the pattern for adding validation to existing MongoDB repositories.
+    /// </summary>
     public class MongoRepository<T> : IRepository<T> where T : class, IValidatable, IBaseEntity, IRootEntity
     {
         private readonly IMongoCollection<T> _collection;
         private readonly IValidationRunner _validationRunner;
+
         public MongoRepository(IMongoClient mongoClient, IValidationRunner validationRunner, string dbName, string collectionName)
         {
             var database = mongoClient.GetDatabase(dbName);
@@ -42,6 +46,12 @@ namespace WorkerService1.Repositories
                     idProp.SetValue(entity, nextId);
                 }
             }
+
+            // INTEGRATION POINT: Use ExampleLib ValidationRunner for comprehensive validation
+            // This includes manual validation, summarisation validation, and sequence validation
+            var isValid = await _validationRunner.ValidateAsync(entity);
+            entity.Validated = isValid;
+
             await _collection.InsertOneAsync(entity);
         }
 
@@ -67,6 +77,10 @@ namespace WorkerService1.Repositories
 
         public async Task UpdateAsync(T entity)
         {
+            // Run validation before updating
+            var isValid = await _validationRunner.ValidateAsync(entity);
+            entity.Validated = isValid;
+
             var idProp = typeof(T).GetProperty("Id");
             if (idProp == null) return;
             var id = idProp.GetValue(entity);
@@ -82,12 +96,12 @@ namespace WorkerService1.Repositories
 
         public async Task<bool> ValidateAsync(T entity, CancellationToken cancellationToken = default)
         {
+            // INTEGRATION POINT: Expose ValidationRunner functionality to repository consumers
             return await _validationRunner.ValidateAsync(entity, cancellationToken);
         }
 
         public async Task<T?> GetLastAsync()
         {
-            // Assumes Id is the primary key and is int
             var sort = Builders<T>.Sort.Descending("Id");
             return await _collection.Find(_ => true).Sort(sort).FirstOrDefaultAsync();
         }

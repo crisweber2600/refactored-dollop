@@ -43,7 +43,6 @@ namespace WorkerService1
                 throw;
             }
             MigrationCompleted.TrySetResult();
-            _hostApplicationLifetime.StopApplication();
         }
 
         private static async Task RunMigrationAsync(DbContext dbContext, CancellationToken cancellationToken)

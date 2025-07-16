@@ -10,10 +10,13 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using WorkerService1.Models;
-using WorkerService1.Repositories;
 
 namespace WorkerService1;
 
+/// <summary>
+/// Demonstrates how ExampleLib.Infrastructure.ValidationRunner integrates with existing repositories
+/// to provide comprehensive validation including manual rules, summarisation, and sequence validation.
+/// </summary>
 public class ValidationDemoWorker : BackgroundService
 {
     private readonly IServiceProvider _serviceProvider;
@@ -29,17 +32,16 @@ public class ValidationDemoWorker : BackgroundService
     {
         using var scope = _serviceProvider.CreateScope();
         
-        // Get TheNannyDbContext (for SaveAudit records) and the repository
-        var sampleRepo = scope.ServiceProvider.GetRequiredService<IRepository<SampleEntity>>();
+        // Get the repository with integrated ValidationRunner and audit database context for seeding
+        var sampleRepo = scope.ServiceProvider.GetRequiredService<WorkerService1.Repositories.IRepository<SampleEntity>>();
         var auditDbContext = scope.ServiceProvider.GetRequiredService<TheNannyDbContext>();
-        var plan = scope.ServiceProvider.GetRequiredService<ValidationPlan>();
 
-        _logger.LogInformation("Starting ValidationDemoWorker with SaveAudit validation, threshold: {Threshold}", plan.Threshold);
+        _logger.LogInformation("Starting ValidationDemoWorker - demonstrating ExampleLib.Infrastructure.ValidationRunner integration");
 
         // Step 1: Seed the SaveAudit database with initial audit records
         await SeedAuditDatabaseAsync(auditDbContext, stoppingToken);
 
-        // Step 2: Create new entities to validate against SaveAudit records
+        // Step 2: Create new entities to insert using the repository
         var newEntities = new List<SampleEntity>
         {
             new SampleEntity { Name = "A", Value = 2.0, Validated = true },
@@ -48,42 +50,39 @@ public class ValidationDemoWorker : BackgroundService
             new SampleEntity { Name = "D", Value = 15.0, Validated = true } // This should pass validation against audit (20.0 - 15.0 = 5.0 <= 5.0)
         };
 
-        _logger.LogInformation("Validating {Count} new entities against existing SaveAudit records", newEntities.Count);
+        _logger.LogInformation("Inserting {Count} new entities using repository (ValidationRunner handles all validation automatically)", newEntities.Count);
 
-        // Step 3: Use SequenceValidator extensions with IEntityIdProvider for automatic key mapping
-        var entityIdProvider = scope.ServiceProvider.GetRequiredService<IEntityIdProvider>();
-        bool valid = await SequenceValidatorExtensions.ValidateWithPlanAndProviderAsync(
-            newEntities,
-            auditDbContext.SaveAudits,
-            entityIdProvider,
-            plan,
-            e => (decimal)e.Value, // valueSelector: convert entity Value to decimal
-            stoppingToken
-        );
+        // Step 3: Use the repository which automatically handles all validation through ValidationRunner
+        int successCount = 0;
+        int failureCount = 0;
 
-        _logger.LogInformation("SequenceValidator result using SaveAudit validation (threshold: {Threshold}): {Result}", 
-            plan.Threshold, valid);
-
-        if (valid)
+        foreach (var entity in newEntities)
         {
-            _logger.LogInformation("All new entities are valid against SaveAudit records. Proceeding with insertion.");
-            
-            // Step 4: Insert the valid entities (SaveAudit records will be created automatically by ValidationRunner)
-            foreach (var entity in newEntities)
+            try
             {
+                // The repository's AddAsync method automatically calls ValidationRunner.ValidateAsync, which includes:
+                // 1. Manual validation (rules defined in Program.cs)
+                // 2. Summarisation validation (SummarisationPlan)
+                // 3. Sequence validation (ValidationPlan against SaveAudit records)
                 await sampleRepo.AddAsync(entity);
-                _logger.LogInformation("Inserted entity: Name={Name}, Value={Value} (SaveAudit created automatically)", entity.Name, entity.Value);
+                successCount++;
+                _logger.LogInformation("Successfully inserted entity: Name={Name}, Value={Value} (all validations passed)", entity.Name, entity.Value);
+            }
+            catch (InvalidOperationException ex)
+            {
+                failureCount++;
+                _logger.LogWarning("Failed to insert entity: Name={Name}, Value={Value}. Reason: {Reason}", entity.Name, entity.Value, ex.Message);
+            }
+            catch (Exception ex)
+            {
+                failureCount++;
+                _logger.LogError(ex, "Unexpected error inserting entity: Name={Name}, Value={Value}", entity.Name, entity.Value);
             }
         }
-        else
-        {
-            _logger.LogWarning("Some new entities failed validation against SaveAudit records. Insertion aborted.");
-            
-            // Show detailed validation results for each entity
-            await LogDetailedAuditValidationResultsAsync(newEntities, auditDbContext, plan, stoppingToken);
-        }
 
-        // Step 5: Show final SaveAudit database state
+        _logger.LogInformation("Repository insertion complete. Success: {SuccessCount}, Failures: {FailureCount}", successCount, failureCount);
+
+        // Step 4: Show final SaveAudit database state
         await LogAuditDatabaseStateAsync(auditDbContext, stoppingToken);
 
         // Wait before next execution (this is just a demo)
@@ -94,88 +93,68 @@ public class ValidationDemoWorker : BackgroundService
     {
         _logger.LogInformation("Seeding SaveAudit database with initial audit records...");
 
-        // Check if we already have SaveAudit data
-        var existingCount = await auditDbContext.SaveAudits
-            .Where(a => a.EntityType == nameof(SampleEntity))
-            .CountAsync(cancellationToken);
-        
-        if (existingCount > 0)
+        try
         {
-            _logger.LogInformation("SaveAudit database already contains {Count} SampleEntity records, skipping seed", existingCount);
-            return;
-        }
-
-        // Seed with initial SaveAudit records representing previous entity saves
-        var seedAudits = new List<SaveAudit>
-        {
-            new SaveAudit 
-            { 
-                EntityType = nameof(SampleEntity),
-                EntityId = "A", // Name field value
-                ApplicationName = "ValidationDemo",
-                MetricValue = 7.0m, // Previous Value
-                BatchSize = 1,
-                Validated = true,
-                Timestamp = DateTimeOffset.UtcNow.AddMinutes(-10)
-            },
-            new SaveAudit 
-            { 
-                EntityType = nameof(SampleEntity),
-                EntityId = "B", // Name field value
-                ApplicationName = "ValidationDemo",
-                MetricValue = 4.0m, // Previous Value
-                BatchSize = 1,
-                Validated = true,
-                Timestamp = DateTimeOffset.UtcNow.AddMinutes(-5)
-            },
-            new SaveAudit 
-            { 
-                EntityType = nameof(SampleEntity),
-                EntityId = "D", // Name field value
-                ApplicationName = "ValidationDemo",
-                MetricValue = 20.0m, // Previous Value
-                BatchSize = 1,
-                Validated = true,
-                Timestamp = DateTimeOffset.UtcNow.AddMinutes(-2)
-            }
-        };
-
-        foreach (var audit in seedAudits)
-        {
-            auditDbContext.SaveAudits.Add(audit);
-            _logger.LogInformation("Seeded SaveAudit: EntityId={EntityId}, MetricValue={MetricValue}", 
-                audit.EntityId, audit.MetricValue);
-        }
-
-        await auditDbContext.SaveChangesAsync(cancellationToken);
-        _logger.LogInformation("SaveAudit database seeding completed with {Count} records", seedAudits.Count);
-    }
-
-    private async Task LogDetailedAuditValidationResultsAsync(List<SampleEntity> newEntities, TheNannyDbContext auditDbContext, ValidationPlan plan, CancellationToken cancellationToken)
-    {
-        _logger.LogInformation("Detailed SaveAudit validation results:");
-        
-        foreach (var newEntity in newEntities)
-        {
-            var latestAudit = await auditDbContext.SaveAudits
-                .Where(a => a.EntityType == nameof(SampleEntity) && a.EntityId == newEntity.Name)
-                .OrderByDescending(a => a.Timestamp)
-                .FirstOrDefaultAsync(cancellationToken);
-
-            if (latestAudit != null)
+            // Check if we already have SaveAudit data
+            var existingCount = await auditDbContext.SaveAudits
+                .Where(a => a.EntityType == nameof(SampleEntity))
+                .CountAsync(cancellationToken);
+            
+            if (existingCount > 0)
             {
-                var newValue = (decimal)newEntity.Value;
-                var auditValue = latestAudit.MetricValue;
-                var difference = Math.Abs(newValue - auditValue);
-                var isValid = difference <= (decimal)plan.Threshold;
-                
-                _logger.LogInformation("Entity Name={Name}: New Value={NewValue}, SaveAudit MetricValue={AuditValue}, Difference={Difference}, Valid={IsValid} (threshold={Threshold})",
-                    newEntity.Name, newValue, auditValue, difference, isValid, plan.Threshold);
+                _logger.LogInformation("SaveAudit database already contains {Count} SampleEntity records, skipping seed", existingCount);
+                return;
             }
-            else
+
+            // Seed with initial SaveAudit records representing previous entity saves
+            var seedAudits = new List<SaveAudit>
             {
-                _logger.LogInformation("Entity Name={Name}: No SaveAudit record found, validation passes by default", newEntity.Name);
+                new SaveAudit 
+                { 
+                    EntityType = nameof(SampleEntity),
+                    EntityId = "A", // Name field value (from EntityIdProvider configuration)
+                    ApplicationName = "ValidationDemo",
+                    MetricValue = 7.0m, // Previous Value
+                    BatchSize = 1,
+                    Validated = true,
+                    Timestamp = DateTimeOffset.UtcNow.AddMinutes(-10)
+                },
+                new SaveAudit 
+                { 
+                    EntityType = nameof(SampleEntity),
+                    EntityId = "B", // Name field value (from EntityIdProvider configuration)
+                    ApplicationName = "ValidationDemo",
+                    MetricValue = 4.0m, // Previous Value
+                    BatchSize = 1,
+                    Validated = true,
+                    Timestamp = DateTimeOffset.UtcNow.AddMinutes(-5)
+                },
+                new SaveAudit 
+                { 
+                    EntityType = nameof(SampleEntity),
+                    EntityId = "D", // Name field value (from EntityIdProvider configuration)
+                    ApplicationName = "ValidationDemo",
+                    MetricValue = 20.0m, // Previous Value
+                    BatchSize = 1,
+                    Validated = true,
+                    Timestamp = DateTimeOffset.UtcNow.AddMinutes(-2)
+                }
+            };
+
+            foreach (var audit in seedAudits)
+            {
+                auditDbContext.SaveAudits.Add(audit);
+                _logger.LogInformation("Seeded SaveAudit: EntityId={EntityId}, MetricValue={MetricValue}", 
+                    audit.EntityId, audit.MetricValue);
             }
+
+            await auditDbContext.SaveChangesAsync(cancellationToken);
+            _logger.LogInformation("SaveAudit database seeding completed with {Count} records", seedAudits.Count);
+        }
+        catch (OperationCanceledException)
+        {
+            _logger.LogInformation("Seeding SaveAudit database was canceled.");
+            // Swallow exception to allow graceful shutdown
         }
     }
 

@@ -3,6 +3,9 @@ using WorkerService1.Repositories;
 
 namespace WorkerService1
 {
+    /// <summary>
+    /// Demonstrates MongoDB repositories with integrated ExampleLib validation.
+    /// </summary>
     public class MongoWorker : BackgroundService
     {
         private readonly ILogger<MongoWorker> _logger;
@@ -19,12 +22,14 @@ namespace WorkerService1
             // Wait for migration to complete before starting
             await MigrationWorker.MigrationCompleted.Task;
             using var scope = _scopeFactory.CreateScope();
-            var sampleRepo = scope.ServiceProvider.GetRequiredService<IRepository<SampleEntity>>();
-            var otherRepo = scope.ServiceProvider.GetRequiredService<IRepository<OtherEntity>>();
+            
+            // Get MongoDB repositories with integrated validation
+            var sampleRepo = scope.ServiceProvider.GetRequiredService<MongoRepository<SampleEntity>>();
+            var otherRepo = scope.ServiceProvider.GetRequiredService<MongoRepository<OtherEntity>>();
 
-            // SampleEntity actions
+            // SampleEntity actions with MongoDB - validation happens automatically
             var sample = new SampleEntity { Name = "MongoEntity1", Value = 42 };
-            await sampleRepo.AddAsync(sample);
+            await sampleRepo.AddAsync(sample); // <- ValidationRunner.ValidateAsync called automatically
             _logger.LogInformation("Mongo: Added SampleEntity Name={Name}, Value={Value}", sample.Name, sample.Value);
             var allSamples = await sampleRepo.GetAllAsync();
             _logger.LogInformation("Mongo: Total SampleEntities after add: {Count}", allSamples.Count);
@@ -38,9 +43,9 @@ namespace WorkerService1
                 _logger.LogInformation("Mongo: Deleted SampleEntity Id={Id}", first.Id);
             }
 
-            // OtherEntity actions
+            // OtherEntity actions with MongoDB - validation happens automatically
             var other = new OtherEntity { Code = "MongoOther1", Amount = 100, IsActive = true };
-            await otherRepo.AddAsync(other);
+            await otherRepo.AddAsync(other); // <- ValidationRunner.ValidateAsync called automatically
             _logger.LogInformation("Mongo: Added OtherEntity Code={Code}, Amount={Amount}, IsActive={IsActive}", other.Code, other.Amount, other.IsActive);
             var allOthers = await otherRepo.GetAllAsync();
             _logger.LogInformation("Mongo: Total OtherEntities after add: {Count}", allOthers.Count);

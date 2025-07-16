@@ -3,6 +3,9 @@ using WorkerService1.Repositories;
 
 namespace WorkerService1
 {
+    /// <summary>
+    /// Demonstrates MongoDB repositories with integrated ExampleLib validation.
+    /// </summary>
     public class MongoOtherWorker : BackgroundService
     {
         private readonly ILogger<MongoOtherWorker> _logger;
@@ -16,41 +19,39 @@ namespace WorkerService1
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
+            // Wait for migration to complete before starting
             await MigrationWorker.MigrationCompleted.Task;
             using var scope = _scopeFactory.CreateScope();
-            var sampleRepo = scope.ServiceProvider.GetRequiredService<IRepository<SampleEntity>>();
-            var otherRepo = scope.ServiceProvider.GetRequiredService<IRepository<OtherEntity>>();
+            
+            // Get MongoDB repositories with integrated validation
+            var sampleRepo = scope.ServiceProvider.GetRequiredService<MongoRepository<SampleEntity>>();
+            var otherRepo = scope.ServiceProvider.GetRequiredService<MongoRepository<OtherEntity>>();
 
-            // OtherEntity actions
-            var entity = new OtherEntity { Code = "MongoA", Amount = 50, IsActive = true };
-            await otherRepo.AddAsync(entity);
-            _logger.LogInformation("MongoOtherWorker: Added OtherEntity Code={Code}, Amount={Amount}, IsActive={IsActive}", entity.Code, entity.Amount, entity.IsActive);
-            var all = await otherRepo.GetAllAsync();
-            _logger.LogInformation("MongoOtherWorker: Total OtherEntities after add: {Count}", all.Count);
-            if (all.Count > 0)
+            // OtherEntity actions with MongoDB - validation happens automatically
+            var other = new OtherEntity { Code = "MongoOtherWorker1", Amount = 200, IsActive = true };
+            await otherRepo.AddAsync(other); // <- ValidationRunner.ValidateAsync called automatically
+            _logger.LogInformation("MongoOther: Added OtherEntity Code={Code}, Amount={Amount}, IsActive={IsActive}", other.Code, other.Amount, other.IsActive);
+            var allOthers = await otherRepo.GetAllAsync();
+            _logger.LogInformation("MongoOther: Total OtherEntities after add: {Count}", allOthers.Count);
+
+            // SampleEntity actions with MongoDB - validation happens automatically
+            var sample = new SampleEntity { Name = "MongoOtherWorkerSample", Value = 150 };
+            await sampleRepo.AddAsync(sample); // <- ValidationRunner.ValidateAsync called automatically
+            _logger.LogInformation("MongoOther: Added SampleEntity Name={Name}, Value={Value}", sample.Name, sample.Value);
+            var allSamples = await sampleRepo.GetAllAsync();
+            _logger.LogInformation("MongoOther: Total SampleEntities after add: {Count}", allSamples.Count);
+
+            // Demonstrate GetLastAsync functionality
+            var lastSample = await sampleRepo.GetLastAsync();
+            if (lastSample != null)
             {
-                var first = all[0];
-                first.Amount += 10;
-                await otherRepo.UpdateAsync(first);
-                _logger.LogInformation("MongoOtherWorker: Updated OtherEntity Id={Id} to Amount={Amount}", first.Id, first.Amount);
-                await otherRepo.DeleteAsync(first.Id);
-                _logger.LogInformation("MongoOtherWorker: Deleted OtherEntity Id={Id}", first.Id);
+                _logger.LogInformation("MongoOther: Last SampleEntity Name={Name}, Value={Value}", lastSample.Name, lastSample.Value);
             }
 
-            // SampleEntity actions
-            var sample = new SampleEntity { Name = "MongoOtherWorkerSample", Value = 99 };
-            await sampleRepo.AddAsync(sample);
-            _logger.LogInformation("MongoOtherWorker: Added SampleEntity Name={Name}, Value={Value}", sample.Name, sample.Value);
-            var allSamples = await sampleRepo.GetAllAsync();
-            _logger.LogInformation("MongoOtherWorker: Total SampleEntities after add: {Count}", allSamples.Count);
-            if (allSamples.Count > 0)
+            var lastOther = await otherRepo.GetLastAsync();
+            if (lastOther != null)
             {
-                var first = allSamples[0];
-                first.Value += 1;
-                await sampleRepo.UpdateAsync(first);
-                _logger.LogInformation("MongoOtherWorker: Updated SampleEntity Id={Id} to Value={Value}", first.Id, first.Value);
-                await sampleRepo.DeleteAsync(first.Id);
-                _logger.LogInformation("MongoOtherWorker: Deleted SampleEntity Id={Id}", first.Id);
+                _logger.LogInformation("MongoOther: Last OtherEntity Code={Code}, Amount={Amount}", lastOther.Code, lastOther.Amount);
             }
         }
     }

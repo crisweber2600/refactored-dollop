@@ -115,10 +115,28 @@ public static class SequenceValidator
         foreach (var entity in entities)
         {
             var key = keySelector(entity);
-            var latestAudit = await audits
-                .Where(a => auditKeySelector(a).Equals(key))
-                .OrderByDescending(a => EF.Property<DateTimeOffset>(a!, "Timestamp"))
-                .FirstOrDefaultAsync(cancellationToken);
+            TAudit? latestAudit = null;
+            
+            // Special handling for SaveAudit with string keys (most common case)
+            if (typeof(TAudit).Name == "SaveAudit" && key is string stringKey)
+            {
+                // Use a direct property comparison that EF can translate
+                latestAudit = await audits
+                    .Where(a => EF.Property<string>(a!, "EntityId") == stringKey)
+                    .OrderByDescending(a => EF.Property<DateTimeOffset>(a!, "Timestamp"))
+                    .FirstOrDefaultAsync(cancellationToken);
+            }
+            else
+            {
+                // For other types, load all audits and filter on client side
+                var allAudits = await audits
+                    .OrderByDescending(a => EF.Property<DateTimeOffset>(a!, "Timestamp"))
+                    .ToListAsync(cancellationToken);
+                
+                latestAudit = allAudits
+                    .Where(a => auditKeySelector(a).Equals(key))
+                    .FirstOrDefault();
+            }
 
             if (latestAudit != null)
             {

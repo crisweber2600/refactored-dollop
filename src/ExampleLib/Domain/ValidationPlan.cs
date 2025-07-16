@@ -24,3 +24,15 @@ public class ValidationPlan
         Threshold = threshold;
     }
 }
+
+/// <summary>
+/// Store for validation plans, providing the plan for a given entity type.
+/// </summary>
+public interface IValidationPlanStore
+{
+    /// <summary>Retrieve the ValidationPlan for entity type T.</summary>
+    ValidationPlan? GetPlan<T>();
+    
+    /// <summary>Check if a ValidationPlan exists for entity type T.</summary>
+    bool HasPlan<T>();
+}

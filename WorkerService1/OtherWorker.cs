@@ -4,6 +4,9 @@ using WorkerService1.Services;
 
 namespace WorkerService1
 {
+    /// <summary>
+    /// Demonstrates how existing workers can use repositories with integrated ExampleLib validation.
+    /// </summary>
     public class OtherWorker : BackgroundService
     {
         private readonly ILogger<OtherWorker> _logger;
@@ -19,26 +22,28 @@ namespace WorkerService1
         {
             await MigrationWorker.MigrationCompleted.Task;
             using var scope = _scopeFactory.CreateScope();
+            
+            // Get repositories with integrated validation
             var sampleRepo = scope.ServiceProvider.GetRequiredService<IRepository<SampleEntity>>();
             var otherRepo = scope.ServiceProvider.GetRequiredService<IRepository<OtherEntity>>();
             var _service = scope.ServiceProvider.GetRequiredService<ISampleEntityService>();
             var _otherService = scope.ServiceProvider.GetRequiredService<IOtherEntityService>();
 
-            // OtherEntity actions
+            // OtherEntity actions - validation happens automatically in repository
             var other = new OtherEntity { Code = "OtherWorker", Amount = 77, IsActive = true };
-            await otherRepo.AddAsync(other);
+            await otherRepo.AddAsync(other); // <- ValidationRunner.ValidateAsync called automatically
             _logger.LogInformation("OtherWorker: Added OtherEntity Code={Code}, Amount={Amount}, IsActive={IsActive}", other.Code, other.Amount, other.IsActive);
             var allOthers = await otherRepo.GetAllAsync();
             _logger.LogInformation("OtherWorker: Total OtherEntities after add: {Count}", allOthers.Count);
 
-            // SampleEntity actions
+            // SampleEntity actions - validation happens automatically in repository
             var sample = new SampleEntity { Name = "OtherWorkerSample", Value = 88 };
-            await sampleRepo.AddAsync(sample);
+            await sampleRepo.AddAsync(sample); // <- ValidationRunner.ValidateAsync called automatically
             _logger.LogInformation("OtherWorker: Added SampleEntity Name={Name}, Value={Value}", sample.Name, sample.Value);
             var allSamples = await sampleRepo.GetAllAsync();
             _logger.LogInformation("OtherWorker: Total SampleEntities after add: {Count}", allSamples.Count);
 
-            // IOtherEntityService logic
+            // Service usage demonstrating validation integration
             (bool addSuccess, int addCount) = await _otherService.AddAndCountAsync("A1", 100, true);
             _logger.LogInformation("OtherWorker AddAndCount (valid): Success={Success}, Count={Count}", addSuccess, addCount);
             (bool addFail, int addFailCount) = await _otherService.AddAndCountAsync("", -5, false);
@@ -46,15 +51,17 @@ namespace WorkerService1
             (int manyCount, int manyValid, int manyInvalid) = await _otherService.AddManyAndCountAsync(new[] {
                 ("B", 10, true), ("", 0, false), ("C", 20, true)
             });
-            _logger.LogInformation("OtherWorker AddManyAndCount: Total={Count}, Valid={Valid}, Invalid={Invalid}", manyCount, manyValid, manyInvalid);
-            (bool updateSuccess, bool updateValid) = await _otherService.UpdateAndCheckAsync(1, "A1-Updated", 200, true);
-            _logger.LogInformation("OtherWorker UpdateAndCheck (valid): Success={Success}, IsValid={IsValid}", updateSuccess, updateValid);
-            (bool updateFail, bool updateFailValid) = await _otherService.UpdateAndCheckAsync(1, "", -1, false);
-            _logger.LogInformation("OtherWorker UpdateAndCheck (invalid): Success={Success}, IsValid={IsValid}", updateFail, updateFailValid);
+            _logger.LogInformation("OtherWorker AddMany: Count={Count}, Valid={Valid}, Invalid={Invalid}", manyCount, manyValid, manyInvalid);
 
             // ISampleEntityService logic
-            (bool saddSuccess, int saddCount) = await _service.AddAndCountAsync("OtherValid", 123);
-            _logger.LogInformation("OtherWorker Sample AddAndCount (valid): Success={Success}, Count={Count}", saddSuccess, saddCount);
+            (bool sampleAddSuccess, int sampleAddCount) = await _service.AddAndCountAsync("Other1", 55);
+            _logger.LogInformation("OtherWorker SampleEntity AddAndCount (valid): Success={Success}, Count={Count}", sampleAddSuccess, sampleAddCount);
+            (bool sampleAddFail, int sampleAddFailCount) = await _service.AddAndCountAsync("", -99);
+            _logger.LogInformation("OtherWorker SampleEntity AddAndCount (invalid): Success={Success}, Count={Count}", sampleAddFail, sampleAddFailCount);
+            (int sampleManyCount, int sampleManyValid, int sampleManyInvalid) = await _service.AddManyAndCountAsync(new[] {
+                ("Q", 33.0), ("", 0.0), ("R", 44.0)
+            });
+            _logger.LogInformation("OtherWorker SampleEntity AddMany: Count={Count}, Valid={Valid}, Invalid={Invalid}", sampleManyCount, sampleManyValid, sampleManyInvalid);
         }
     }
 }

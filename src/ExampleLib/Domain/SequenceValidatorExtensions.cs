@@ -1,6 +1,5 @@
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
-using ExampleLib.Infrastructure; // Add this for IEntityIdProvider
+using ExampleLib.Infrastructure;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,22 +13,6 @@ namespace ExampleLib.Domain;
 /// </summary>
 public static class SequenceValidatorExtensions
 {
-    /// <summary>
-    /// Registers a ConfigurableEntityIdProvider with custom selectors for entity types.
-    /// </summary>
-    /// <param name="services">Service collection</param>
-    /// <param name="configure">Action to configure the EntityId selectors</param>
-    /// <returns>Service collection for chaining</returns>
-    public static IServiceCollection AddConfigurableEntityIdProvider(
-        this IServiceCollection services, 
-        Action<ConfigurableEntityIdProvider> configure)
-    {
-        var provider = new ConfigurableEntityIdProvider();
-        configure(provider);
-        services.AddSingleton<IEntityIdProvider>(provider);
-        return services;
-    }
-
     /// <summary>
     /// Validates a sequence by comparing each entity's value to the latest audit value from a DbSet,
     /// automatically using the registered EntityId selector from IEntityIdProvider.
@@ -54,11 +37,11 @@ public static class SequenceValidatorExtensions
         CancellationToken cancellationToken = default)
         where T : IValidatable, IBaseEntity, IRootEntity
     {
-        return await SequenceValidator.ValidateAgainstLatestAuditAsync<T, SaveAudit, string, TValue>(
+        return await SequenceValidator.ValidateAgainstLatestAuditAsync(
             entities,
             audits,
-            entity => entityIdProvider.GetEntityId(entity), // Use EntityIdProvider for key extraction
-            audit => audit.EntityId, // SaveAudit.EntityId contains the discriminator key
+            new Func<T, string>(entity => entityIdProvider.GetEntityId<T>(entity)), // Explicit generic type specification
+            new Func<SaveAudit, string>(audit => audit.EntityId), // SaveAudit.EntityId contains the discriminator key
             valueSelector,
             auditValueSelector,
             validationFunc,
