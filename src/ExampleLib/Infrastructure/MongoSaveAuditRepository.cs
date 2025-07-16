@@ -12,8 +12,9 @@ public class MongoSaveAuditRepository : ISaveAuditRepository
     private readonly IMongoCollection<SaveAudit> _collection;
     private const string BatchKey = "__batch__";
 
-    public MongoSaveAuditRepository(IMongoDatabase database)
+    public MongoSaveAuditRepository(IMongoClient mongoClient)
     {
+        var database = mongoClient.GetDatabase("SampleEntities"); // Use the correct database name if different
         _collection = database.GetCollection<SaveAudit>("SaveAudits");
     }
 
