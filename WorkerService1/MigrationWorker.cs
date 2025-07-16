@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using Microsoft.EntityFrameworkCore;
 using WorkerService1.Repositories;
+using ExampleLib.Infrastructure;
 
 namespace WorkerService1
 {
@@ -24,8 +25,11 @@ namespace WorkerService1
             try
             {
                 using var scope = _serviceProvider.CreateScope();
-                var dbContext = scope.ServiceProvider.GetRequiredService<SampleDbContext>();
-                await RunMigrationAsync(dbContext, cancellationToken);
+                var sampleDbContext = scope.ServiceProvider.GetRequiredService<SampleDbContext>();
+                await RunMigrationAsync(sampleDbContext, cancellationToken);
+
+                var nannyDbContext = scope.ServiceProvider.GetRequiredService<TheNannyDbContext>();
+                await RunMigrationAsync(nannyDbContext, cancellationToken);
             }
             catch (Exception ex)
             {
@@ -42,7 +46,7 @@ namespace WorkerService1
             _hostApplicationLifetime.StopApplication();
         }
 
-        private static async Task RunMigrationAsync(SampleDbContext dbContext, CancellationToken cancellationToken)
+        private static async Task RunMigrationAsync(DbContext dbContext, CancellationToken cancellationToken)
         {
             var strategy = dbContext.Database.CreateExecutionStrategy();
             await strategy.ExecuteAsync(async () =>

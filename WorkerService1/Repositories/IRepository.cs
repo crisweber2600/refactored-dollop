@@ -8,5 +8,6 @@ namespace WorkerService1.Repositories
         Task UpdateAsync(T entity);
         Task DeleteAsync(int id);
         Task<bool> ValidateAsync(T entity, CancellationToken cancellationToken = default);
+        Task<T?> GetLastAsync(); // Added for sequence validation
     }
 }

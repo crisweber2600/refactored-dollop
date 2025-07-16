@@ -2,6 +2,8 @@ using ExampleLib.Domain;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Driver;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace WorkerService1.Repositories
 {
@@ -81,6 +83,13 @@ namespace WorkerService1.Repositories
         public async Task<bool> ValidateAsync(T entity, CancellationToken cancellationToken = default)
         {
             return await _validationRunner.ValidateAsync(entity, cancellationToken);
+        }
+
+        public async Task<T?> GetLastAsync()
+        {
+            // Assumes Id is the primary key and is int
+            var sort = Builders<T>.Sort.Descending("Id");
+            return await _collection.Find(_ => true).Sort(sort).FirstOrDefaultAsync();
         }
     }
 }

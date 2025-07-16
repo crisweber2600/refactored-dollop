@@ -24,7 +24,6 @@ summarisationPlanStore.AddPlan(new SummarisationPlan<OtherEntity>(
     1.0m
 ));
 
-
 // Register manual validation rules
 builder.Services.AddValidatorService();
 builder.Services.AddValidatorRule<SampleEntity>(entity => !string.IsNullOrWhiteSpace(entity.Name));
@@ -35,10 +34,20 @@ builder.Services.AddValidatorRule<OtherEntity>(entity => entity.Amount > 0);
 builder.Services.AddValidatorRule<OtherEntity>(entity => entity.IsActive);
 builder.Services.AddValidatorRule<OtherEntity>(entity => entity.Validated);
 
-// Register IValidationService implementation for DI
+// Register configurable EntityIdProvider for SequenceValidator compatibility
+builder.Services.AddConfigurableEntityIdProvider(provider =>
+{
+    // Register custom selectors for different entity types
+    provider.RegisterSelector<SampleEntity>(entity => entity.Name);
+    provider.RegisterSelector<OtherEntity>(entity => entity.Code);
+});
+
+// Register IValidationService implementation for DI (custom implementation for SequenceValidator compatibility)
 builder.Services.AddScoped<IValidationService, ValidationService>();
 // Register ISummarisationValidator<T> open generic for DI
 builder.Services.AddSingleton(typeof(ISummarisationValidator<>), typeof(SummarisationValidator<>));
+// Remove invalid registration for SequenceValidator<T> as it is a static class and cannot be registered for DI
+// builder.Services.AddScoped(typeof(SequenceValidator<>));
 
 // Register ValidationRunner
 builder.Services.AddValidationRunner();
@@ -49,8 +58,9 @@ builder.AddServiceDefaults();
 builder.AddSqlServerDbContext<SampleDbContext>("Sql");
 builder.AddSqlServerDbContext<TheNannyDbContext>("Sql");
 
-// Register EfSaveAuditRepository for audit persistence (EF)
-// builder.Services.AddScoped<ISaveAuditRepository, ExampleLib.Infrastructure.EfSaveAuditRepository>();
+// Register EfSaveAuditRepository for audit persistence using TheNannyDbContext
+builder.Services.AddScoped<ISaveAuditRepository>(sp =>
+    new EfSaveAuditRepository(sp.GetRequiredService<TheNannyDbContext>()));
 
 // Register generic EF repositories for DI using SampleDbContext
 builder.Services.AddScoped<IRepository<SampleEntity>>(sp =>
@@ -98,15 +108,20 @@ builder.Services.AddSingleton<IApplicationNameProvider>(
 
 // Register migration worker FIRST to ensure migrations run before other workers
 builder.Services.AddHostedService<MigrationWorker>();
-
 builder.Services.AddHostedService<Worker>();
 builder.Services.AddHostedService<MongoWorker>();
 builder.Services.AddHostedService<OtherWorker>();
 builder.Services.AddHostedService<MongoOtherWorker>();
+// Register ValidationDemoWorker for demoing SequenceValidator with ValidationPlan
+builder.Services.AddHostedService<ValidationDemoWorker>();
 
 // Register ISampleEntityService and IOtherEntityService
 builder.Services.AddScoped<ISampleEntityService, SampleEntityService>();
 builder.Services.AddScoped<IOtherEntityService, OtherEntityService>();
+
+// Register a ValidationPlan for SampleEntity with specific threshold for SequenceValidator demo
+var sampleEntityValidationPlan = new ValidationPlan(typeof(SampleEntity), threshold: 5.0, ValidationStrategy.Count);
+builder.Services.AddSingleton(sampleEntityValidationPlan);
 
 var host = builder.Build();
 host.Run();

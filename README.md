@@ -27,13 +27,9 @@ RAGStart showcases an event-driven validation pipeline built with .NET. The proj
 5. Use `AddManyAsync` and `UpdateManyAsync` for efficient bulk operations.
 
 ### Building with Different Providers
-The solution supports Entity Framework Core or MongoDB. Configure the provider during startup:
-```csharp
-services.AddEfCoreRepositories<TestDbContext>();
+The solution supports Entity Framework Core or MongoDB. Configure the provider during startup:services.AddEfCoreRepositories<TestDbContext>();
 // or
 services.AddMongoRepositories(options => options.ConnectionString = "mongodb://localhost");
-```
-
 ## Repository Structure
 - `src/ExampleLib` – the domain models and infrastructure code.
 - `tests/ExampleLib.Tests` – unit tests covering repositories and validators.
@@ -46,9 +42,7 @@ services.AddMongoRepositories(options => options.ConnectionString = "mongodb://l
 `SaveAudit` records details of each save, including the size of bulk operations.
 Entities participating in validation must implement `IValidatable`,
 `IBaseEntity` and `IRootEntity` so the framework can obtain their identifier and
-store audits correctly:
-```csharp
-public class SaveAudit
+store audits correctly:public class SaveAudit
 {
     public int Id { get; set; }
     public string EntityType { get; set; } = string.Empty;
@@ -58,35 +52,35 @@ public class SaveAudit
     public int BatchSize { get; set; }
     public bool Validated { get; set; }
     public DateTimeOffset Timestamp { get; set; }
-}
-```
-The `ApplicationName` property records which application performed the save. If multiple services share the database, provide a distinct name so audits are kept separate.
+}The `ApplicationName` property records which application performed the save. If multiple services share the database, provide a distinct name so audits are kept separate.
 
-Retrieve the last audit for an entity and inspect the application name:
-```csharp
-var last = repo.GetLastAudit("Order", "42");
-Console.WriteLine(last?.ApplicationName);
-```
-Repositories implement `IGenericRepository<T>` for data access. Entity Framework and MongoDB variants provide the same interface for adding, updating and deleting entities.
+Retrieve the last audit for an entity and inspect the application name:var last = repo.GetLastAudit("Order", "42");
+Console.WriteLine(last?.ApplicationName);Repositories implement `IGenericRepository<T>` for data access. Entity Framework and MongoDB variants provide the same interface for adding, updating and deleting entities.
 
 ## Configuring the Data Layer
-The library registers services through extension methods. Use `AddExampleLib` to set up validation and data access in one step:
-```csharp
-services.AddExampleLib(builder =>
+The library registers services through extension methods. Use `AddExampleLib` to set up validation and data access in one step:services.AddExampleLib(builder =>
 {
     builder.UseEf<TestDbContext>(options => options.UseSqlServer("connection"));
-});
-```
-Replace `"connection"` with your actual connection string. For SQLite or PostgreSQL simply call the corresponding `Use*` method on the builder.
+});Replace `"connection"` with your actual connection string. For SQLite or PostgreSQL simply call the corresponding `Use*` method on the builder.
 Switch to MongoDB by calling `UseMongo` instead. Both providers expose `AddBatchAudit` for summarising bulk saves.
 
 ### Application Name Provider
-Audits are tagged with the application name to keep metrics separate. Register a provider at startup:
-```csharp
-services.AddSingleton<IApplicationNameProvider>(
-    new StaticApplicationNameProvider("MyApp"));
-```
-`ValidationService` uses this provider so all `SaveAudit` entries store the current application name.
+Audits are tagged with the application name to keep metrics separate. Register a provider at startup:services.AddSingleton<IApplicationNameProvider>(
+    new StaticApplicationNameProvider("MyApp"));`ValidationService` uses this provider so all `SaveAudit` entries store the current application name.
+
+### EntityId Provider Configuration
+The validation system supports custom EntityId extraction for SaveAudit records, enabling SequenceValidator to work with discriminator keys (like Name, Code) instead of just database IDs.
+
+Register a configurable EntityId provider:services.AddConfigurableEntityIdProvider(provider =>
+{
+    // Use Name field for SampleEntity SaveAudit records
+    provider.RegisterSelector<SampleEntity>(entity => entity.Name);
+    // Use Code field for OtherEntity SaveAudit records  
+    provider.RegisterSelector<OtherEntity>(entity => entity.Code);
+});This configuration ensures that:
+- SaveAudit records store meaningful discriminator keys as EntityId
+- SequenceValidator can validate against historical audit data using the same keys
+- ValidationPlan thresholds work consistently across validation and audit systems
 
 ## Validation Pipeline
 Entities are validated against a `SummarisationPlan` whenever they are saved. The Entity Framework unit of work exposes `SaveChangesWithPlanAsync<TEntity>()`, while the MongoDB implementation uses an interceptor to apply the same logic during inserts and updates.
@@ -94,36 +88,24 @@ Entities are validated against a `SummarisationPlan` whenever they are saved. Th
 You can register multiple plans if different thresholds are needed. Each plan captures the metric selector and allowed variance for a specific entity type.
 
 ## Manual Validation Service
-`ManualValidatorService` lets you register predicates to run against specific types:
-```csharp
-services.AddValidatorService()
-        .AddValidatorRule<Order>(o => o.Total > 0);
-```
-All rules for a type must pass for the service to return `true`. You can inspect and modify the registered predicates via dependency injection. Combine manual predicates with summarisation rules using `AddSaveValidation`:
-```csharp
-services.AddSaveValidation<Order>(o => o.Total,
+`ManualValidatorService` lets you register predicates to run against specific types:services.AddValidatorService()
+        .AddValidatorRule<Order>(o => o.Total > 0);All rules for a type must pass for the service to return `true`. You can inspect and modify the registered predicates via dependency injection. Combine manual predicates with summarisation rules using `AddSaveValidation`:services.AddSaveValidation<Order>(o => o.Total,
     ThresholdType.RawDifference, 2m,
     o => o.Status == "Open",
     o => o.Total > 0);
-services.AddValidationRunner();
-```
-`AddValidationRunner` registers a single service that executes every validator so existing repositories can enable validation in one line.
+services.AddValidationRunner();`AddValidationRunner` registers a single service that executes every validator so existing repositories can enable validation in one line.
 
 `AddValidatorRule` requires entities to implement `IValidatable`, `IBaseEntity` and `IRootEntity` ensuring only valid domain models can be registered.
 
 ## Using ValidationRunner
 Once registered, request `IValidationRunner` from the service provider and call `ValidateAsync`
-before persisting changes. This integrates validation with any repository:
-```csharp
-var provider = services.BuildServiceProvider();
+before persisting changes. This integrates validation with any repository:var provider = services.BuildServiceProvider();
 var runner = provider.GetRequiredService<IValidationRunner>();
 var repo = new EfGenericRepository<Order>(provider.GetRequiredService<DbContext>());
 var order = new Order { Id = 1, Total = 5, Status = "Open", Validated = true };
 await repo.AddAsync(order);
 await provider.GetRequiredService<DbContext>().SaveChangesAsync();
-bool ok = await runner.ValidateAsync(order);
-```
-`ok` indicates whether both summarisation and manual checks succeeded.
+bool ok = await runner.ValidateAsync(order);`ok` indicates whether both summarisation and manual checks succeeded.
 
 `ValidateAsync` now derives the identifier from `order.Id`, so callers no longer
 need to pass an explicit string. The example above shows the new simplified
@@ -134,33 +116,19 @@ call signature.
 *key selector* so the validator can maintain a per-key history. Each item is
 compared with the last value for that discriminator key, ensuring metrics from
 different sources don't interfere. Provide key and
-value selectors with an optional comparison delegate:
-```csharp
-var ok = SequenceValidator.Validate(items, x => x.Server, x => x.Value,
-    (cur, prev) => Math.Abs(cur - prev) < 10);
-```
-If the sequence returns to a previously seen key it will be compared with the
-value recorded for that key. For example:
-```csharp
-var servers = new[] { "ServerA", "ServerB", "ServerC", "ServerA" };
+value selectors with an optional comparison delegate:var ok = SequenceValidator.Validate(items, x => x.Server, x => x.Value,
+    (cur, prev) => Math.Abs(cur - prev) < 10);If the sequence returns to a previously seen key it will be compared with the
+value recorded for that key. For example:var servers = new[] { "ServerA", "ServerB", "ServerC", "ServerA" };
 var check = SequenceValidator.Validate(servers,
     s => s,
     s => s,
-    (cur, prev) => cur == prev);
-```
-The last `ServerA` item is checked against the first `ServerA` entry rather than
+    (cur, prev) => cur == prev);The last `ServerA` item is checked against the first `ServerA` entry rather than
 `ServerC`. This key-based history ensures related items are validated together.
-You can also drive the comparison using a `SummarisationPlan`:
-```csharp
-var plan = new SummarisationPlan<MyEntity>(e => e.Value, ThresholdType.RawDifference, 5);
-bool passes = SequenceValidator.Validate(items, e => e.Server, plan);
-```
-Use `ThresholdValidator.IsWithinThreshold` in custom checks to maintain consistent logic.
+You can also drive the comparison using a `SummarisationPlan`:var plan = new SummarisationPlan<MyEntity>(e => e.Value, ThresholdType.RawDifference, 5);
+bool passes = SequenceValidator.Validate(items, e => e.Server, plan);Use `ThresholdValidator.IsWithinThreshold` in custom checks to maintain consistent logic.
 
 ## Loading Validation Flows
-Validation rules can be configured from JSON:
-```json
-[
+Validation rules can be configured from JSON:[
   {
     "Type": "ExampleData.YourEntity, ExampleLib.Tests",
     "SaveValidation": true,
@@ -168,15 +136,9 @@ Validation rules can be configured from JSON:
     "ThresholdType": "RawDifference",
     "ThresholdValue": 2
   }
-]
-```
-Register the configuration at startup:
-```csharp
-var json = File.ReadAllText("flows.json");
+]Register the configuration at startup:var json = File.ReadAllText("flows.json");
 var options = ValidationFlowOptions.Load(json);
-services.AddValidationFlows(options);
-```
-This hook wires up save, commit and delete validations automatically.
+services.AddValidationFlows(options);This hook wires up save, commit and delete validations automatically.
 
 ## Validation Details
 Below is a deeper look at the validation system and how it integrates with the data layer.
@@ -208,9 +170,7 @@ Implement `IGenericRepository<T>` in your repositories to connect to the pipelin
 2. Inject `IValidationRunner` so each operation can run the configured rules.
 3. Register the repository along with `AddValidationRunner` during startup.
 
-#### Example
-```csharp
-public class CustomOrderRepository : IGenericRepository<Order>
+#### Examplepublic class CustomOrderRepository : IGenericRepository<Order>
 {
     private readonly MyDbContext _db;
     private readonly IValidationRunner _runner;
@@ -230,8 +190,6 @@ public class CustomOrderRepository : IGenericRepository<Order>
 
     // implement the remaining CRUD methods...
 }
-```
-
 
 ### Saving audit data
 - Each save creates a `SaveAudit` record containing batch size, metric value, timestamp and application name.
@@ -249,23 +207,11 @@ public class CustomOrderRepository : IGenericRepository<Order>
 - ValidationRunner returns `true` only if all rules succeed.
 - Unit tests maintain coverage above 80% and treat warnings as errors.
 ## Running Tests
-Run the unit tests with coverage:
-```bash
-dotnet test --collect:"XPlat Code Coverage"
-```
-The generated coverage report appears under `TestResults` and should exceed 80%.
+Run the unit tests with coverage:dotnet test --collect:"XPlat Code Coverage"The generated coverage report appears under `TestResults` and should exceed 80%.
 Open the `.cobertura.xml` file in Visual Studio Code with the C# extension to visualise line-by-line results.
-For quick iterations run:
-```bash
-dotnet test --no-build --no-restore
-```
-
-If you change the EF models, create a new migration:
-```bash
-dotnet ef migrations add MyMigration -p tests/ExampleLib.Tests/ExampleLib.Tests.csproj \
+For quick iterations run:dotnet test --no-build --no-restore
+If you change the EF models, create a new migration:dotnet ef migrations add MyMigration -p tests/ExampleLib.Tests/ExampleLib.Tests.csproj \
     -s tests/ExampleLib.Tests/ExampleLib.Tests.csproj -o ExampleData/Migrations
-```
-
 ## Why Choose RAGStart?
 - Provides a working example of event-driven validation with EF Core and MongoDB.
 - Shows how to separate validation rules from persistence logic.
