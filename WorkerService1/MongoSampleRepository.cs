@@ -1,10 +1,7 @@
+using ExampleLib.Domain;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Driver;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using System.Threading;
-using ExampleLib.Domain;
 
 namespace WorkerService1.Repositories
 {

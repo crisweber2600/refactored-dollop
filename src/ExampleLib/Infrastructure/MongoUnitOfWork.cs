@@ -1,6 +1,6 @@
 using System.Linq.Expressions;
-using MongoDB.Driver;
 using ExampleLib.Domain;
+using MongoDB.Driver;
 
 namespace ExampleLib.Infrastructure;
 
@@ -8,10 +8,10 @@ public class MongoUnitOfWork : IUnitOfWork
 {
     private readonly IMongoDatabase _database;
     private readonly IValidationService _validationService;
-    private readonly ExampleLib.Domain.ISummarisationPlanStore _planStore;
+    private readonly ISummarisationPlanStore _planStore;
 
     public MongoUnitOfWork(IMongoDatabase database, IValidationService validationService,
-        ExampleLib.Domain.ISummarisationPlanStore planStore)
+        ISummarisationPlanStore planStore)
     {
         _database = database;
         _validationService = validationService;

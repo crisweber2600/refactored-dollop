@@ -1,8 +1,8 @@
+using ExampleLib.Domain;
+using ExampleLib.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using MongoDB.Driver;
-using ExampleLib.Infrastructure;
-using ExampleLib.Domain;
 
 namespace ExampleData;
 
@@ -24,7 +24,7 @@ public static class ServiceCollectionExtensions
     {
         services.AddDbContext<YourDbContext>(o => o.UseSqlServer(connectionString));
         services.AddSingleton<IApplicationNameProvider>(new StaticApplicationNameProvider("ExampleTests"));
-        services.AddScoped<ExampleLib.Domain.IValidationService, ExampleLib.Infrastructure.ValidationService>();
+        services.AddScoped<IValidationService, ValidationService>();
         services.AddScoped<IUnitOfWork, UnitOfWork<YourDbContext>>();
         return services;
     }
@@ -42,7 +42,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IMongoDatabase>(sp =>
             sp.GetRequiredService<MongoClient>().GetDatabase(databaseName));
         services.AddSingleton<IApplicationNameProvider>(new StaticApplicationNameProvider("ExampleTests"));
-        services.AddScoped<ExampleLib.Domain.IValidationService, ExampleLib.Infrastructure.ValidationService>();
+        services.AddScoped<IValidationService, ValidationService>();
         services.AddScoped<IUnitOfWork, MongoUnitOfWork>();
         services.AddScoped(typeof(IMongoCollectionInterceptor<>), typeof(MongoCollectionInterceptor<>));
         return services;
@@ -59,9 +59,9 @@ public static class ServiceCollectionExtensions
     {
         services.AddDbContext<TContext>(o => o.UseSqlServer(connectionString));
         services.AddSingleton<IApplicationNameProvider>(new StaticApplicationNameProvider("ExampleTests"));
-        services.AddScoped<ExampleLib.Domain.IValidationService, ExampleLib.Infrastructure.ValidationService>();
+        services.AddScoped<IValidationService, ValidationService>();
         services.AddScoped<IUnitOfWork, UnitOfWork<TContext>>();
-        services.AddSingleton<ExampleLib.Domain.ISummarisationPlanStore, ExampleLib.Infrastructure.InMemorySummarisationPlanStore>();
+        services.AddSingleton<ISummarisationPlanStore, InMemorySummarisationPlanStore>();
         services.AddScoped(typeof(IGenericRepository<>), typeof(EfGenericRepository<>));
         return services;
     }
@@ -79,10 +79,10 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IMongoDatabase>(sp =>
             sp.GetRequiredService<MongoClient>().GetDatabase(databaseName));
         services.AddSingleton<IApplicationNameProvider>(new StaticApplicationNameProvider("ExampleTests"));
-        services.AddScoped<ExampleLib.Domain.IValidationService, ExampleLib.Infrastructure.ValidationService>();
+        services.AddScoped<IValidationService, ValidationService>();
         services.AddScoped<IUnitOfWork, MongoUnitOfWork>();
         services.AddScoped(typeof(IMongoCollectionInterceptor<>), typeof(MongoCollectionInterceptor<>));
-        services.AddSingleton<ExampleLib.Domain.ISummarisationPlanStore, ExampleLib.Infrastructure.InMemorySummarisationPlanStore>();
+        services.AddSingleton<ISummarisationPlanStore, InMemorySummarisationPlanStore>();
         services.AddScoped(typeof(IGenericRepository<>), typeof(MongoGenericRepository<>));
         return services;
     }

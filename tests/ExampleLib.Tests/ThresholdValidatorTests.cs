@@ -1,6 +1,4 @@
 using ExampleLib.Domain;
-using System;
-using Xunit;
 
 namespace ExampleLib.Tests;
 

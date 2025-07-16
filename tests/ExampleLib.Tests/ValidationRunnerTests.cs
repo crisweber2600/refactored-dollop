@@ -58,7 +58,7 @@ public class ValidationRunnerTests
     {
         var services = new ServiceCollection();
         services.AddSingleton<IApplicationNameProvider>(new StaticApplicationNameProvider("Tests"));
-        services.AddSaveValidation<YourEntity>(e => (decimal)e.Timestamp.Ticks, ThresholdType.RawDifference, 1m,
+        services.AddSaveValidation<YourEntity>(e => e.Timestamp.Ticks, ThresholdType.RawDifference, 1m,
             e => true);
         services.AddValidationRunner();
         var provider = services.BuildServiceProvider();

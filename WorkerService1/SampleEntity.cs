@@ -1,8 +1,7 @@
-using ExampleLib.Domain;
-using MongoDB.Bson;
-using MongoDB.Bson.Serialization.Attributes;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using ExampleLib.Domain;
+using MongoDB.Bson.Serialization.Attributes;
 
 namespace WorkerService1.Models
 {

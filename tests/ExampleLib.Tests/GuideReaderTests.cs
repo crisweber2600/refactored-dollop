@@ -1,4 +1,3 @@
-using ExampleLib;
 using Moq;
 
 namespace ExampleLib.Tests;

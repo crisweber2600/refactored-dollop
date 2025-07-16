@@ -1,6 +1,5 @@
-using ExampleLib.Domain;
-using System.Collections.Generic;
 using System.Reflection;
+using ExampleLib.Domain;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace ExampleLib.Infrastructure;
@@ -31,7 +30,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<ISummarisationPlanStore>(sp =>
         {
             var store = new InMemorySummarisationPlanStore();
-            Func<T, decimal> selector = metricSelector ?? DefaultSelector<T>;
+            Func<T, decimal> selector = metricSelector ?? DefaultSelector;
             store.AddPlan(new SummarisationPlan<T>(selector, thresholdType, thresholdValue));
             return store;
         });

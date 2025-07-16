@@ -1,9 +1,8 @@
 using ExampleData;
-using Microsoft.EntityFrameworkCore;
-using System.Threading;
-using MongoDB.Driver;
-using ExampleLib.Infrastructure;
 using ExampleLib.Domain;
+using ExampleLib.Infrastructure;
+using Microsoft.EntityFrameworkCore;
+using MongoDB.Driver;
 
 namespace ExampleLib.Tests;
 
@@ -148,7 +147,7 @@ public class RepositoryTests
         Assert.Contains(list, e => e.Name == "New2");
     }
 
-    private class NoopValidationService : ExampleLib.Domain.IValidationService
+    private class NoopValidationService : IValidationService
     {
         public Task<bool> ValidateAndSaveAsync<T>(T entity, CancellationToken cancellationToken = default)
             where T : IValidatable, IBaseEntity, IRootEntity

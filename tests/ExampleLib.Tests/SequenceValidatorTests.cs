@@ -1,5 +1,4 @@
 using ExampleLib.Domain;
-using System;
 
 namespace ExampleLib.Tests;
 
@@ -21,7 +20,7 @@ public class SequenceValidatorTests
             new Foo { Jar = "server2", Car = 12 }
         };
 
-        var result = SequenceValidator.Validate(
+        var result = SummarisationPlan<Foo>.Validate(
             data,
             x => x.Jar,
             x => x.Car,
@@ -41,7 +40,7 @@ public class SequenceValidatorTests
             new Foo { Jar = "a", Car = 1 }
         };
 
-        Assert.True(SequenceValidator.Validate(data, f => f.Jar, f => f.Car));
+        Assert.True(SummarisationPlan<Foo>.Validate(data, f => f.Jar, f => f.Car));
     }
 
     [Fact]
@@ -54,7 +53,7 @@ public class SequenceValidatorTests
             new Foo { Jar = "server2", Car = 50 }
         };
 
-        var result = SequenceValidator.Validate(
+        var result = SummarisationPlan<Foo>.Validate(
             data,
             x => x.Jar,
             x => x.Car,
@@ -74,7 +73,7 @@ public class SequenceValidatorTests
             new Foo { Jar = "ServerA", Car = 5 }
         };
 
-        var result = SequenceValidator.Validate(
+        var result = SummarisationPlan<Foo>.Validate(
             data,
             x => x.Jar,
             x => x.Car,
@@ -95,7 +94,7 @@ public class SequenceValidatorTests
 
         var plan = new SummarisationPlan<Foo>(f => f.Car, ThresholdType.RawDifference, 5);
 
-        Assert.True(SequenceValidator.Validate(data, f => f.Jar, plan));
+        Assert.True(SummarisationPlan<Foo>.Validate(data, f => f.Jar, plan));
     }
 
     [Fact]
@@ -110,7 +109,7 @@ public class SequenceValidatorTests
 
         var plan = new SummarisationPlan<Foo>(f => f.Car, ThresholdType.RawDifference, 5);
 
-        Assert.False(SequenceValidator.Validate(data, f => f.Jar, plan));
+        Assert.False(SummarisationPlan<Foo>.Validate(data, f => f.Jar, plan));
     }
 
     [Fact]
@@ -125,6 +124,6 @@ public class SequenceValidatorTests
         var plan = new SummarisationPlan<Foo>(f => f.Car, (ThresholdType)999, 0m);
 
         Assert.Throws<NotSupportedException>(() =>
-            SequenceValidator.Validate(data, f => f.Jar, plan));
+            SummarisationPlan<Foo>.Validate(data, f => f.Jar, plan));
     }
 }

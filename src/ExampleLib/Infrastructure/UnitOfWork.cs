@@ -1,7 +1,6 @@
-using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
-using System.Linq;
 using ExampleLib.Domain;
+using Microsoft.EntityFrameworkCore;
 
 namespace ExampleLib.Infrastructure;
 
@@ -9,10 +8,10 @@ public class UnitOfWork<TContext> : IUnitOfWork where TContext : DbContext
 {
     private readonly TContext _context;
     private readonly IValidationService _validationService;
-    private readonly ExampleLib.Domain.ISummarisationPlanStore _planStore;
+    private readonly ISummarisationPlanStore _planStore;
 
     public UnitOfWork(TContext context, IValidationService validationService,
-        ExampleLib.Domain.ISummarisationPlanStore planStore)
+        ISummarisationPlanStore planStore)
     {
         _context = context;
         _validationService = validationService;

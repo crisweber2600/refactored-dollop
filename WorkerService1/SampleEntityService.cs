@@ -1,9 +1,5 @@
-using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
 using WorkerService1.Models;
 using WorkerService1.Repositories;
-using ExampleLib.Domain;
 
 namespace WorkerService1.Services
 {

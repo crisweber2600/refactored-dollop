@@ -1,5 +1,5 @@
-using Microsoft.EntityFrameworkCore;
 using ExampleLib.Domain;
+using Microsoft.EntityFrameworkCore;
 
 namespace ExampleLib.Infrastructure;
 

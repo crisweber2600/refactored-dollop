@@ -1,12 +1,6 @@
-using System;
-using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
-using Microsoft.Extensions.Logging;
 using WorkerService1.Models;
 using WorkerService1.Repositories;
 using WorkerService1.Services;
-using ExampleLib.Domain;
 
 namespace WorkerService1
 {

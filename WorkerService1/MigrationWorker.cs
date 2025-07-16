@@ -1,11 +1,6 @@
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.EntityFrameworkCore;
 using System.Diagnostics;
-using System.Threading;
-using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 using WorkerService1.Repositories;
-using System;
 
 namespace WorkerService1
 {

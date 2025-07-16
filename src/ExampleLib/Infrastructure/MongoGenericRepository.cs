@@ -1,5 +1,5 @@
-using MongoDB.Driver;
 using ExampleLib.Domain;
+using MongoDB.Driver;
 
 namespace ExampleLib.Infrastructure;
 

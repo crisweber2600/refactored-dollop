@@ -1,10 +1,10 @@
-using WorkerService1;
-using WorkerService1.Repositories;
-using Microsoft.EntityFrameworkCore;
-using MongoDB.Driver;
-using WorkerService1.Services;
-using ExampleLib.Infrastructure;
 using ExampleLib.Domain;
+using ExampleLib.Infrastructure;
+using MongoDB.Driver;
+using WorkerService1;
+using WorkerService1.Models;
+using WorkerService1.Repositories;
+using WorkerService1.Services;
 
 var builder = Host.CreateApplicationBuilder(args);
 
@@ -13,31 +13,32 @@ var summarisationPlanStore = new InMemorySummarisationPlanStore();
 builder.Services.AddSingleton<ISummarisationPlanStore>(summarisationPlanStore);
 
 // Register SummarisationPlans for SampleEntity and OtherEntity directly
-summarisationPlanStore.AddPlan(new SummarisationPlan<WorkerService1.Models.SampleEntity>(
+summarisationPlanStore.AddPlan(new SummarisationPlan<SampleEntity>(
     entity => (decimal)entity.Value,
     ThresholdType.RawDifference,
     0.0m
 ));
-summarisationPlanStore.AddPlan(new SummarisationPlan<WorkerService1.Models.OtherEntity>(
+summarisationPlanStore.AddPlan(new SummarisationPlan<OtherEntity>(
     entity => entity.Amount,
     ThresholdType.RawDifference,
     1.0m
 ));
 
+
 // Register manual validation rules
 builder.Services.AddValidatorService();
-builder.Services.AddValidatorRule<WorkerService1.Models.SampleEntity>(entity => !string.IsNullOrWhiteSpace(entity.Name));
-builder.Services.AddValidatorRule<WorkerService1.Models.SampleEntity>(entity => entity.Value >= 0);
-builder.Services.AddValidatorRule<WorkerService1.Models.SampleEntity>(entity => entity.Validated);
-builder.Services.AddValidatorRule<WorkerService1.Models.OtherEntity>(entity => !string.IsNullOrWhiteSpace(entity.Code));
-builder.Services.AddValidatorRule<WorkerService1.Models.OtherEntity>(entity => entity.Amount > 0);
-builder.Services.AddValidatorRule<WorkerService1.Models.OtherEntity>(entity => entity.IsActive);
-builder.Services.AddValidatorRule<WorkerService1.Models.OtherEntity>(entity => entity.Validated);
+builder.Services.AddValidatorRule<SampleEntity>(entity => !string.IsNullOrWhiteSpace(entity.Name));
+builder.Services.AddValidatorRule<SampleEntity>(entity => entity.Value >= 0);
+builder.Services.AddValidatorRule<SampleEntity>(entity => entity.Validated);
+builder.Services.AddValidatorRule<OtherEntity>(entity => !string.IsNullOrWhiteSpace(entity.Code));
+builder.Services.AddValidatorRule<OtherEntity>(entity => entity.Amount > 0);
+builder.Services.AddValidatorRule<OtherEntity>(entity => entity.IsActive);
+builder.Services.AddValidatorRule<OtherEntity>(entity => entity.Validated);
 
 // Register IValidationService implementation for DI
-builder.Services.AddScoped<ExampleLib.Domain.IValidationService, ExampleLib.Infrastructure.ValidationService>();
+builder.Services.AddScoped<IValidationService, ValidationService>();
 // Register ISummarisationValidator<T> open generic for DI
-builder.Services.AddSingleton(typeof(ExampleLib.Domain.ISummarisationValidator<>), typeof(ExampleLib.Domain.SummarisationValidator<>));
+builder.Services.AddSingleton(typeof(ISummarisationValidator<>), typeof(SummarisationValidator<>));
 
 // Register ValidationRunner
 builder.Services.AddValidationRunner();
@@ -52,27 +53,27 @@ builder.AddSqlServerDbContext<TheNannyDbContext>("Sql");
 // builder.Services.AddScoped<ISaveAuditRepository, ExampleLib.Infrastructure.EfSaveAuditRepository>();
 
 // Register generic EF repositories for DI using SampleDbContext
-builder.Services.AddScoped<IRepository<WorkerService1.Models.SampleEntity>>(sp =>
-    new WorkerService1.Repositories.EfRepository<WorkerService1.Models.SampleEntity>(
-        sp.GetRequiredService<WorkerService1.Repositories.SampleDbContext>(),
-        sp.GetRequiredService<ExampleLib.Domain.IValidationRunner>()));
-builder.Services.AddScoped<IRepository<WorkerService1.Models.OtherEntity>>(sp =>
-    new WorkerService1.Repositories.EfRepository<WorkerService1.Models.OtherEntity>(
-        sp.GetRequiredService<WorkerService1.Repositories.SampleDbContext>(),
-        sp.GetRequiredService<ExampleLib.Domain.IValidationRunner>()));
+builder.Services.AddScoped<IRepository<SampleEntity>>(sp =>
+    new EfRepository<SampleEntity>(
+        sp.GetRequiredService<SampleDbContext>(),
+        sp.GetRequiredService<IValidationRunner>()));
+builder.Services.AddScoped<IRepository<OtherEntity>>(sp =>
+    new EfRepository<OtherEntity>(
+        sp.GetRequiredService<SampleDbContext>(),
+        sp.GetRequiredService<IValidationRunner>()));
 
 // MongoDB Aspire connection
 builder.AddMongoDBClient("mongodb");
 // Register generic Mongo repositories for DI
-builder.Services.AddScoped<IRepository<WorkerService1.Models.SampleEntity>>(sp =>
-    new WorkerService1.Repositories.MongoRepository<WorkerService1.Models.SampleEntity>(
-        sp.GetRequiredService<MongoDB.Driver.IMongoClient>(),
-        sp.GetRequiredService<ExampleLib.Domain.IValidationRunner>(),
+builder.Services.AddScoped<IRepository<SampleEntity>>(sp =>
+    new MongoRepository<SampleEntity>(
+        sp.GetRequiredService<IMongoClient>(),
+        sp.GetRequiredService<IValidationRunner>(),
         "SampleEntities", "SampleEntities"));
-builder.Services.AddScoped<IRepository<WorkerService1.Models.OtherEntity>>(sp =>
-    new WorkerService1.Repositories.MongoRepository<WorkerService1.Models.OtherEntity>(
-        sp.GetRequiredService<MongoDB.Driver.IMongoClient>(),
-        sp.GetRequiredService<ExampleLib.Domain.IValidationRunner>(),
+builder.Services.AddScoped<IRepository<OtherEntity>>(sp =>
+    new MongoRepository<OtherEntity>(
+        sp.GetRequiredService<IMongoClient>(),
+        sp.GetRequiredService<IValidationRunner>(),
         "OtherEntities", "OtherEntities"));
 
 // Register ExampleLib validation pipeline for SampleEntity (Mongo)
@@ -89,7 +90,7 @@ builder.Services.AddScoped<IRepository<WorkerService1.Models.OtherEntity>>(sp =>
 //     1.0m
 // );
 // Register MongoSaveAuditRepository for audit persistence (Mongo)
-builder.Services.AddScoped<ExampleLib.Domain.ISaveAuditRepository, ExampleLib.Infrastructure.MongoSaveAuditRepository>();
+builder.Services.AddScoped<ISaveAuditRepository, MongoSaveAuditRepository>();
 
 // Register a static application name provider for validation/audit services
 builder.Services.AddSingleton<IApplicationNameProvider>(

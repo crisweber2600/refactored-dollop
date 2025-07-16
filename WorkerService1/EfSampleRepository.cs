@@ -1,10 +1,6 @@
-using WorkerService1.Models;
-using Microsoft.EntityFrameworkCore;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using System;
-using System.Threading;
 using ExampleLib.Domain;
+using Microsoft.EntityFrameworkCore;
+using WorkerService1.Models;
 
 namespace WorkerService1.Repositories
 {

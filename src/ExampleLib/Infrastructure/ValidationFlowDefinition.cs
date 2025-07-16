@@ -1,5 +1,5 @@
-using ExampleLib.Domain;
 using System.Text.Json.Serialization;
+using ExampleLib.Domain;
 
 namespace ExampleLib.Infrastructure;
 

@@ -18,11 +18,9 @@ public class ValidationFlowOptions
             var flows = JsonSerializer.Deserialize<List<ValidationFlowDefinition>>(json);
             return new ValidationFlowOptions { Flows = flows ?? new List<ValidationFlowDefinition>() };
         }
-        else
-        {
-            var flow = JsonSerializer.Deserialize<ValidationFlowDefinition>(json);
-            var list = flow != null ? new List<ValidationFlowDefinition> { flow } : new List<ValidationFlowDefinition>();
-            return new ValidationFlowOptions { Flows = list };
-        }
+
+        var flow = JsonSerializer.Deserialize<ValidationFlowDefinition>(json);
+        var list = flow != null ? new List<ValidationFlowDefinition> { flow } : new List<ValidationFlowDefinition>();
+        return new ValidationFlowOptions { Flows = list };
     }
 }

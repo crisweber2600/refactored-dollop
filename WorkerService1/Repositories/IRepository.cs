@@ -1,7 +1,3 @@
-using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
-
 namespace WorkerService1.Repositories
 {
     public interface IRepository<T> where T : class

@@ -1,6 +1,6 @@
-namespace ExampleData;
-
 using ExampleLib.Domain;
+
+namespace ExampleData;
 
 public class YourEntity : BaseEntity
 {
