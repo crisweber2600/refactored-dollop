@@ -25,7 +25,6 @@ public static class ServiceCollectionExtensions
         services.AddDbContext<YourDbContext>(o => o.UseSqlServer(connectionString));
         services.AddSingleton<IApplicationNameProvider>(new StaticApplicationNameProvider("ExampleTests"));
         services.AddScoped<IValidationService, ValidationService>();
-        services.AddScoped<IUnitOfWork, UnitOfWork<YourDbContext>>();
         return services;
     }
 
@@ -43,14 +42,13 @@ public static class ServiceCollectionExtensions
             sp.GetRequiredService<MongoClient>().GetDatabase(databaseName));
         services.AddSingleton<IApplicationNameProvider>(new StaticApplicationNameProvider("ExampleTests"));
         services.AddScoped<IValidationService, ValidationService>();
-        services.AddScoped<IUnitOfWork, MongoUnitOfWork>();
         services.AddScoped(typeof(IMongoCollectionInterceptor<>), typeof(MongoCollectionInterceptor<>));
         return services;
     }
 
     /// <summary>
     /// Generic database setup used by production examples.
-    /// Registers the DbContext, validation service and unit of work.
+    /// Registers the DbContext, validation service and generic repositories.
     /// </summary>
     public static IServiceCollection SetupDatabase<TContext>(
         this IServiceCollection services,
@@ -60,7 +58,6 @@ public static class ServiceCollectionExtensions
         services.AddDbContext<TContext>(o => o.UseSqlServer(connectionString));
         services.AddSingleton<IApplicationNameProvider>(new StaticApplicationNameProvider("ExampleTests"));
         services.AddScoped<IValidationService, ValidationService>();
-        services.AddScoped<IUnitOfWork, UnitOfWork<TContext>>();
         services.AddSingleton<ISummarisationPlanStore, InMemorySummarisationPlanStore>();
         services.AddScoped(typeof(IGenericRepository<>), typeof(EfGenericRepository<>));
         return services;
@@ -68,7 +65,7 @@ public static class ServiceCollectionExtensions
 
     /// <summary>
     /// Generic MongoDB setup mirroring <see cref="SetupDatabase{TContext}"/>.
-    /// Registers the Mongo client, database, validation service and unit of work.
+    /// Registers the Mongo client, database, validation service and repositories.
     /// </summary>
     public static IServiceCollection SetupMongoDatabase(
         this IServiceCollection services,
@@ -80,7 +77,6 @@ public static class ServiceCollectionExtensions
             sp.GetRequiredService<MongoClient>().GetDatabase(databaseName));
         services.AddSingleton<IApplicationNameProvider>(new StaticApplicationNameProvider("ExampleTests"));
         services.AddScoped<IValidationService, ValidationService>();
-        services.AddScoped<IUnitOfWork, MongoUnitOfWork>();
         services.AddScoped(typeof(IMongoCollectionInterceptor<>), typeof(MongoCollectionInterceptor<>));
         services.AddSingleton<ISummarisationPlanStore, InMemorySummarisationPlanStore>();
         services.AddScoped(typeof(IGenericRepository<>), typeof(MongoGenericRepository<>));
