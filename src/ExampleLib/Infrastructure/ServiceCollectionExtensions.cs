@@ -2,6 +2,7 @@ using System.Reflection;
 using ExampleLib.Domain;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.EntityFrameworkCore;
+using MongoDB.Driver;
 
 namespace ExampleLib.Infrastructure;
 
@@ -91,24 +92,30 @@ public static class ServiceCollectionExtensions
         // Register ISaveAuditRepository if not already registered - this is required for IValidationService
         if (!services.Any(x => x.ServiceType == typeof(ISaveAuditRepository)))
         {
-            // Use a minimal mock implementation for testing scenarios
-            // In real applications, this should be properly configured via AddExampleLibValidation
+            // Find what DbContext types are registered before building the provider
+            var dbContextType = FindRegisteredDbContextType(services);
+            
+            // Use a deferred factory that resolves DbContext at runtime
             services.AddScoped<ISaveAuditRepository>(sp =>
             {
-                // Try to get TheNannyDbContext first, fall back to any DbContext
-                var dbContext = sp.GetService<TheNannyDbContext>() ?? 
-                               sp.GetService<DbContext>();
-                
-                if (dbContext == null)
+                // Try to get TheNannyDbContext first
+                var theNannyDbContext = sp.GetService<TheNannyDbContext>();
+                if (theNannyDbContext != null)
                 {
-                    throw new InvalidOperationException(
-                        "No DbContext is registered. When using AddValidationRunner, " +
-                        "you must register a DbContext (preferably TheNannyDbContext) using " +
-                        "services.AddDbContext<TheNannyDbContext>() or similar, or use " +
-                        "AddExampleLibValidation() which handles this automatically.");
+                    return new EfSaveAuditRepository(theNannyDbContext);
                 }
                 
-                return new EfSaveAuditRepository(dbContext);
+                // Use the found DbContext type
+                if (dbContextType != null)
+                {
+                    var dbContext = (DbContext)sp.GetRequiredService(dbContextType);
+                    return new EfSaveAuditRepository(dbContext);
+                }
+                
+                throw new InvalidOperationException(
+                    "No DbContext is registered. When using Entity Framework with ExampleLib, " +
+                    "you must register a DbContext (preferably TheNannyDbContext) using " +
+                    "services.AddDbContext<TheNannyDbContext>() or similar.");
             });
         }
 
@@ -226,9 +233,14 @@ public static class ServiceCollectionExtensions
         this IServiceCollection services,
         Action<ConfigurableEntityIdProvider> configure)
     {
-        var provider = new ConfigurableEntityIdProvider();
-        configure(provider);
-        services.AddSingleton<IEntityIdProvider>(provider);
+        // Only register if no IEntityIdProvider is already registered
+        var existingProviderDescriptor = services.FirstOrDefault(x => x.ServiceType == typeof(IEntityIdProvider));
+        if (existingProviderDescriptor == null)
+        {
+            var provider = new ConfigurableEntityIdProvider();
+            configure(provider);
+            services.AddSingleton<IEntityIdProvider>(provider);
+        }
         return services;
     }
 
@@ -242,10 +254,15 @@ public static class ServiceCollectionExtensions
         this IServiceCollection services,
         params string[] propertyPriority)
     {
-        var provider = propertyPriority.Length > 0 
-            ? new ReflectionBasedEntityIdProvider(propertyPriority)
-            : new ReflectionBasedEntityIdProvider();
-        services.AddSingleton<IEntityIdProvider>(provider);
+        // Only register if no IEntityIdProvider is already registered
+        var existingProviderDescriptor = services.FirstOrDefault(x => x.ServiceType == typeof(IEntityIdProvider));
+        if (existingProviderDescriptor == null)
+        {
+            var provider = propertyPriority.Length > 0 
+                ? new ReflectionBasedEntityIdProvider(propertyPriority)
+                : new ReflectionBasedEntityIdProvider();
+            services.AddSingleton<IEntityIdProvider>(provider);
+        }
         return services;
     }
 
@@ -258,6 +275,26 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddDefaultEntityIdProvider(this IServiceCollection services)
     {
         return services.AddReflectionBasedEntityIdProvider();
+    }
+
+    /// <summary>
+    /// Helper method to find registered DbContext types in the service collection.
+    /// </summary>
+    private static Type? FindRegisteredDbContextType(IServiceCollection services)
+    {
+        // Look for TheNannyDbContext first
+        var nannyDbContextDescriptor = services.FirstOrDefault(d => d.ServiceType == typeof(TheNannyDbContext));
+        if (nannyDbContextDescriptor != null)
+        {
+            return typeof(TheNannyDbContext);
+        }
+
+        // Look for any DbContext subclass registration
+        var dbContextDescriptor = services.FirstOrDefault(d => 
+            d.ServiceType.IsSubclassOf(typeof(DbContext)) && 
+            d.ServiceType != typeof(DbContext));
+        
+        return dbContextDescriptor?.ServiceType;
     }
 
     /// <summary>
@@ -292,6 +329,12 @@ public static class ServiceCollectionExtensions
                 new StaticApplicationNameProvider("ExampleLib-DefaultApp"));
         }
 
+        // Register EntityIdProvider if not already registered
+        if (!services.Any(x => x.ServiceType == typeof(IEntityIdProvider)))
+        {
+            services.AddDefaultEntityIdProvider();
+        }
+
         // Register core validation services
         services.AddValidatorService();
         
@@ -300,26 +343,45 @@ public static class ServiceCollectionExtensions
         {
             if (builder.PreferMongo)
             {
-                services.AddScoped<ISaveAuditRepository, MongoSaveAuditRepository>();
+                services.AddScoped<ISaveAuditRepository>(sp =>
+                {
+                    var mongoClient = sp.GetService<IMongoClient>();
+                    if (mongoClient == null)
+                    {
+                        throw new InvalidOperationException(
+                            "No IMongoClient is registered. When using MongoDB with ExampleLib, " +
+                            "you must register an IMongoClient using services.AddSingleton<IMongoClient>() " +
+                            "or similar MongoDB configuration.");
+                    }
+                    return new MongoSaveAuditRepository(mongoClient);
+                });
             }
             else
             {
-                // Register EfSaveAuditRepository with proper DbContext resolution
+                // Find what DbContext types are registered before building the provider
+                var dbContextType = FindRegisteredDbContextType(services);
+                
+                // Use a deferred factory that resolves DbContext at runtime
                 services.AddScoped<ISaveAuditRepository>(sp =>
                 {
-                    // Try to get TheNannyDbContext first, fall back to any DbContext
-                    var dbContext = sp.GetService<TheNannyDbContext>() ?? 
-                                   sp.GetService<DbContext>();
-                    
-                    if (dbContext == null)
+                    // First try TheNannyDbContext if available
+                    var theNannyDbContext = sp.GetService<TheNannyDbContext>();
+                    if (theNannyDbContext != null)
                     {
-                        throw new InvalidOperationException(
-                            "No DbContext is registered. When using Entity Framework with ExampleLib, " +
-                            "you must register a DbContext (preferably TheNannyDbContext) using " +
-                            "services.AddDbContext<TheNannyDbContext>() or similar.");
+                        return new EfSaveAuditRepository(theNannyDbContext);
                     }
                     
-                    return new EfSaveAuditRepository(dbContext);
+                    // Use the found DbContext type
+                    if (dbContextType != null)
+                    {
+                        var dbContext = (DbContext)sp.GetRequiredService(dbContextType);
+                        return new EfSaveAuditRepository(dbContext);
+                    }
+                    
+                    throw new InvalidOperationException(
+                        "No DbContext is registered. When using Entity Framework with ExampleLib, " +
+                        "you must register a DbContext (preferably TheNannyDbContext) using " +
+                        "services.AddDbContext<TheNannyDbContext>() or similar.");
                 });
             }
         }
@@ -334,12 +396,6 @@ public static class ServiceCollectionExtensions
         
         services.AddSingleton(typeof(ISummarisationValidator<>), typeof(SummarisationValidator<>));
         services.AddValidationRunner();
-
-        // Register EntityIdProvider if not already registered
-        if (!services.Any(x => x.ServiceType == typeof(IEntityIdProvider)))
-        {
-            services.AddDefaultEntityIdProvider();
-        }
 
         return services;
     }

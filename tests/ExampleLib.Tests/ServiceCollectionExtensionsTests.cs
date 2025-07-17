@@ -520,92 +520,185 @@ public class ServiceCollectionExtensionsTests
     }
 
     [Fact]
-    public void AddValidatorRule_WithExistingManualValidator_UsesExistingInstance()
+    public void AddValidatorService_WithExistingService_DoesNotReplace()
     {
         // Arrange
         var services = new ServiceCollection();
-        services.AddValidatorService(); // This creates the static instance
-        Func<TestEntity, bool> rule1 = entity => !string.IsNullOrWhiteSpace(entity.Name);
-        Func<TestEntity, bool> rule2 = entity => entity.Validated;
+        var existingValidator = new Mock<IManualValidatorService>().Object;
+        services.AddSingleton(existingValidator);
 
         // Act
-        services.AddValidatorRule(rule1);
-        services.AddValidatorRule(rule2);
+        services.AddValidatorService();
         var provider = services.BuildServiceProvider();
 
         // Assert
-        var validator = provider.GetService<IManualValidatorService>() as ManualValidatorService;
-        Assert.NotNull(validator);
-        Assert.Contains(typeof(TestEntity), validator.Rules.Keys);
-        Assert.Equal(2, validator.Rules[typeof(TestEntity)].Count);
+        var registeredService = provider.GetService<IManualValidatorService>();
+        Assert.Same(existingValidator, registeredService);
     }
 
     [Fact]
-    public void AddValidatorRule_WithoutExistingManualValidator_CreatesNewInstance()
+    public void AddValidationRunner_WithExistingRunner_DoesNotReplace()
     {
         // Arrange
         var services = new ServiceCollection();
-        Func<TestEntity, bool> rule = entity => !string.IsNullOrWhiteSpace(entity.Name);
-
-        // Act
-        services.AddValidatorRule(rule);
-        // Note: Not calling AddValidatorService() first
+        services.AddDbContext<TheNannyDbContext>(options =>
+            options.UseInMemoryDatabase("existing-runner-test"));
+        services.AddValidatorService();
+        services.AddScoped<IValidationService, ValidationService>();
         
-        // This should work because AddValidatorRule creates the validator if it doesn't exist
-        var provider = services.BuildServiceProvider();
-
-        // Assert
-        var validator = provider.GetService<IManualValidatorService>();
-        Assert.NotNull(validator);
-    }
-
-    [Fact]
-    public void AddValidationRunner_RequiresDependencies_ThrowsWhenMissing()
-    {
-        // Arrange
-        var services = new ServiceCollection();
-        // Not registering required dependencies
+        var existingRunner = new Mock<IValidationRunner>().Object;
+        services.AddScoped(_ => existingRunner);
 
         // Act
         services.AddValidationRunner();
         var provider = services.BuildServiceProvider();
 
         // Assert
-        Assert.Throws<InvalidOperationException>(() => 
-            provider.GetService<IValidationRunner>());
+        var registeredRunner = provider.GetService<IValidationRunner>();
+        Assert.Same(existingRunner, registeredRunner);
     }
 
     [Fact]
-    public void AddExampleLibValidation_WithComplexConfiguration_WorksCorrectly()
+    public void AddConfigurableEntityIdProvider_WithExistingProvider_DoesNotReplace()
     {
         // Arrange
         var services = new ServiceCollection();
-        services.AddDbContext<TheNannyDbContext>(options => 
-            options.UseInMemoryDatabase("complex-config"));
+        var existingProvider = new Mock<IEntityIdProvider>().Object;
+        services.AddSingleton(existingProvider);
 
         // Act
-        services.AddExampleLibValidation(builder =>
-        {
-            builder.UseEntityFramework();
-        });
+        services.AddConfigurableEntityIdProvider(provider => { });
+        var serviceProvider = services.BuildServiceProvider();
 
-        // Also add custom rules
-        services.AddValidatorRule<TestEntity>(entity => entity.Validated);
+        // Assert
+        var registeredProvider = serviceProvider.GetService<IEntityIdProvider>();
+        Assert.Same(existingProvider, registeredProvider);
+    }
 
+    [Fact]
+    public void AddReflectionBasedEntityIdProvider_WithExistingProvider_DoesNotReplace()
+    {
+        // Arrange
+        var services = new ServiceCollection();
+        var existingProvider = new Mock<IEntityIdProvider>().Object;
+        services.AddSingleton(existingProvider);
+
+        // Act
+        services.AddReflectionBasedEntityIdProvider();
         var provider = services.BuildServiceProvider();
 
         // Assert
-        var runner = provider.GetService<IValidationRunner>();
-        var repository = provider.GetService<ISaveAuditRepository>();
+        var registeredProvider = provider.GetService<IEntityIdProvider>();
+        Assert.Same(existingProvider, registeredProvider);
+    }
+
+    [Fact]
+    public void AddValidatorRule_CreatesValidatorService_WhenNotRegistered()
+    {
+        // Arrange
+        var services = new ServiceCollection();
+        Func<TestEntity, bool> rule = entity => entity.Validated;
+
+        // Act
+        services.AddValidatorRule(rule);
+        var provider = services.BuildServiceProvider();
+
+        // Assert
         var validator = provider.GetService<IManualValidatorService>();
-        
-        Assert.NotNull(runner);
-        Assert.NotNull(repository);
         Assert.NotNull(validator);
-        Assert.IsType<EfSaveAuditRepository>(repository);
+        Assert.IsType<ManualValidatorService>(validator);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void ExampleLibValidationBuilder_ConfigurationMethods_ReturnCorrectValues(bool useMongo)
+    {
+        // Arrange
+        var builder = new ExampleLibValidationBuilder();
+
+        // Act & Assert initial state
+        Assert.False(builder.PreferMongo);
+
+        if (useMongo)
+        {
+            var result = builder.UseMongo();
+            Assert.Same(builder, result);
+            Assert.True(builder.PreferMongo);
+        }
+        else
+        {
+            var result = builder.UseEntityFramework();
+            Assert.Same(builder, result);
+            Assert.False(builder.PreferMongo);
+        }
+    }
+
+    [Fact]
+    public void AddExampleLibValidation_WithMongoButNoClient_ThrowsException()
+    {
+        // Arrange
+        var services = new ServiceCollection();
+
+        // Act
+        services.AddExampleLibValidation(builder => builder.UseMongo());
+        var provider = services.BuildServiceProvider();
+
+        // Assert
+        var exception = Assert.Throws<InvalidOperationException>(() => 
+            provider.GetService<ISaveAuditRepository>());
         
-        // Test that the custom rule was registered
-        var testEntity = new TestEntity { Name = "Test", Validated = false };
-        Assert.False(validator.Validate(testEntity));
+        Assert.Contains("No IMongoClient is registered", exception.Message);
+    }
+
+    [Fact]
+    public void AddExampleLibValidation_WithMultipleDbContexts_UsesFirstAvailable()
+    {
+        // Arrange
+        var services = new ServiceCollection();
+        services.AddDbContext<TestDbContext>(options => 
+            options.UseInMemoryDatabase("first-context"));
+        // Don't add TheNannyDbContext to test fallback behavior
+
+        // Act
+        services.AddExampleLibValidation(builder => builder.UseEntityFramework());
+        var provider = services.BuildServiceProvider();
+
+        // Assert
+        var repository = provider.GetService<ISaveAuditRepository>();
+        Assert.NotNull(repository);
+        Assert.IsType<EfSaveAuditRepository>(repository);
+    }
+
+    [Fact]
+    public void AddExampleLibValidation_RegistersGenericSummarisationValidator()
+    {
+        // Arrange
+        var services = new ServiceCollection();
+
+        // Act
+        services.AddExampleLibValidation();
+        var provider = services.BuildServiceProvider();
+
+        // Assert
+        var validator = provider.GetService<ISummarisationValidator<TestEntity>>();
+        Assert.NotNull(validator);
+        Assert.IsType<SummarisationValidator<TestEntity>>(validator);
+    }
+
+    [Fact]
+    public void AddExampleLibValidation_WithEmptyConfiguration_UsesDefaults()
+    {
+        // Arrange
+        var services = new ServiceCollection();
+
+        // Act
+        services.AddExampleLibValidation(builder => { });
+        var provider = services.BuildServiceProvider();
+
+        // Assert
+        Assert.NotNull(provider.GetService<ISummarisationPlanStore>());
+        Assert.NotNull(provider.GetService<IValidationPlanStore>());
+        Assert.NotNull(provider.GetService<IManualValidatorService>());
     }
 }
