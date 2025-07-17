@@ -95,14 +95,25 @@ public static class ServiceCollectionExtensions
         this IServiceCollection services, 
         string? applicationName = null)
     {
-        // Core validation infrastructure (90% of setup)
-        services.AddSingleton<ISummarisationPlanStore, InMemorySummarisationPlanStore>();
-        services.AddSingleton<IValidationPlanStore, InMemoryValidationPlanStore>();
+        // Core validation infrastructure (90% of setup) - only register if not already present
+        if (!services.Any(x => x.ServiceType == typeof(ISummarisationPlanStore)))
+        {
+            services.AddSingleton<ISummarisationPlanStore, InMemorySummarisationPlanStore>();
+        }
+        
+        if (!services.Any(x => x.ServiceType == typeof(IValidationPlanStore)))
+        {
+            services.AddSingleton<IValidationPlanStore, InMemoryValidationPlanStore>();
+        }
         
         // Use applicationName if provided, otherwise use IApplicationNameProvider or default
         if (!string.IsNullOrEmpty(applicationName))
         {
-            services.AddSingleton<IApplicationNameProvider>(new StaticApplicationNameProvider(applicationName));
+            // Only register if no IApplicationNameProvider is already registered
+            if (!services.Any(x => x.ServiceType == typeof(IApplicationNameProvider)))
+            {
+                services.AddSingleton<IApplicationNameProvider>(new StaticApplicationNameProvider(applicationName));
+            }
         }
         else if (!services.Any(x => x.ServiceType == typeof(IApplicationNameProvider)))
         {
@@ -113,37 +124,47 @@ public static class ServiceCollectionExtensions
         services.AddDefaultEntityIdProvider();
         services.AddValidatorService();
         
-        // Register save audit repository with smart detection
-        services.AddScoped<ISaveAuditRepository>(sp =>
+        // Register save audit repository with smart detection - only if not already registered
+        if (!services.Any(x => x.ServiceType == typeof(ISaveAuditRepository)))
         {
-            // Try MongoDB first if available
-            var mongoClient = sp.GetService<IMongoClient>();
-            if (mongoClient != null)
+            services.AddScoped<ISaveAuditRepository>(sp =>
             {
-                return new MongoSaveAuditRepository(mongoClient);
-            }
-            
-            // Fall back to EF Core
-            var dbContext = sp.GetService<TheNannyDbContext>() ?? 
-                           sp.GetService<DbContext>();
-            if (dbContext != null)
-            {
-                return new EfSaveAuditRepository(dbContext);
-            }
-            
-            throw new InvalidOperationException(
-                "No database provider found. Register either a DbContext or IMongoClient.");
-        });
+                // Try MongoDB first if available
+                var mongoClient = sp.GetService<IMongoClient>();
+                if (mongoClient != null)
+                {
+                    return new MongoSaveAuditRepository(mongoClient);
+                }
+                
+                // Fall back to EF Core
+                var dbContext = sp.GetService<TheNannyDbContext>() ?? 
+                               sp.GetService<DbContext>();
+                if (dbContext != null)
+                {
+                    return new EfSaveAuditRepository(dbContext);
+                }
+                
+                throw new InvalidOperationException(
+                    "No database provider found. Register either a DbContext or IMongoClient.");
+            });
+        }
         
-        // Core validation services
-        services.AddScoped<IValidationService>(sp => new ValidationService(
-            sp.GetRequiredService<ISummarisationPlanStore>(),
-            sp.GetRequiredService<ISaveAuditRepository>(),
-            sp,
-            sp.GetRequiredService<IApplicationNameProvider>(),
-            sp.GetService<IEntityIdProvider>()));
+        // Core validation services - only register if not already present
+        if (!services.Any(x => x.ServiceType == typeof(IValidationService)))
+        {
+            services.AddScoped<IValidationService>(sp => new ValidationService(
+                sp.GetRequiredService<ISummarisationPlanStore>(),
+                sp.GetRequiredService<ISaveAuditRepository>(),
+                sp,
+                sp.GetRequiredService<IApplicationNameProvider>(),
+                sp.GetService<IEntityIdProvider>()));
+        }
         
-        services.AddSingleton(typeof(ISummarisationValidator<>), typeof(SummarisationValidator<>));
+        if (!services.Any(x => x.ServiceType == typeof(ISummarisationValidator<>)))
+        {
+            services.AddSingleton(typeof(ISummarisationValidator<>), typeof(SummarisationValidator<>));
+        }
+        
         services.AddValidationRunner();
         
         return services;

@@ -204,14 +204,33 @@ public class ExampleLibTestBuilder
             _services.AddSingleton(mockClient.Object);
         }
 
-        // Use the new simplified validation setup
-        _services.AddExampleLibValidationLegacy(builder =>
+        // Register the application name provider BEFORE calling AddExampleLibValidation
+        // This ensures our custom application name takes precedence
+        if (!string.IsNullOrEmpty(_applicationName))
         {
-            if (_useEntityFramework)
-                builder.UseEntityFramework();
-            else
+            // Remove any existing registration and add our custom one
+            var existingAppNameDescriptor = _services.FirstOrDefault(s => s.ServiceType == typeof(IApplicationNameProvider));
+            if (existingAppNameDescriptor != null)
+            {
+                _services.Remove(existingAppNameDescriptor);
+            }
+            _services.AddSingleton<IApplicationNameProvider>(new StaticApplicationNameProvider(_applicationName));
+        }
+
+        // Use the new simplified validation setup instead of legacy - this preserves existing services better
+        if (_useEntityFramework)
+        {
+            // Pass null for application name since we already registered the provider above
+            _services.AddExampleLibValidation();
+        }
+        else
+        {
+            // For MongoDB, we need to use the legacy method with configuration
+            _services.AddExampleLibValidationLegacy(builder =>
+            {
                 builder.UseMongo();
-        });
+            });
+        }
 
         // Build the provider
         var provider = _services.BuildServiceProvider();

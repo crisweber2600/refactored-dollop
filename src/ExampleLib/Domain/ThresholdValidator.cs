@@ -40,8 +40,9 @@ public static class ThresholdValidator
                     // If previous is zero, only allow if current is also zero
                     return current == 0;
                 }
-                var changePercent = Math.Abs((current - previous) / previous) * 100m; // Convert to percentage
-                return changePercent <= threshold;
+                // Calculate percentage change as a whole number (e.g., 20 = 20%)
+                var percentageChange = Math.Abs((current - previous) / previous * 100);
+                return percentageChange <= threshold;
             default:
                 if (throwOnUnsupported)
                     throw new NotSupportedException($"Unsupported ThresholdType: {type}");
