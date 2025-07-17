@@ -276,7 +276,7 @@ public static class ExampleLibFluentConfigurationExtensions
 
         // Register core validation services AFTER configuration, so we know the data provider preference
         // and the stores are properly configured
-        result.AddExampleLibValidation(validationBuilder =>
+        result.AddExampleLibValidationLegacy(validationBuilder =>
         {
             if (options.UseMongoDb)
                 validationBuilder.UseMongo();

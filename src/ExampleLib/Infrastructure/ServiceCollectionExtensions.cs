@@ -86,6 +86,88 @@ public static class ServiceCollectionExtensions
     }
 
     /// <summary>
+    /// Simplified validation setup that configures 90% of the validation infrastructure with one call.
+    /// </summary>
+    /// <param name="services">The service collection</param>
+    /// <param name="applicationName">The application name (will be retrieved from IApplicationNameProvider if not specified)</param>
+    /// <returns>The service collection for chaining</returns>
+    public static IServiceCollection AddExampleLibValidation(
+        this IServiceCollection services, 
+        string? applicationName = null)
+    {
+        // Core validation infrastructure (90% of setup)
+        services.AddSingleton<ISummarisationPlanStore, InMemorySummarisationPlanStore>();
+        services.AddSingleton<IValidationPlanStore, InMemoryValidationPlanStore>();
+        
+        // Use applicationName if provided, otherwise use IApplicationNameProvider or default
+        if (!string.IsNullOrEmpty(applicationName))
+        {
+            services.AddSingleton<IApplicationNameProvider>(new StaticApplicationNameProvider(applicationName));
+        }
+        else if (!services.Any(x => x.ServiceType == typeof(IApplicationNameProvider)))
+        {
+            // If no applicationName provided and no IApplicationNameProvider registered, use default
+            services.AddSingleton<IApplicationNameProvider>(new StaticApplicationNameProvider("ExampleLib-DefaultApp"));
+        }
+        
+        services.AddDefaultEntityIdProvider();
+        services.AddValidatorService();
+        
+        // Register save audit repository with smart detection
+        services.AddScoped<ISaveAuditRepository>(sp =>
+        {
+            // Try MongoDB first if available
+            var mongoClient = sp.GetService<IMongoClient>();
+            if (mongoClient != null)
+            {
+                return new MongoSaveAuditRepository(mongoClient);
+            }
+            
+            // Fall back to EF Core
+            var dbContext = sp.GetService<TheNannyDbContext>() ?? 
+                           sp.GetService<DbContext>();
+            if (dbContext != null)
+            {
+                return new EfSaveAuditRepository(dbContext);
+            }
+            
+            throw new InvalidOperationException(
+                "No database provider found. Register either a DbContext or IMongoClient.");
+        });
+        
+        // Core validation services
+        services.AddScoped<IValidationService>(sp => new ValidationService(
+            sp.GetRequiredService<ISummarisationPlanStore>(),
+            sp.GetRequiredService<ISaveAuditRepository>(),
+            sp,
+            sp.GetRequiredService<IApplicationNameProvider>(),
+            sp.GetService<IEntityIdProvider>()));
+        
+        services.AddSingleton(typeof(ISummarisationValidator<>), typeof(SummarisationValidator<>));
+        services.AddValidationRunner();
+        
+        return services;
+    }
+
+    /// <summary>
+    /// Configure validation plans and rules for specific entities.
+    /// Call this after AddExampleLibValidation() to set up entity-specific validations.
+    /// </summary>
+    /// <typeparam name="TEntity">The entity type</typeparam>
+    /// <param name="services">The service collection</param>
+    /// <param name="configure">Configuration action</param>
+    /// <returns>The service collection for chaining</returns>
+    public static IServiceCollection ConfigureValidation<TEntity>(
+        this IServiceCollection services,
+        Action<ValidationConfiguration<TEntity>> configure)
+        where TEntity : class, IValidatable, IBaseEntity, IRootEntity
+    {
+        var config = new ValidationConfiguration<TEntity>(services);
+        configure(config);
+        return services;
+    }
+
+    /// <summary>
     /// Register <see cref="ManualValidatorService"/> and the rule dictionary as singletons.
     /// </summary>
     public static IServiceCollection AddValidatorService(this IServiceCollection services)
@@ -344,11 +426,12 @@ public static class ServiceCollectionExtensions
     /// <summary>
     /// Convenience method to set up the complete ExampleLib validation stack with minimal configuration.
     /// Registers all core services including stores, validators, and providers with sensible defaults.
+    /// This is the LEGACY method, use AddExampleLibValidation(string) instead.
     /// </summary>
     /// <param name="services">The service collection</param>
     /// <param name="configure">Optional configuration action</param>
     /// <returns>The service collection for chaining</returns>
-    public static IServiceCollection AddExampleLibValidation(
+    public static IServiceCollection AddExampleLibValidationLegacy(
         this IServiceCollection services,
         Action<ExampleLibValidationBuilder>? configure = null)
     {
@@ -450,6 +533,109 @@ public static class ServiceCollectionExtensions
         services.AddValidationRunner();
 
         return services;
+    }
+}
+
+/// <summary>
+/// Fluent configuration for entity-specific validation setup.
+/// </summary>
+/// <typeparam name="TEntity">The entity type</typeparam>
+public class ValidationConfiguration<TEntity> 
+    where TEntity : class, IValidatable, IBaseEntity, IRootEntity
+{
+    private readonly IServiceCollection _services;
+    
+    public ValidationConfiguration(IServiceCollection services)
+    {
+        _services = services;
+    }
+    
+    /// <summary>
+    /// Add a summarisation plan with validation plan using the same metric.
+    /// </summary>
+    /// <param name="metricSelector">Function to select the metric from the entity</param>
+    /// <param name="summaryThreshold">Threshold for summarisation validation</param>
+    /// <param name="sequenceThreshold">Threshold for sequence validation (default: 10.0)</param>
+    /// <param name="thresholdType">Type of threshold comparison (default: RawDifference)</param>
+    /// <param name="strategy">Validation strategy (default: Average)</param>
+    /// <returns>The configuration for chaining</returns>
+    public ValidationConfiguration<TEntity> WithMetricValidation(
+        Func<TEntity, decimal> metricSelector,
+        decimal summaryThreshold,
+        double sequenceThreshold = 10.0,
+        ThresholdType thresholdType = ThresholdType.RawDifference,
+        ValidationStrategy strategy = ValidationStrategy.Average)
+    {
+        // Remove existing store registrations if they exist
+        var existingSummaryStore = _services.FirstOrDefault(d => d.ServiceType == typeof(ISummarisationPlanStore));
+        var existingValidationStore = _services.FirstOrDefault(d => d.ServiceType == typeof(IValidationPlanStore));
+        
+        if (existingSummaryStore != null)
+        {
+            _services.Remove(existingSummaryStore);
+        }
+        if (existingValidationStore != null)
+        {
+            _services.Remove(existingValidationStore);
+        }
+        
+        // Add summarisation plan store with our plan
+        _services.AddSingleton<ISummarisationPlanStore>(sp =>
+        {
+            var store = new InMemorySummarisationPlanStore();
+            var plan = new SummarisationPlan<TEntity>(metricSelector, thresholdType, summaryThreshold);
+            store.AddPlan(plan);
+            return store;
+        });
+        
+        // Add validation plan store with our plan
+        _services.AddSingleton<IValidationPlanStore>(sp =>
+        {
+            var store = new InMemoryValidationPlanStore();
+            var plan = new ValidationPlan(typeof(TEntity), sequenceThreshold, strategy);
+            store.AddPlan(plan);
+            return store;
+        });
+        
+        return this;
+    }
+    
+    /// <summary>
+    /// Add manual validation rules.
+    /// </summary>
+    /// <param name="rules">Validation rules to add</param>
+    /// <returns>The configuration for chaining</returns>
+    public ValidationConfiguration<TEntity> WithRules(params Func<TEntity, bool>[] rules)
+    {
+        foreach (var rule in rules)
+        {
+            _services.AddValidatorRule(rule);
+        }
+        return this;
+    }
+    
+    /// <summary>
+    /// Configure custom entity ID extraction for SaveAudit records.
+    /// </summary>
+    /// <param name="selector">Function to extract entity ID</param>
+    /// <returns>The configuration for chaining</returns>
+    public ValidationConfiguration<TEntity> WithEntityIdSelector(Func<TEntity, string> selector)
+    {
+        // Remove existing EntityIdProvider if it exists and add a configurable one
+        var existingProvider = _services.FirstOrDefault(d => d.ServiceType == typeof(IEntityIdProvider));
+        if (existingProvider != null)
+        {
+            _services.Remove(existingProvider);
+        }
+        
+        _services.AddSingleton<IEntityIdProvider>(sp =>
+        {
+            var provider = new ConfigurableEntityIdProvider();
+            provider.RegisterSelector(selector);
+            return provider;
+        });
+        
+        return this;
     }
 }
 

@@ -8,57 +8,39 @@ using WorkerService1.Services;
 
 var builder = Host.CreateApplicationBuilder(args);
 
-// STEP 1: Configure ExampleLib validation services using fluent configuration
-// This shows how easy it is to add ExampleLib to an existing application
-builder.Services.ConfigureExampleLib(config =>
-{
-    config.WithApplicationName(builder.Environment.ApplicationName)
-          .UseEntityFramework() // Primary data store
-          .WithConfigurableEntityIds(provider =>
-          {
-              // Register custom selectors for different entity types
-              provider.RegisterSelector<SampleEntity>(entity => entity.Name);
-              provider.RegisterSelector<OtherEntity>(entity => entity.Code);
-          })
-          .AddSummarisationPlan<SampleEntity>(
-              entity => (decimal)entity.Value,
-              ThresholdType.RawDifference,
-              0.0m)
-          .AddSummarisationPlan<OtherEntity>(
-              entity => entity.Amount,
-              ThresholdType.RawDifference,
-              1.0m)
-          .AddValidationPlan<SampleEntity>(threshold: 5.0, ValidationStrategy.Count)
-          .AddValidationPlan<OtherEntity>(threshold: 1.0, ValidationStrategy.Count)
-          .AddValidationRules<SampleEntity>(
-              entity => !string.IsNullOrWhiteSpace(entity.Name),
-              entity => entity.Value >= 0,
-              entity => entity.Validated)
-          .AddValidationRules<OtherEntity>(
-              entity => !string.IsNullOrWhiteSpace(entity.Code),
-              entity => entity.Amount > 0,
-              entity => entity.IsActive,
-              entity => entity.Validated);
-});
-
-// Remove default ISaveAuditRepository registration from ExampleLib
-var defaultAuditDescriptor = builder.Services.FirstOrDefault(d => d.ServiceType == typeof(ISaveAuditRepository));
-if (defaultAuditDescriptor != null)
-{
-    builder.Services.Remove(defaultAuditDescriptor);
-}
-
-builder.AddServiceDefaults();
+// STEP 1: Simplified Setup - 90% of validation infrastructure in one call
+// The application name is automatically retrieved from IApplicationNameProvider
+builder.Services.AddExampleLibValidation();
 
 // STEP 2: Configure your existing database contexts
+builder.AddServiceDefaults();
 builder.AddSqlServerDbContext<SampleDbContext>("Sql");
 builder.AddSqlServerDbContext<TheNannyDbContext>("Sql");
 builder.AddMongoDBClient("mongodb");
 
-// STEP 3: Register ExampleLib audit repository
-// Register EfSaveAuditRepository as the ISaveAuditRepository implementation using TheNannyDbContext
-builder.Services.AddScoped<ISaveAuditRepository>(sp =>
-    new EfSaveAuditRepository(sp.GetRequiredService<TheNannyDbContext>()));
+// STEP 3: Entity-specific validation setup using the new fluent API
+builder.Services.ConfigureValidation<SampleEntity>(config => config
+    .WithMetricValidation(
+        metricSelector: entity => (decimal)entity.Value,
+        summaryThreshold: 0.0m,
+        sequenceThreshold: 5.0)
+    .WithRules(
+        entity => !string.IsNullOrWhiteSpace(entity.Name),
+        entity => entity.Value >= 0,
+        entity => entity.Validated)
+    .WithEntityIdSelector(entity => entity.Name));
+
+builder.Services.ConfigureValidation<OtherEntity>(config => config
+    .WithMetricValidation(
+        metricSelector: entity => entity.Amount,
+        summaryThreshold: 1.0m,
+        sequenceThreshold: 1.0)
+    .WithRules(
+        entity => !string.IsNullOrWhiteSpace(entity.Code),
+        entity => entity.Amount > 0,
+        entity => entity.IsActive,
+        entity => entity.Validated)
+    .WithEntityIdSelector(entity => entity.Code));
 
 // STEP 4: Register EF repositories WITH ValidationRunner integration as primary implementation
 // This shows how to modify existing repository registrations to include validation
@@ -99,3 +81,30 @@ builder.Services.AddScoped<IOtherEntityService, OtherEntityService>();
 
 var host = builder.Build();
 host.Run();
+
+/*
+ * COMPARISON: Old vs New Approach
+ * 
+ * OLD (Fluent Configuration):
+ * - Required 25+ lines of configuration
+ * - Needed to manually configure stores, providers, and plans
+ * - Separate calls for summarisation and validation plans
+ * - Complex setup for EntityIdProvider
+ * - Manual dependency management
+ * 
+ * NEW (Simplified Approach):
+ * - Only 3 key method calls: AddExampleLibValidation() + ConfigureValidation<T>()
+ * - 90% of infrastructure setup in one call
+ * - Combined metric validation (handles both summarisation and sequence validation)
+ * - Fluent entity-specific configuration
+ * - Automatic dependency resolution
+ * - Application name automatically retrieved from IApplicationNameProvider
+ * 
+ * Benefits:
+ * 1. Reduced complexity: 25+ lines ? 3 method calls
+ * 2. Better discoverability: Fluent API guides users
+ * 3. Consistent patterns: Same approach for all entities
+ * 4. Less error-prone: Automatic dependency registration
+ * 5. Easier testing: Simplified test setup
+ * 6. Logical grouping: Related validations configured together
+ */

@@ -179,8 +179,8 @@ public class ExampleLibTestBuilder
             _services.AddSingleton(mockClient.Object);
         }
 
-        // Register ExampleLib validation services
-        _services.AddExampleLibValidation(builder =>
+        // Use the new simplified validation setup
+        _services.AddExampleLibValidationLegacy(builder =>
         {
             if (_useEntityFramework)
                 builder.UseEntityFramework();
@@ -188,14 +188,10 @@ public class ExampleLibTestBuilder
                 builder.UseMongo();
         });
 
-        // Override the application name provider to ensure tests have a known value
-        _services.RemoveAll<IApplicationNameProvider>();
-        _services.AddSingleton<IApplicationNameProvider>(new StaticApplicationNameProvider(_applicationName));
-
         // Build the provider
         var provider = _services.BuildServiceProvider();
 
-        // Configure plans after building the provider
+        // Configure plans after building the provider by directly manipulating the stores
         ConfigurePlans(provider);
 
         return provider;
@@ -234,41 +230,6 @@ public class ExampleLibTestBuilder
             }
         }
     }
-
-    /// <summary>
-    /// Add test validation rules for a specific entity type.
-    /// </summary>
-    /// <typeparam name="T">The entity type</typeparam>
-    /// <param name="rules">Validation rules to add</param>
-    /// <returns>The builder for chaining</returns>
-    public ExampleLibTestBuilder AddValidationRules<T>(params Func<T, bool>[] rules)
-        where T : class, IValidatable, IBaseEntity, IRootEntity
-    {
-        foreach (var rule in rules)
-        {
-            _services.AddValidatorRule(rule);
-        }
-        return this;
-    }
-
-    /// <summary>
-    /// Create a service collection and test builder for quick test setup.
-    /// </summary>
-    /// <returns>A new test builder with a fresh service collection</returns>
-    public static ExampleLibTestBuilder Create()
-    {
-        return new ExampleLibTestBuilder(new ServiceCollection());
-    }
-
-    /// <summary>
-    /// Create a test builder with an existing service collection.
-    /// </summary>
-    /// <param name="services">The service collection to use</param>
-    /// <returns>A new test builder</returns>
-    public static ExampleLibTestBuilder Create(IServiceCollection services)
-    {
-        return new ExampleLibTestBuilder(services);
-    }
 }
 
 /// <summary>
@@ -288,25 +249,22 @@ public class TestEntity : IValidatable, IBaseEntity, IRootEntity
 public static class ServiceCollectionTestExtensions
 {
     /// <summary>
-    /// Configure ExampleLib for testing with sensible defaults.
+    /// Simplified test setup extension using the new validation approach.
     /// </summary>
     /// <param name="services">The service collection</param>
-    /// <param name="configure">Optional configuration action</param>
+    /// <param name="applicationName">The application name for tests (default: "TestApp")</param>
     /// <returns>The service collection for chaining</returns>
     public static IServiceCollection AddExampleLibForTesting(
         this IServiceCollection services,
-        Action<ExampleLibTestBuilder>? configure = null)
+        string applicationName = "TestApp")
     {
-        var builder = new ExampleLibTestBuilder(services);
+        // Add in-memory database
+        services.AddDbContext<TheNannyDbContext>(options =>
+            options.UseInMemoryDatabase($"TestDb-{Guid.NewGuid()}"));
         
-        // Apply test defaults first
-        builder.WithTestDefaults();
+        // Add core validation using the new simplified approach
+        services.AddExampleLibValidation(applicationName);
         
-        // Then apply any custom configuration
-        configure?.Invoke(builder);
-        
-        // Build the configuration
-        builder.Build();
         return services;
     }
 
