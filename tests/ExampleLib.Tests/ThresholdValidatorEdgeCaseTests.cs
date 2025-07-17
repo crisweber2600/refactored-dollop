@@ -11,27 +11,27 @@ public class ThresholdValidatorEdgeCaseTests
     public void IsWithinThreshold_WithZeroCurrentValue_ReturnsCorrectResult()
     {
         // Act
-        var result = ThresholdValidator.IsWithinThreshold(0m, 100m, ThresholdType.PercentChange, 10m, false);
+        var result = ThresholdValidator.IsWithinThreshold(0m, 100m, ThresholdType.PercentChange, 0.1m, false);
 
         // Assert
-        Assert.False(result); // 0 to 100 is more than 10% change
+        Assert.False(result); // 100% change exceeds 10% threshold
     }
 
     [Fact]
     public void IsWithinThreshold_WithZeroPreviousValue_ReturnsCorrectResult()
     {
         // Act
-        var result = ThresholdValidator.IsWithinThreshold(100m, 0m, ThresholdType.PercentChange, 10m, false);
+        var result = ThresholdValidator.IsWithinThreshold(100m, 0m, ThresholdType.PercentChange, 0.1m, false);
 
         // Assert
-        Assert.False(result); // 100 to 0 is more than 10% change
+        Assert.False(result); // Any change from 0 exceeds threshold
     }
 
     [Fact]
     public void IsWithinThreshold_WithBothZeroValues_ReturnsTrue()
     {
         // Act
-        var result = ThresholdValidator.IsWithinThreshold(0m, 0m, ThresholdType.PercentChange, 10m, false);
+        var result = ThresholdValidator.IsWithinThreshold(0m, 0m, ThresholdType.PercentChange, 0.1m, false);
 
         // Assert
         Assert.True(result); // No change between two zero values
@@ -71,7 +71,7 @@ public class ThresholdValidatorEdgeCaseTests
     public void IsWithinThreshold_WithPercentageThresholdExceeded_ReturnsFalse()
     {
         // Act
-        var result = ThresholdValidator.IsWithinThreshold(150m, 100m, ThresholdType.PercentChange, 25m, false);
+        var result = ThresholdValidator.IsWithinThreshold(150m, 100m, ThresholdType.PercentChange, 0.25m, false);
 
         // Assert
         Assert.False(result); // 50% increase exceeds 25% threshold
@@ -81,7 +81,7 @@ public class ThresholdValidatorEdgeCaseTests
     public void IsWithinThreshold_WithPercentageThresholdMet_ReturnsTrue()
     {
         // Act
-        var result = ThresholdValidator.IsWithinThreshold(120m, 100m, ThresholdType.PercentChange, 25m, false);
+        var result = ThresholdValidator.IsWithinThreshold(120m, 100m, ThresholdType.PercentChange, 0.25m, false);
 
         // Assert
         Assert.True(result); // 20% increase is within 25% threshold
@@ -91,7 +91,7 @@ public class ThresholdValidatorEdgeCaseTests
     public void IsWithinThreshold_WithExactThresholdValue_ReturnsTrue()
     {
         // Act
-        var result = ThresholdValidator.IsWithinThreshold(125m, 100m, ThresholdType.PercentChange, 25m, false);
+        var result = ThresholdValidator.IsWithinThreshold(125m, 100m, ThresholdType.PercentChange, 0.25m, false);
 
         // Assert
         Assert.True(result); // Exactly 25% increase should be within threshold
@@ -101,7 +101,7 @@ public class ThresholdValidatorEdgeCaseTests
     public void IsWithinThreshold_WithValidatedTrueAndInvalidChange_ReturnsTrue()
     {
         // Act
-        var result = ThresholdValidator.IsWithinThreshold(200m, 100m, ThresholdType.PercentChange, 10m, true);
+        var result = ThresholdValidator.IsWithinThreshold(200m, 100m, ThresholdType.PercentChange, 0.1m, true);
 
         // Assert
         Assert.True(result); // Even with large change, validated=true should return true
@@ -111,7 +111,7 @@ public class ThresholdValidatorEdgeCaseTests
     public void IsWithinThreshold_WithValidatedFalseAndValidChange_ReturnsTrue()
     {
         // Act
-        var result = ThresholdValidator.IsWithinThreshold(105m, 100m, ThresholdType.PercentChange, 10m, false);
+        var result = ThresholdValidator.IsWithinThreshold(105m, 100m, ThresholdType.PercentChange, 0.1m, false);
 
         // Assert
         Assert.True(result); // Small change within threshold should return true
@@ -121,7 +121,7 @@ public class ThresholdValidatorEdgeCaseTests
     public void IsWithinThreshold_WithVerySmallPercentageChange_ReturnsTrue()
     {
         // Act
-        var result = ThresholdValidator.IsWithinThreshold(100.01m, 100m, ThresholdType.PercentChange, 1m, false);
+        var result = ThresholdValidator.IsWithinThreshold(100.01m, 100m, ThresholdType.PercentChange, 0.01m, false);
 
         // Assert
         Assert.True(result); // 0.01% change is within 1% threshold
@@ -131,7 +131,7 @@ public class ThresholdValidatorEdgeCaseTests
     public void IsWithinThreshold_WithLargeNumbers_ReturnsCorrectResult()
     {
         // Act
-        var result = ThresholdValidator.IsWithinThreshold(1000000m, 999000m, ThresholdType.PercentChange, 1m, false);
+        var result = ThresholdValidator.IsWithinThreshold(1000000m, 999000m, ThresholdType.PercentChange, 0.01m, false);
 
         // Assert
         Assert.True(result); // ~0.1% change is within 1% threshold
@@ -152,7 +152,7 @@ public class ThresholdValidatorEdgeCaseTests
     {
         // Act & Assert
         Assert.Throws<ArgumentException>(() =>
-            ThresholdValidator.IsWithinThreshold(100m, 90m, ThresholdType.PercentChange, -10m, false));
+            ThresholdValidator.IsWithinThreshold(100m, 90m, ThresholdType.PercentChange, -0.1m, false));
     }
 
     [Fact]
@@ -179,7 +179,7 @@ public class ThresholdValidatorEdgeCaseTests
     public void IsWithinThreshold_WithVeryLargeThreshold_ReturnsTrue()
     {
         // Act
-        var result = ThresholdValidator.IsWithinThreshold(1000m, 100m, ThresholdType.PercentChange, 10000m, false);
+        var result = ThresholdValidator.IsWithinThreshold(1000m, 100m, ThresholdType.PercentChange, 100m, false);
 
         // Assert
         Assert.True(result); // Even 900% change is within 10000% threshold
@@ -190,7 +190,7 @@ public class ThresholdValidatorEdgeCaseTests
     {
         // Test edge case where previous value is very small
         // Act
-        var result = ThresholdValidator.IsWithinThreshold(1m, 0.01m, ThresholdType.PercentChange, 10000m, false);
+        var result = ThresholdValidator.IsWithinThreshold(1m, 0.01m, ThresholdType.PercentChange, 100m, false);
 
         // Assert
         Assert.True(result); // Large percentage change should still be within very large threshold

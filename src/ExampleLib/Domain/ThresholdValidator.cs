@@ -1,3 +1,5 @@
+using System;
+
 namespace ExampleLib.Domain;
 
 /// <summary>
@@ -40,8 +42,8 @@ public static class ThresholdValidator
                     // If previous is zero, only allow if current is also zero
                     return current == 0;
                 }
-                // Calculate percentage change as a whole number (e.g., 20 = 20%)
-                var percentageChange = Math.Abs((current - previous) / previous * 100);
+                // Calculate percentage change as a decimal fraction (e.g., 0.2 = 20%)
+                var percentageChange = Math.Abs((current - previous) / previous);
                 return percentageChange <= threshold;
             default:
                 if (throwOnUnsupported)

@@ -15,7 +15,7 @@ public class ThresholdValidatorTests
 
         // Act & Assert
         var exception = Assert.Throws<NotSupportedException>(() =>
-            ThresholdValidator.IsWithinThreshold(100, 90, unsupportedType, 10, throwOnUnsupported: true));
+            ThresholdValidator.IsWithinThreshold(100, 90, unsupportedType, 0.1m, throwOnUnsupported: true));
         
         Assert.Contains("Unsupported ThresholdType", exception.Message);
     }
@@ -82,7 +82,7 @@ public class ThresholdValidatorTests
         // Arrange
         var current = 105m;
         var previous = 100m;
-        var threshold = 10m; // 10% threshold
+        var threshold = 0.1m; // 10% threshold as decimal fraction
 
         // Act
         var result = ThresholdValidator.IsWithinThreshold(current, previous, ThresholdType.PercentChange, threshold);
@@ -97,7 +97,7 @@ public class ThresholdValidatorTests
         // Arrange
         var current = 120m;
         var previous = 100m;
-        var threshold = 10m; // 10% threshold
+        var threshold = 0.1m; // 10% threshold as decimal fraction
 
         // Act
         var result = ThresholdValidator.IsWithinThreshold(current, previous, ThresholdType.PercentChange, threshold);
@@ -112,7 +112,7 @@ public class ThresholdValidatorTests
         // Arrange
         var current = 0m;
         var previous = 0m;
-        var threshold = 10m;
+        var threshold = 0.1m; // 10% threshold as decimal fraction
 
         // Act
         var result = ThresholdValidator.IsWithinThreshold(current, previous, ThresholdType.PercentChange, threshold);
@@ -127,7 +127,7 @@ public class ThresholdValidatorTests
         // Arrange
         var current = 100m;
         var previous = 0m;
-        var threshold = 10m;
+        var threshold = 0.1m; // 10% threshold as decimal fraction
 
         // Act
         var result = ThresholdValidator.IsWithinThreshold(current, previous, ThresholdType.PercentChange, threshold);
@@ -143,7 +143,7 @@ public class ThresholdValidatorTests
         var unsupportedType = (ThresholdType)999;
 
         // Act
-        var result = ThresholdValidator.IsWithinThreshold(100, 90, unsupportedType, 10, throwOnUnsupported: false);
+        var result = ThresholdValidator.IsWithinThreshold(100, 90, unsupportedType, 0.1m, throwOnUnsupported: false);
 
         // Assert
         Assert.True(result);
