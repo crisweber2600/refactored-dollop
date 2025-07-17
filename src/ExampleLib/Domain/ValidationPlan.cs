@@ -19,7 +19,7 @@ public class ValidationPlan
     /// </summary>
     public ValidationPlan(Type entityType, double threshold = 0d, ValidationStrategy strategy = ValidationStrategy.Count)
     {
-        EntityType = entityType;
+        EntityType = entityType ?? throw new ArgumentNullException(nameof(entityType));
         Strategy = strategy;
         Threshold = threshold;
     }

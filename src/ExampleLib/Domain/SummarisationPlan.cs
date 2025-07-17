@@ -16,7 +16,7 @@ public class SummarisationPlan<T>
 
     public SummarisationPlan(Func<T, decimal> metricSelector, ThresholdType thresholdType, decimal thresholdValue)
     {
-        MetricSelector = metricSelector;
+        MetricSelector = metricSelector ?? throw new ArgumentNullException(nameof(metricSelector));
         ThresholdType = thresholdType;
         ThresholdValue = thresholdValue;
     }
