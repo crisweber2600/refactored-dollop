@@ -1,3 +1,7 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+
 namespace ExampleLib.Domain;
 
 /// <summary>
@@ -30,7 +34,9 @@ public class ManualValidatorService : IManualValidatorService
             return true;
         }
 
-        foreach (var rule in rules)
+        // Create a copy to avoid "Collection was modified" exception during enumeration
+        var rulesCopy = new List<Func<object, bool>>(rules);
+        foreach (var rule in rulesCopy)
         {
             if (!rule(instance))
             {

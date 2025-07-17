@@ -23,6 +23,7 @@
 
   <ItemGroup>
     <Using Include="Xunit" />
+    <Using Include="ExampleLib.Tests.TestHelpers" />
   <ProjectReference Include="../../src/ExampleLib/ExampleLib.csproj" />
   </ItemGroup>
 

@@ -193,11 +193,17 @@ public class ExampleLibConfigurationBuilder
             // Add all the plans that were configured through the fluent API
             foreach (var plan in _summarisationPlans)
             {
-                var addPlanMethod = typeof(InMemorySummarisationPlanStore).GetMethod(nameof(InMemorySummarisationPlanStore.AddPlan));
+                // Use direct method call instead of reflection to avoid ambiguity
                 var planType = plan.GetType();
                 var entityType = planType.GetGenericArguments()[0];
-                var genericAddPlan = addPlanMethod!.MakeGenericMethod(entityType);
-                genericAddPlan.Invoke(store, new[] { plan });
+                
+                // Get the AddPlan method and make it generic for the specific entity type
+                var addPlanMethod = typeof(InMemorySummarisationPlanStore).GetMethod("AddPlan");
+                if (addPlanMethod != null)
+                {
+                    var genericAddPlan = addPlanMethod.MakeGenericMethod(entityType);
+                    genericAddPlan.Invoke(store, new[] { plan });
+                }
             }
             
             return store;
@@ -217,9 +223,7 @@ public class ExampleLibConfigurationBuilder
             // Add all the validation plans that were configured through the fluent API
             foreach (var plan in _validationPlans)
             {
-                var addPlanMethod = typeof(InMemoryValidationPlanStore).GetMethod(nameof(InMemoryValidationPlanStore.AddPlan));
-                var genericAddPlan = addPlanMethod!.MakeGenericMethod(plan.EntityType);
-                genericAddPlan.Invoke(store, new[] { plan });
+                store.AddPlan(plan);
             }
             
             return store;
@@ -247,7 +251,10 @@ public static class ExampleLibFluentConfigurationExtensions
         var options = new ExampleLibOptions();
         var builder = new ExampleLibConfigurationBuilder(services, options);
 
-        // Register core validation services first
+        // Configure the builder first to know which options are set
+        configure(builder);
+
+        // Register core validation services AFTER configuration, so we know the data provider preference
         services.AddExampleLibValidation(validationBuilder =>
         {
             if (options.UseMongoDb)
@@ -256,7 +263,6 @@ public static class ExampleLibFluentConfigurationExtensions
                 validationBuilder.UseEntityFramework();
         });
 
-        configure(builder);
         return builder.Build();
     }
 

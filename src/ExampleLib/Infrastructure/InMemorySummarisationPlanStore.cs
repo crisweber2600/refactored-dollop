@@ -19,15 +19,22 @@ public class InMemorySummarisationPlanStore : ISummarisationPlanStore
     }
 
     /// <summary>
-    /// Retrieve the plan for the specified entity type.
+    /// Retrieve the plan for the specified entity type. Returns null if no plan exists.
     /// </summary>
-    /// <exception cref="KeyNotFoundException">Thrown when no plan is registered for <typeparamref name="T"/>.</exception>
-    public SummarisationPlan<T> GetPlan<T>()
+    public SummarisationPlan<T>? GetPlan<T>()
     {
         if (_plans.TryGetValue(typeof(T), out var obj) && obj is SummarisationPlan<T> plan)
         {
             return plan;
         }
-        throw new KeyNotFoundException($"No SummarisationPlan registered for type {typeof(T).Name}");
+        return null;
+    }
+
+    /// <summary>
+    /// Check if a SummarisationPlan exists for entity type T.
+    /// </summary>
+    public bool HasPlan<T>()
+    {
+        return _plans.ContainsKey(typeof(T));
     }
 }

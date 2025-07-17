@@ -150,49 +150,73 @@ public static class SequenceValidator
     }
 
     /// <summary>
-    /// Validates a sequence of new entities by comparing each entity's value to the latest existing entity value from the database for the same discriminator key.
-    /// For example: Database has [{Name:"A",Value:7},{Name:"B",Value:4}], new list has [{Name:"A",Value:2},{Name:"B",Value:7}].
-    /// For Name="A": compares new Value=2 against existing Value=7 using the validation function.
+    /// Validates a sequence by comparing each entity's value to the latest audit value from a DbSet for the same key,
+    /// with proper filtering by ApplicationName and EntityType for SaveAudit records.
     /// </summary>
     /// <typeparam name="T">Entity type</typeparam>
-    /// <typeparam name="TKey">Discriminator key type (e.g., Name)</typeparam>
-    /// <typeparam name="TValue">Value type to compare (e.g., Value property)</typeparam>
-    /// <param name="newEntities">New entities to validate before insertion</param>
-    /// <param name="existingEntities">DbSet of existing entities in the database</param>
-    /// <param name="keySelector">Selects the discriminator key (e.g., Name)</param>
-    /// <param name="valueSelector">Selects the value to compare (e.g., Value property)</param>
-    /// <param name="validationFunc">Compares new value against existing value (e.g., using plan threshold)</param>
+    /// <typeparam name="TKey">Key type (whenever value)</typeparam>
+    /// <typeparam name="TValue">Value type</typeparam>
+    /// <param name="entities">Entities to validate</param>
+    /// <param name="audits">DbSet of SaveAudit records</param>
+    /// <param name="keySelector">Selects the key from the entity</param>
+    /// <param name="valueSelector">Selects the value from the entity</param>
+    /// <param name="auditValueSelector">Selects the value from the audit</param>
+    /// <param name="validationFunc">Compares entity value to audit value</param>
+    /// <param name="applicationName">Application name to filter audits by</param>
     /// <param name="cancellationToken">Cancellation token</param>
-    /// <returns>True if all new entities are valid against existing database values, otherwise false</returns>
-    public static async Task<bool> ValidateAgainstExistingEntitiesAsync<T, TKey, TValue>(
-        IEnumerable<T> newEntities,
-        DbSet<T> existingEntities,
+    /// <returns>True if all entities are valid, otherwise false</returns>
+    public static async Task<bool> ValidateAgainstSaveAuditsAsync<T, TKey, TValue>(
+        IEnumerable<T> entities,
+        DbSet<SaveAudit> audits,
         Func<T, TKey> keySelector,
         Func<T, TValue> valueSelector,
+        Func<SaveAudit, TValue> auditValueSelector,
         Func<TValue, TValue, bool> validationFunc,
+        string applicationName,
         CancellationToken cancellationToken = default)
         where TKey : notnull
-        where T : class
+        where T : IValidatable, IBaseEntity, IRootEntity
     {
-        foreach (var newEntity in newEntities)
+        var entityTypeName = typeof(T).Name;
+        Console.WriteLine($"Debug ValidateAgainstSaveAuditsAsync: Starting validation for {entityTypeName}, app={applicationName}");
+        
+        foreach (var entity in entities)
         {
-            var key = keySelector(newEntity);
-            var newValue = valueSelector(newEntity);
+            var key = keySelector(entity);
+            var stringKey = key?.ToString() ?? string.Empty;
             
-            // Find the latest existing entity with the same discriminator key (order by Id as the primary key)
-            var latestExisting = await existingEntities
-                .Where(e => keySelector(e).Equals(key))
-                .OrderByDescending(e => EF.Property<int>(e!, "Id"))
+            Console.WriteLine($"Debug ValidateAgainstSaveAuditsAsync: Looking for audit with EntityType={entityTypeName}, EntityId={stringKey}, ApplicationName={applicationName}");
+            
+            // Filter SaveAudit records by EntityType, EntityId, and ApplicationName
+            var latestAudit = await audits
+                .Where(a => a.EntityType == entityTypeName && 
+                           a.EntityId == stringKey && 
+                           a.ApplicationName == applicationName)
+                .OrderByDescending(a => a.Timestamp)
                 .FirstOrDefaultAsync(cancellationToken);
 
-            if (latestExisting != null)
+            Console.WriteLine($"Debug ValidateAgainstSaveAuditsAsync: Found audit: {latestAudit != null}");
+
+            if (latestAudit != null)
             {
-                var existingValue = valueSelector(latestExisting);
-                if (!validationFunc(newValue, existingValue))
+                var entityValue = valueSelector(entity);
+                var auditValue = auditValueSelector(latestAudit);
+                Console.WriteLine($"Debug ValidateAgainstSaveAuditsAsync: About to validate entityValue={entityValue} vs auditValue={auditValue}");
+                Console.WriteLine($"Debug ValidateAgainstSaveAuditsAsync: Audit MetricValue from DB: {latestAudit.MetricValue}");
+                
+                if (!validationFunc(entityValue, auditValue))
+                {
+                    Console.WriteLine($"Debug ValidateAgainstSaveAuditsAsync: Validation failed, returning false");
                     return false;
+                }
+                Console.WriteLine($"Debug ValidateAgainstSaveAuditsAsync: Validation passed for this entity");
             }
-            // If no existing entity found, validation passes (first time inserting this key)
+            else
+            {
+                Console.WriteLine($"Debug ValidateAgainstSaveAuditsAsync: No audit found, validation passes by default");
+            }
         }
+        Console.WriteLine($"Debug ValidateAgainstSaveAuditsAsync: All entities validated successfully, returning true");
         return true;
     }
 }

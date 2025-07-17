@@ -24,11 +24,11 @@ public class InMemoryValidationPlanStore : IValidationPlanStore
     /// <summary>
     /// Add a validation plan for the specified entity type.
     /// </summary>
-    /// <typeparam name="T">The entity type</typeparam>
     /// <param name="plan">The validation plan</param>
-    public void AddPlan<T>(ValidationPlan plan)
+    public void AddPlan(ValidationPlan plan)
     {
-        _plans[typeof(T)] = plan;
+        if (plan == null) throw new ArgumentNullException(nameof(plan));
+        _plans[plan.EntityType] = plan;
     }
 
     /// <summary>
