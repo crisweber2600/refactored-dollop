@@ -119,10 +119,10 @@ public class ValidationPlanFactoryTests
         Assert.NotNull(plans);
         Assert.NotEmpty(plans);
         
-        // Each plan should have a valid property type
+        // Each plan should have a valid entity type
         foreach (var plan in plans)
         {
-            Assert.NotNull(plan.PropertyType);
+            Assert.NotNull(plan.EntityType);
         }
     }
 
@@ -179,7 +179,7 @@ public class ValidationPlanFactoryTests
         Assert.Equal(distinctTypes.Count(), plans.Count);
         
         // Verify all property types are represented
-        var planTypes = plans.Select(p => p.PropertyType).ToList();
+        var planTypes = plans.Select(p => p.EntityType).ToList();
         foreach (var expectedType in distinctTypes)
         {
             Assert.Contains(expectedType, planTypes);

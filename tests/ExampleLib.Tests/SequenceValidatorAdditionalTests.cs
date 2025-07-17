@@ -462,17 +462,17 @@ public class SequenceValidatorAdditionalTests
         // Entity with null ID selector result
         var entities = new[] { new TestEntity { Id = 1, Value = 100 } };
 
-        // Act
-        var result = await SequenceValidator.ValidateAgainstSaveAuditsAsync<TestEntity, string?, decimal>(
+        // Act - Use string instead of string? to avoid nullability constraint violation
+        var result = await SequenceValidator.ValidateAgainstSaveAuditsAsync<TestEntity, string, decimal>(
             entities,
             context.SaveAudits,
-            e => null, // Returns null for key
+            e => string.Empty, // Return empty string instead of null
             e => e.Value,
             a => a.MetricValue,
             (entityVal, auditVal) => entityVal >= auditVal,
             "TestApp");
 
         // Assert
-        Assert.True(result); // Should handle null key gracefully
+        Assert.True(result); // Should handle empty string key gracefully
     }
 }

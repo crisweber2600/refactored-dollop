@@ -12,13 +12,13 @@ public class ValidationPlanTests
     public void ValidationPlan_Constructor_WithType_SetsPropertyCorrectly()
     {
         // Arrange
-        var propertyType = typeof(string);
+        var entityType = typeof(string);
 
         // Act
-        var plan = new ValidationPlan(propertyType);
+        var plan = new ValidationPlan(entityType);
 
         // Assert
-        Assert.Equal(propertyType, plan.PropertyType);
+        Assert.Equal(entityType, plan.EntityType);
     }
 
     [Fact]
@@ -42,12 +42,12 @@ public class ValidationPlanTests
         var decimalPlan = new ValidationPlan(decimalType);
 
         // Assert
-        Assert.Equal(intType, intPlan.PropertyType);
-        Assert.Equal(stringType, stringPlan.PropertyType);
-        Assert.Equal(decimalType, decimalPlan.PropertyType);
+        Assert.Equal(intType, intPlan.EntityType);
+        Assert.Equal(stringType, stringPlan.EntityType);
+        Assert.Equal(decimalType, decimalPlan.EntityType);
         
-        Assert.NotEqual(intPlan.PropertyType, stringPlan.PropertyType);
-        Assert.NotEqual(stringPlan.PropertyType, decimalPlan.PropertyType);
+        Assert.NotEqual(intPlan.EntityType, stringPlan.EntityType);
+        Assert.NotEqual(stringPlan.EntityType, decimalPlan.EntityType);
     }
 
     public class TestEntity : IValidatable, IBaseEntity, IRootEntity
