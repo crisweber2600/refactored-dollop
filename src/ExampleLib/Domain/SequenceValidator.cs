@@ -41,7 +41,7 @@ public static class SequenceValidator
 
             if (lastValues.TryGetValue(key, out var previous))
             {
-                if (!validationFunc(value, previous))
+                if (!validationFunc(previous, value)) // Call with (previous, current)
                     return false;
             }
 
@@ -60,7 +60,7 @@ public static class SequenceValidator
         Func<T, TValue> valueSelector)
         where TKey : notnull
     {
-        return Validate(items, wheneverSelector, valueSelector, (c, p) => EqualityComparer<TValue>.Default.Equals(c, p));
+        return Validate(items, wheneverSelector, valueSelector, (p, c) => EqualityComparer<TValue>.Default.Equals(c, p));
     }
 
     /// <summary>
@@ -75,7 +75,7 @@ public static class SequenceValidator
     {
         if (plan == null) throw new ArgumentNullException(nameof(plan));
 
-        return Validate(items, wheneverSelector, plan.MetricSelector, (cur, prev) =>
+        return Validate(items, wheneverSelector, plan.MetricSelector, (prev, cur) =>
             ThresholdValidator.IsWithinThreshold(
                 cur,
                 prev,
@@ -178,14 +178,11 @@ public static class SequenceValidator
         where T : IValidatable, IBaseEntity, IRootEntity
     {
         var entityTypeName = typeof(T).Name;
-        Console.WriteLine($"Debug ValidateAgainstSaveAuditsAsync: Starting validation for {entityTypeName}, app={applicationName}");
         
         foreach (var entity in entities)
         {
             var key = keySelector(entity);
             var stringKey = key?.ToString() ?? string.Empty;
-            
-            Console.WriteLine($"Debug ValidateAgainstSaveAuditsAsync: Looking for audit with EntityType={entityTypeName}, EntityId={stringKey}, ApplicationName={applicationName}");
             
             // Filter SaveAudit records by EntityType, EntityId, and ApplicationName
             var latestAudit = await audits
@@ -195,28 +192,17 @@ public static class SequenceValidator
                 .OrderByDescending(a => a.Timestamp)
                 .FirstOrDefaultAsync(cancellationToken);
 
-            Console.WriteLine($"Debug ValidateAgainstSaveAuditsAsync: Found audit: {latestAudit != null}");
-
             if (latestAudit != null)
             {
                 var entityValue = valueSelector(entity);
                 var auditValue = auditValueSelector(latestAudit);
-                Console.WriteLine($"Debug ValidateAgainstSaveAuditsAsync: About to validate entityValue={entityValue} vs auditValue={auditValue}");
-                Console.WriteLine($"Debug ValidateAgainstSaveAuditsAsync: Audit MetricValue from DB: {latestAudit.MetricValue}");
                 
                 if (!validationFunc(entityValue, auditValue))
                 {
-                    Console.WriteLine($"Debug ValidateAgainstSaveAuditsAsync: Validation failed, returning false");
                     return false;
                 }
-                Console.WriteLine($"Debug ValidateAgainstSaveAuditsAsync: Validation passed for this entity");
-            }
-            else
-            {
-                Console.WriteLine($"Debug ValidateAgainstSaveAuditsAsync: No audit found, validation passes by default");
             }
         }
-        Console.WriteLine($"Debug ValidateAgainstSaveAuditsAsync: All entities validated successfully, returning true");
         return true;
     }
 }

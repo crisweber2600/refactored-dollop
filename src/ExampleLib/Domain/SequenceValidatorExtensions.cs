@@ -90,8 +90,6 @@ public static class SequenceValidatorExtensions
         if (valueSelector == null) throw new ArgumentNullException(nameof(valueSelector));
         if (string.IsNullOrWhiteSpace(applicationName)) throw new ArgumentException("Application name cannot be null or empty", nameof(applicationName));
 
-        Console.WriteLine($"Debug ValidateWithPlanAndProviderAsync: Starting with threshold {plan.Threshold}, appName {applicationName}");
-
         return await ValidateAgainstAuditsWithProviderAsync(
             entities,
             audits,
@@ -101,9 +99,7 @@ public static class SequenceValidatorExtensions
             (newValue, auditValue) => {
                 var difference = Math.Abs(newValue - auditValue);
                 var threshold = (decimal)plan.Threshold;
-                var isValid = difference <= threshold;
-                Console.WriteLine($"Debug ValidateWithPlanAndProviderAsync: newValue={newValue}, auditValue={auditValue}, difference={difference}, threshold={threshold}, isValid={isValid}");
-                return isValid;
+                return difference <= threshold;
             },
             applicationName,
             cancellationToken

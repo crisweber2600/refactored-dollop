@@ -1,6 +1,7 @@
 using ExampleLib.Domain;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
+using Microsoft.EntityFrameworkCore;
 
 namespace ExampleLib.Infrastructure;
 
@@ -63,7 +64,7 @@ public class ExampleLibConfigurationBuilder
     public ExampleLibConfigurationBuilder WithReflectionBasedEntityIds(params string[] propertyPriority)
     {
         _options.EntityIdProvider.Type = EntityIdProviderType.Reflection;
-        if (propertyPriority.Length > 0)
+        if (propertyPriority != null && propertyPriority.Length > 0)
         {
             _options.EntityIdProvider.PropertyPriority = propertyPriority;
         }
@@ -157,6 +158,19 @@ public class ExampleLibConfigurationBuilder
     /// <returns>The service collection for continued configuration</returns>
     public IServiceCollection Build()
     {
+        // Validate that at least one data storage option is configured
+        if (!_options.UseMongoDb)
+        {
+            // Check if Entity Framework is properly configured
+            var dbContextRegistered = _services.Any(s => s.ServiceType.IsSubclassOf(typeof(DbContext)) || 
+                                                          s.ServiceType == typeof(DbContext) ||
+                                                          s.ServiceType.Name.Contains("DbContext"));
+            if (!dbContextRegistered)
+            {
+                throw new InvalidOperationException("No data storage configuration found. Either configure MongoDB using UseMongoDb() or Entity Framework using UseEntityFramework() with a registered DbContext.");
+            }
+        }
+
         // Register the application name provider
         _services.AddSingleton<IApplicationNameProvider>(
             new StaticApplicationNameProvider(_options.ApplicationName));
@@ -248,14 +262,21 @@ public static class ExampleLibFluentConfigurationExtensions
         this IServiceCollection services,
         Action<ExampleLibConfigurationBuilder> configure)
     {
+        if (configure == null)
+            throw new ArgumentNullException(nameof(configure));
+
         var options = new ExampleLibOptions();
         var builder = new ExampleLibConfigurationBuilder(services, options);
 
         // Configure the builder first to know which options are set
         configure(builder);
 
+        // Build the configuration first to register stores and providers
+        var result = builder.Build();
+
         // Register core validation services AFTER configuration, so we know the data provider preference
-        services.AddExampleLibValidation(validationBuilder =>
+        // and the stores are properly configured
+        result.AddExampleLibValidation(validationBuilder =>
         {
             if (options.UseMongoDb)
                 validationBuilder.UseMongo();
@@ -263,7 +284,7 @@ public static class ExampleLibFluentConfigurationExtensions
                 validationBuilder.UseEntityFramework();
         });
 
-        return builder.Build();
+        return result;
     }
 
     /// <summary>

@@ -16,13 +16,17 @@ public class ConfigurableEntityIdProvider : IEntityIdProvider
     /// <param name="selector">Function to extract the ID value from the entity</param>
     public void RegisterSelector<T>(Func<T, string> selector)
     {
+        if (selector == null)
+            throw new ArgumentNullException(nameof(selector));
+
         _selectors[typeof(T)] = obj => selector((T)obj);
     }
 
     /// <inheritdoc />
     public string GetEntityId<T>(T entity)
     {
-        if (entity == null) return string.Empty;
+        if (entity == null)
+            throw new ArgumentNullException(nameof(entity));
         
         var entityType = typeof(T);
         if (_selectors.TryGetValue(entityType, out var selector))
@@ -30,15 +34,8 @@ public class ConfigurableEntityIdProvider : IEntityIdProvider
             return selector(entity);
         }
 
-        // Fallback to Id property if available
-        var idProperty = entityType.GetProperty("Id");
-        if (idProperty != null)
-        {
-            var value = idProperty.GetValue(entity);
-            return value?.ToString() ?? string.Empty;
-        }
-
-        return string.Empty;
+        // If no selector is registered, throw an exception
+        throw new InvalidOperationException($"No selector registered for type {entityType.Name}");
     }
 }
 
@@ -48,7 +45,7 @@ public class ConfigurableEntityIdProvider : IEntityIdProvider
 public class ReflectionBasedEntityIdProvider : IEntityIdProvider
 {
     private readonly string[] _propertyPriority;
-    private readonly Dictionary<Type, PropertyInfo?> _cachedProperties = new();
+    private readonly Dictionary<Type, PropertyInfo[]> _cachedProperties = new();
 
     /// <summary>
     /// Create a reflection-based provider with default property priority.
@@ -64,46 +61,64 @@ public class ReflectionBasedEntityIdProvider : IEntityIdProvider
     /// <param name="propertyPriority">Property names in order of priority</param>
     public ReflectionBasedEntityIdProvider(params string[] propertyPriority)
     {
-        _propertyPriority = propertyPriority;
+        if (propertyPriority == null)
+            throw new ArgumentNullException(nameof(propertyPriority));
+        
+        _propertyPriority = propertyPriority.Length > 0 ? propertyPriority : new[] { "Name", "Code", "Key", "Identifier", "Title", "Label" };
     }
 
     /// <inheritdoc />
     public string GetEntityId<T>(T entity)
     {
-        if (entity == null) return string.Empty;
+        if (entity == null)
+            throw new ArgumentNullException(nameof(entity));
 
         var entityType = typeof(T);
-        if (!_cachedProperties.TryGetValue(entityType, out var property))
+        if (!_cachedProperties.TryGetValue(entityType, out var properties))
         {
-            property = FindBestProperty(entityType);
-            _cachedProperties[entityType] = property;
+            properties = FindPropertiesInPriorityOrder(entityType);
+            _cachedProperties[entityType] = properties;
         }
 
-        if (property != null)
+        // Try each property in order until we find a valid value
+        foreach (var property in properties)
         {
             var value = property.GetValue(entity);
-            return value?.ToString() ?? string.Empty;
+            var stringValue = value?.ToString();
+            
+            // Return the first non-null, non-empty, non-whitespace value
+            if (!string.IsNullOrWhiteSpace(stringValue))
+            {
+                return stringValue;
+            }
         }
 
-        return string.Empty;
+        // If no valid property found or all values are invalid, fall back to ToString()
+        return entity.ToString() ?? string.Empty;
     }
 
-    private PropertyInfo? FindBestProperty(Type entityType)
+    private PropertyInfo[] FindPropertiesInPriorityOrder(Type entityType)
     {
         var properties = entityType.GetProperties(BindingFlags.Public | BindingFlags.Instance)
             .Where(p => p.PropertyType == typeof(string) && p.CanRead)
             .ToList();
 
-        // First try the priority list
+        var result = new List<PropertyInfo>();
+
+        // Add properties based on priority list with case-sensitive matching
         foreach (var priorityName in _propertyPriority)
         {
             var property = properties.FirstOrDefault(p => 
-                string.Equals(p.Name, priorityName, StringComparison.OrdinalIgnoreCase));
+                string.Equals(p.Name, priorityName, StringComparison.Ordinal));
             if (property != null)
-                return property;
+            {
+                result.Add(property);
+            }
         }
 
-        // Then try any other suitable string property
-        return properties.FirstOrDefault();
+        // If no priority properties found, no fallback to other properties
+        // This matches the expected behavior from the tests
+        
+        return result.ToArray();
     }
 }

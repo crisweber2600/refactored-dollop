@@ -8,8 +8,8 @@ public class TheNannyDbContextFactory : IDesignTimeDbContextFactory<TheNannyDbCo
     public TheNannyDbContext CreateDbContext(string[] args)
     {
         var optionsBuilder = new DbContextOptionsBuilder<TheNannyDbContext>();
-        // Use a local development connection string or in-memory for migration generation
-        optionsBuilder.UseSqlServer("Server=(localdb)\\mssqllocaldb;Database=TheNannyDb;Trusted_Connection=True;");
+        // Use in-memory database for design-time and test scenarios
+        optionsBuilder.UseInMemoryDatabase("TheNannyDb");
         return new TheNannyDbContext(optionsBuilder.Options);
     }
 }

@@ -42,13 +42,10 @@ public class ValidationRunner : IValidationRunner
     {
         try
         {
-            Console.WriteLine($"Debug ValidateSequenceAsync: Starting sequence validation for {typeof(T).Name}");
-
             // Check if ValidationPlan exists for this entity type
             var validationPlanStore = _serviceProvider.GetService<IValidationPlanStore>();
             if (validationPlanStore == null || !validationPlanStore.HasPlan<T>())
             {
-                Console.WriteLine($"Debug ValidateSequenceAsync: No ValidationPlan found, returning true");
                 // No ValidationPlan configured, sequence validation passes by default
                 return true;
             }
@@ -56,24 +53,16 @@ public class ValidationRunner : IValidationRunner
             var plan = validationPlanStore.GetPlan<T>();
             if (plan == null)
             {
-                Console.WriteLine($"Debug ValidateSequenceAsync: ValidationPlan is null, returning true");
                 return true;
             }
-
-            Console.WriteLine($"Debug ValidateSequenceAsync: Found ValidationPlan with threshold {plan.Threshold}");
 
             // Get required services for sequence validation
             var auditDbContext = _serviceProvider.GetService<TheNannyDbContext>();
             var entityIdProvider = _serviceProvider.GetService<IEntityIdProvider>();
             var applicationNameProvider = _serviceProvider.GetService<IApplicationNameProvider>();
 
-            Console.WriteLine($"Debug ValidateSequenceAsync: auditDbContext null: {auditDbContext == null}");
-            Console.WriteLine($"Debug ValidateSequenceAsync: entityIdProvider null: {entityIdProvider == null}");
-            Console.WriteLine($"Debug ValidateSequenceAsync: applicationNameProvider null: {applicationNameProvider == null}");
-
             if (auditDbContext == null || entityIdProvider == null || applicationNameProvider == null)
             {
-                Console.WriteLine($"Debug ValidateSequenceAsync: Required services not available, returning true");
                 // Required services not available, skip sequence validation gracefully
                 return true;
             }
@@ -90,31 +79,21 @@ public class ValidationRunner : IValidationRunner
                     if (summarisationPlan != null)
                     {
                         valueSelector = new Func<T, decimal>(e => summarisationPlan.MetricSelector(e));
-                        Console.WriteLine($"Debug ValidateSequenceAsync: Found SummarisationPlan, using its value selector");
-                        
-                        // Debug: Test the value selector on our entity
-                        var testValue = valueSelector(entity);
-                        Console.WriteLine($"Debug ValidateSequenceAsync: Value selector applied to entity: {testValue}");
                     }
                     else
                     {
-                        Console.WriteLine($"Debug ValidateSequenceAsync: SummarisationPlan is null, using default value selector");
                         valueSelector = GetDefaultValueSelector<T>();
                     }
                 }
-                catch (Exception ex)
+                catch (Exception)
                 {
-                    Console.WriteLine($"Debug ValidateSequenceAsync: Exception getting SummarisationPlan: {ex.Message}, using default value selector");
                     valueSelector = GetDefaultValueSelector<T>();
                 }
             }
             else
             {
-                Console.WriteLine($"Debug ValidateSequenceAsync: No SummarisationPlan available, using default value selector");
                 valueSelector = GetDefaultValueSelector<T>();
             }
-
-            Console.WriteLine($"Debug ValidateSequenceAsync: About to call ValidateWithPlanAndProviderAsync");
 
             // Perform sequence validation against SaveAudit records
             var entities = new[] { entity };
@@ -128,12 +107,10 @@ public class ValidationRunner : IValidationRunner
                 cancellationToken
             );
 
-            Console.WriteLine($"Debug ValidateSequenceAsync: ValidateWithPlanAndProviderAsync returned: {result}");
             return result;
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            Console.WriteLine($"Debug ValidateSequenceAsync: Exception caught: {ex.Message}");
             // If sequence validation fails due to configuration issues or other exceptions,
             // we gracefully skip sequence validation (return true) rather than failing the entire validation
             // This ensures system resilience when sequence validation is misconfigured
@@ -145,7 +122,7 @@ public class ValidationRunner : IValidationRunner
     /// Gets a default value selector for the entity type T.
     /// Attempts to use a 'Value' property if available, otherwise falls back to Id.
     /// </summary>
-    private static Func<T, decimal> GetDefaultValueSelector<T>()
+    public Func<T, decimal> GetDefaultValueSelector<T>()
         where T : IValidatable, IBaseEntity, IRootEntity
     {
         var type = typeof(T);
@@ -162,6 +139,9 @@ public class ValidationRunner : IValidationRunner
         {
             return entity =>
             {
+                if (entity == null)
+                    throw new ArgumentNullException(nameof(entity));
+                    
                 var value = valueProperty.GetValue(entity);
                 return value switch
                 {
@@ -188,6 +168,9 @@ public class ValidationRunner : IValidationRunner
         {
             return entity =>
             {
+                if (entity == null)
+                    throw new ArgumentNullException(nameof(entity));
+                    
                 var value = amountProperty.GetValue(entity);
                 return value switch
                 {
@@ -202,6 +185,11 @@ public class ValidationRunner : IValidationRunner
         }
         
         // Fallback to using the Id property
-        return entity => (decimal)entity.Id;
+        return entity => 
+        {
+            if (entity == null)
+                throw new ArgumentNullException(nameof(entity));
+            return (decimal)entity.Id;
+        };
     }
 }

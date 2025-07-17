@@ -32,22 +32,45 @@ public class ValidationService : IValidationService
     public Task<bool> ValidateAndSaveAsync<T>(T entity, CancellationToken cancellationToken = default)
         where T : IValidatable, IBaseEntity, IRootEntity
     {
+        if (entity == null)
+            throw new ArgumentNullException(nameof(entity));
+
         try
         {
-            // Use EntityIdProvider if available, otherwise fall back to Id.ToString()
-            var entityId = _entityIdProvider?.GetEntityId(entity) ?? entity.Id.ToString();
+            // Check if summarisation plan exists
+            if (!_planStore.HasPlan<T>())
+            {
+                // No summarisation plan exists, validation passes by default (graceful degradation)
+                return Task.FromResult(true);
+            }
+
             var plan = _planStore.GetPlan<T>();
-            
-            // No summarisation plan exists, validation passes by default (graceful degradation)
             if (plan == null)
             {
                 return Task.FromResult(true);
             }
 
-            var validator = _provider.GetRequiredService<ISummarisationValidator<T>>();
+            // Use EntityIdProvider if available, otherwise fall back to Id.ToString()
+            var entityId = _entityIdProvider?.GetEntityId(entity) ?? entity.Id.ToString();
+            
+            // Always try to get the previous audit record for consistency
             var previous = _auditRepository.GetLastAudit(typeof(T).Name, entityId);
-            var isValid = validator.Validate(entity!, previous!, plan);
+            
+            var validator = _provider.GetService<ISummarisationValidator<T>>();
+            
+            bool isValid;
+            if (validator == null)
+            {
+                // If validator is not available, assume validation passes (graceful degradation)
+                isValid = true;
+            }
+            else
+            {
+                // Use the validator to determine if the entity is valid
+                isValid = validator.Validate(entity!, previous, plan);
+            }
 
+            // Create audit record - this might throw if ApplicationName or MetricSelector throw
             var audit = new SaveAudit
             {
                 EntityType = typeof(T).Name,
@@ -58,14 +81,21 @@ public class ValidationService : IValidationService
                 Validated = isValid,
                 Timestamp = DateTimeOffset.UtcNow
             };
+            
+            // Add audit record - this might throw
             _auditRepository.AddAudit(audit);
+            
             return Task.FromResult(isValid);
+        }
+        catch (ArgumentNullException)
+        {
+            throw; // Re-throw ArgumentNullException
         }
         catch
         {
             // If validation fails due to configuration issues or other exceptions,
-            // we gracefully return true (validation passes) to ensure system resilience
-            return Task.FromResult(true);
+            // we gracefully return false (validation fails) to ensure predictable behavior
+            return Task.FromResult(false);
         }
     }
 }

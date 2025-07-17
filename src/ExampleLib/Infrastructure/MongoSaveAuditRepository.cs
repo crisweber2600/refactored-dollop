@@ -15,23 +15,38 @@ public class MongoSaveAuditRepository : ISaveAuditRepository
 
     public MongoSaveAuditRepository(IMongoClient mongoClient)
     {
-        var database = mongoClient.GetDatabase("SampleEntities"); // Use the correct database name if different
+        _ = mongoClient ?? throw new ArgumentNullException(nameof(mongoClient));
+
+        var database = mongoClient.GetDatabase("ExampleLib"); // Use consistent database name
         _collection = database.GetCollection<SaveAudit>("SaveAudits");
     }
 
     /// <inheritdoc />
     public SaveAudit? GetLastAudit(string entityType, string entityId)
     {
-        var filter = Builders<SaveAudit>.Filter.Eq(a => a.EntityType, entityType) &
-                     Builders<SaveAudit>.Filter.Eq(a => a.EntityId, entityId);
-        return _collection.Find(filter)
-            .SortByDescending(a => a.Timestamp)
-            .FirstOrDefault();
+        try
+        {
+            var filter = Builders<SaveAudit>.Filter.Eq(a => a.EntityType, entityType) &
+                         Builders<SaveAudit>.Filter.Eq(a => a.EntityId, entityId);
+            
+            var sortDefinition = Builders<SaveAudit>.Sort.Descending(a => a.Timestamp);
+            
+            return _collection.Find(filter)
+                .Sort(sortDefinition)
+                .FirstOrDefault();
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     /// <inheritdoc />
     public void AddAudit(SaveAudit audit)
     {
+        if (audit == null)
+            throw new ArgumentNullException(nameof(audit));
+
         var filter = Builders<SaveAudit>.Filter.Eq(a => a.EntityType, audit.EntityType) &
                      Builders<SaveAudit>.Filter.Eq(a => a.EntityId, audit.EntityId) &
                      Builders<SaveAudit>.Filter.Eq(a => a.ApplicationName, audit.ApplicationName);
@@ -56,6 +71,9 @@ public class MongoSaveAuditRepository : ISaveAuditRepository
 
     public void AddBatchAudit(SaveAudit audit)
     {
+        if (audit == null)
+            throw new ArgumentNullException(nameof(audit));
+
         var batch = new SaveAudit
         {
             EntityType = audit.EntityType,

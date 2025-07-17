@@ -33,14 +33,55 @@ public static class ServiceCollectionRemovalExtensions
 /// </summary>
 public static class ServiceCollectionExtensions
 {
-    private static decimal DefaultSelector<T>(T entity)
+    internal static decimal DefaultSelector<T>(T entity)
     {
-        var prop = typeof(T).GetProperty("Id");
-        var value = prop?.GetValue(entity);
-        if (value != null && decimal.TryParse(value.ToString(), out var result))
+        if (entity == null)
+            throw new ArgumentNullException(nameof(entity));
+
+        // Look for decimal properties first
+        var decimalProperties = typeof(T).GetProperties()
+            .Where(p => p.PropertyType == typeof(decimal) && p.CanRead)
+            .ToList();
+
+        if (decimalProperties.Count > 0)
         {
-            return result;
+            // Return the first decimal property value
+            var value = decimalProperties[0].GetValue(entity);
+            return value != null ? (decimal)value : 0m;
         }
+
+        // If no decimal properties found, try to use the Id property
+        var idProperty = typeof(T).GetProperty("Id");
+        if (idProperty != null && idProperty.CanRead)
+        {
+            var idValue = idProperty.GetValue(entity);
+            if (idValue != null)
+            {
+                // Convert to decimal - handle int, long, and other numeric types
+                if (idValue is int intId)
+                    return (decimal)intId;
+                if (idValue is long longId)
+                    return (decimal)longId;
+                if (idValue is decimal decimalId)
+                    return decimalId;
+                if (idValue is double doubleId)
+                    return (decimal)doubleId;
+                if (idValue is float floatId)
+                    return (decimal)floatId;
+                
+                // Try to convert using Convert.ToDecimal as fallback
+                try
+                {
+                    return Convert.ToDecimal(idValue);
+                }
+                catch
+                {
+                    // If conversion fails, return 0
+                    return 0m;
+                }
+            }
+        }
+
         return 0m;
     }
 
@@ -155,6 +196,9 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddValidatorRule<T>(this IServiceCollection services, Func<T, bool> rule)
         where T : class, IValidatable, IBaseEntity, IRootEntity
     {
+        if (rule == null)
+            throw new ArgumentNullException(nameof(rule));
+
         // Find existing ManualValidatorService registration
         var existingDescriptor = services.FirstOrDefault(x => x.ServiceType == typeof(IManualValidatorService));
         
@@ -280,7 +324,7 @@ public static class ServiceCollectionExtensions
     /// <summary>
     /// Helper method to find registered DbContext types in the service collection.
     /// </summary>
-    private static Type? FindRegisteredDbContextType(IServiceCollection services)
+    internal static Type? FindRegisteredDbContextType(IServiceCollection services)
     {
         // Look for TheNannyDbContext first
         var nannyDbContextDescriptor = services.FirstOrDefault(d => d.ServiceType == typeof(TheNannyDbContext));
@@ -308,8 +352,16 @@ public static class ServiceCollectionExtensions
         this IServiceCollection services,
         Action<ExampleLibValidationBuilder>? configure = null)
     {
-        var builder = new ExampleLibValidationBuilder();
-        configure?.Invoke(builder);
+        ExampleLibValidationBuilder builder;
+        if (configure != null)
+        {
+            builder = new ExampleLibValidationBuilder();
+            configure(builder);
+        }
+        else
+        {
+            builder = new ExampleLibValidationBuilder(); // Use default settings
+        }
 
         // Register core stores
         if (!services.Any(x => x.ServiceType == typeof(ISummarisationPlanStore)))
