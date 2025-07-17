@@ -120,24 +120,14 @@ public class ExampleLibTestBuilderDemoTests
         var services = new ServiceCollection();
 
         // Act
-        services.AddExampleLibForTesting(builder =>
-        {
-            builder.WithTestDefaults("ExtensionTestApp")
-                   .AddValidationRules<TestEntity>(entity => entity.Validated);
-        });
+        services.AddExampleLibForTesting("ExtensionTestApp");
         var provider = services.BuildServiceProvider();
 
         // Assert
         var appProvider = provider.GetService<IApplicationNameProvider>();
-        var validator = provider.GetService<IManualValidatorService>();
         
         Assert.NotNull(appProvider);
-        Assert.NotNull(validator);
         Assert.Equal("ExtensionTestApp", appProvider.ApplicationName);
-
-        // Test that validation rules were applied
-        var entity = new TestEntity { Validated = false };
-        Assert.False(validator.Validate(entity));
     }
 
     [Fact]

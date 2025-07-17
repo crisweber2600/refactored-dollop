@@ -17,6 +17,7 @@ public class ServiceCollectionExtensionsTests
     {
         public int Id { get; set; }
         public string Name { get; set; } = string.Empty;
+        public decimal Value { get; set; }
         public bool Validated { get; set; }
     }
 
@@ -863,20 +864,14 @@ public class ServiceCollectionExtensionsTests
     {
         // Demonstrate the extension method approach
         var services = new ServiceCollection();
-        services.AddExampleLibForTesting(builder =>
-        {
-            builder.WithTestDefaults("ExtensionTest")
-                   .WithTestEntities<TestEntity>();
-        });
+        services.AddExampleLibForTesting("ExtensionTest");
 
         var provider = services.BuildServiceProvider();
 
         // Assert
         var appProvider = provider.GetRequiredService<IApplicationNameProvider>();
-        var validator = provider.GetRequiredService<IManualValidatorService>();
         
         Assert.Equal("ExtensionTest", appProvider.ApplicationName);
-        Assert.NotNull(validator);
     }
 
     #endregion

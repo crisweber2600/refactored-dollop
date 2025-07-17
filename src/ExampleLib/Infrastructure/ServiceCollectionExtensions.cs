@@ -150,6 +150,24 @@ public static class ServiceCollectionExtensions
     }
 
     /// <summary>
+    /// Simplified validation setup that configures 90% of the validation infrastructure with one call.
+    /// This overload accepts a configuration action for more advanced configuration.
+    /// </summary>
+    /// <param name="services">The service collection</param>
+    /// <param name="configure">Configuration action for advanced setup</param>
+    /// <returns>The service collection for chaining</returns>
+    public static IServiceCollection AddExampleLibValidation(
+        this IServiceCollection services, 
+        Action<ExampleLibValidationBuilder> configure)
+    {
+        if (configure == null)
+            throw new ArgumentNullException(nameof(configure));
+
+        // Use the legacy method which handles the configuration properly
+        return services.AddExampleLibValidationLegacy(configure);
+    }
+
+    /// <summary>
     /// Configure validation plans and rules for specific entities.
     /// Call this after AddExampleLibValidation() to set up entity-specific validations.
     /// </summary>

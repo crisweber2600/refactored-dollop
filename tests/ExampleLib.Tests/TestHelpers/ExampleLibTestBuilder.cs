@@ -27,6 +27,15 @@ public class ExampleLibTestBuilder
     }
 
     /// <summary>
+    /// Create a new test builder instance with a fresh service collection.
+    /// </summary>
+    /// <returns>A new ExampleLibTestBuilder instance</returns>
+    public static ExampleLibTestBuilder Create()
+    {
+        return new ExampleLibTestBuilder(new ServiceCollection());
+    }
+
+    /// <summary>
     /// Configure the test builder to use a specific in-memory database name.
     /// </summary>
     /// <param name="databaseName">The name for the in-memory database</param>
@@ -143,6 +152,22 @@ public class ExampleLibTestBuilder
         where T : class, IValidatable, IBaseEntity, IRootEntity
     {
         _validationPlans.Add((typeof(T), threshold, strategy));
+        return this;
+    }
+
+    /// <summary>
+    /// Add validation rules for an entity type.
+    /// </summary>
+    /// <typeparam name="T">The entity type</typeparam>
+    /// <param name="rules">Validation rules to add</param>
+    /// <returns>The builder for chaining</returns>
+    public ExampleLibTestBuilder AddValidationRules<T>(params Func<T, bool>[] rules)
+        where T : class, IValidatable, IBaseEntity, IRootEntity
+    {
+        foreach (var rule in rules)
+        {
+            _services.AddValidatorRule(rule);
+        }
         return this;
     }
 
