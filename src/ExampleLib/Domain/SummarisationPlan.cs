@@ -1,3 +1,5 @@
+using System;
+
 namespace ExampleLib.Domain;
 
 /// <summary>
@@ -86,6 +88,7 @@ public class SummarisationPlan<T>
                 prev,
                 plan.ThresholdType,
                 plan.ThresholdValue,
+                validated: false,
                 throwOnUnsupported: true));
     }
 }

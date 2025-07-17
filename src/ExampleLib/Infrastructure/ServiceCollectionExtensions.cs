@@ -605,36 +605,24 @@ public class ValidationConfiguration<TEntity>
         ThresholdType thresholdType = ThresholdType.RawDifference,
         ValidationStrategy strategy = ValidationStrategy.Average)
     {
-        // Remove existing store registrations if they exist
-        var existingSummaryStore = _services.FirstOrDefault(d => d.ServiceType == typeof(ISummarisationPlanStore));
-        var existingValidationStore = _services.FirstOrDefault(d => d.ServiceType == typeof(IValidationPlanStore));
+        // Store plan configurations for deferred registration
+        var summaryPlanConfig = new SummarisationPlanConfiguration
+        {
+            EntityType = typeof(TEntity),
+            MetricSelector = metricSelector,
+            ThresholdType = thresholdType,
+            ThresholdValue = summaryThreshold
+        };
         
-        if (existingSummaryStore != null)
+        var validationPlanConfig = new ValidationPlanConfiguration
         {
-            _services.Remove(existingSummaryStore);
-        }
-        if (existingValidationStore != null)
-        {
-            _services.Remove(existingValidationStore);
-        }
+            EntityType = typeof(TEntity),
+            Threshold = sequenceThreshold,
+            Strategy = strategy
+        };
         
-        // Add summarisation plan store with our plan
-        _services.AddSingleton<ISummarisationPlanStore>(sp =>
-        {
-            var store = new InMemorySummarisationPlanStore();
-            var plan = new SummarisationPlan<TEntity>(metricSelector, thresholdType, summaryThreshold);
-            store.AddPlan(plan);
-            return store;
-        });
-        
-        // Add validation plan store with our plan
-        _services.AddSingleton<IValidationPlanStore>(sp =>
-        {
-            var store = new InMemoryValidationPlanStore();
-            var plan = new ValidationPlan(typeof(TEntity), sequenceThreshold, strategy);
-            store.AddPlan(plan);
-            return store;
-        });
+        // Add to a configuration list that will be processed when the service provider is built
+        AddPlanConfiguration(summaryPlanConfig, validationPlanConfig);
         
         return this;
     }
@@ -675,6 +663,134 @@ public class ValidationConfiguration<TEntity>
         });
         
         return this;
+    }
+    
+    private void AddPlanConfiguration(SummarisationPlanConfiguration summaryConfig, ValidationPlanConfiguration validationConfig)
+    {
+        // Get or create the plan configuration registry
+        var registry = GetOrCreatePlanRegistry();
+        
+        // Add configurations to registry
+        registry.AddSummarisationPlan(summaryConfig);
+        registry.AddValidationPlan(validationConfig);
+        
+        // Update the store registrations
+        UpdateStoreRegistrations();
+    }
+    
+    private ValidationPlanRegistry GetOrCreatePlanRegistry()
+    {
+        // Check if registry already exists in services
+        var registryDescriptor = _services.FirstOrDefault(s => s.ServiceType == typeof(ValidationPlanRegistry));
+        if (registryDescriptor?.ImplementationInstance is ValidationPlanRegistry registry)
+        {
+            return registry;
+        }
+        
+        // Create new registry and register it
+        registry = new ValidationPlanRegistry();
+        if (registryDescriptor != null)
+        {
+            _services.Remove(registryDescriptor);
+        }
+        _services.AddSingleton(registry);
+        
+        return registry;
+    }
+    
+    private void UpdateStoreRegistrations()
+    {
+        var registry = GetOrCreatePlanRegistry();
+        
+        // Remove existing store registrations
+        var existingSummaryStore = _services.FirstOrDefault(d => d.ServiceType == typeof(ISummarisationPlanStore));
+        var existingValidationStore = _services.FirstOrDefault(d => d.ServiceType == typeof(IValidationPlanStore));
+        
+        if (existingSummaryStore != null)
+        {
+            _services.Remove(existingSummaryStore);
+        }
+        if (existingValidationStore != null)
+        {
+            _services.Remove(existingValidationStore);
+        }
+        
+        // Register new stores that use the registry
+        _services.AddSingleton<ISummarisationPlanStore>(sp =>
+        {
+            var planRegistry = sp.GetRequiredService<ValidationPlanRegistry>();
+            var store = new InMemorySummarisationPlanStore();
+            
+            foreach (var config in planRegistry.SummarisationPlans)
+            {
+                // Create the generic SummarisationPlan<T> using reflection
+                var planType = typeof(SummarisationPlan<>).MakeGenericType(config.EntityType);
+                var plan = Activator.CreateInstance(planType, config.MetricSelector, config.ThresholdType, config.ThresholdValue);
+                
+                if (plan != null)
+                {
+                    var addPlanMethod = typeof(InMemorySummarisationPlanStore).GetMethod("AddPlan");
+                    var genericMethod = addPlanMethod?.MakeGenericMethod(config.EntityType);
+                    genericMethod?.Invoke(store, new object[] { plan });
+                }
+            }
+            
+            return store;
+        });
+        
+        _services.AddSingleton<IValidationPlanStore>(sp =>
+        {
+            var planRegistry = sp.GetRequiredService<ValidationPlanRegistry>();
+            var store = new InMemoryValidationPlanStore();
+            
+            foreach (var config in planRegistry.ValidationPlans)
+            {
+                var plan = new ValidationPlan(config.EntityType, config.Threshold, config.Strategy);
+                store.AddPlan(plan);
+            }
+            
+            return store;
+        });
+    }
+}
+
+/// <summary>
+/// Configuration for a summarisation plan.
+/// </summary>
+public class SummarisationPlanConfiguration
+{
+    public Type EntityType { get; set; } = null!;
+    public object MetricSelector { get; set; } = null!;
+    public ThresholdType ThresholdType { get; set; }
+    public decimal ThresholdValue { get; set; }
+}
+
+/// <summary>
+/// Configuration for a validation plan.
+/// </summary>
+public class ValidationPlanConfiguration
+{
+    public Type EntityType { get; set; } = null!;
+    public double Threshold { get; set; }
+    public ValidationStrategy Strategy { get; set; }
+}
+
+/// <summary>
+/// Registry for collecting plan configurations before service provider is built.
+/// </summary>
+public class ValidationPlanRegistry
+{
+    public List<SummarisationPlanConfiguration> SummarisationPlans { get; } = new();
+    public List<ValidationPlanConfiguration> ValidationPlans { get; } = new();
+    
+    public void AddSummarisationPlan(SummarisationPlanConfiguration config)
+    {
+        SummarisationPlans.Add(config);
+    }
+    
+    public void AddValidationPlan(ValidationPlanConfiguration config)
+    {
+        ValidationPlans.Add(config);
     }
 }
 

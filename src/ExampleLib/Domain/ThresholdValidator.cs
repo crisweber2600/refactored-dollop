@@ -37,18 +37,26 @@ public static class ThresholdValidator
             case ThresholdType.RawDifference:
                 return Math.Abs(current - previous) <= threshold;
             case ThresholdType.PercentChange:
-                if (previous == 0)
-                {
-                    // If previous is zero, only allow if current is also zero
-                    return current == 0;
-                }
-                // Calculate percentage change as a decimal fraction (e.g., 0.2 = 20%)
-                var percentageChange = Math.Abs((current - previous) / previous);
-                return percentageChange <= threshold;
+                return ValidatePercentageChange(current, previous, threshold);
             default:
                 if (throwOnUnsupported)
                     throw new NotSupportedException($"Unsupported ThresholdType: {type}");
                 return true;
         }
+    }
+
+    private static bool ValidatePercentageChange(decimal current, decimal previous, decimal threshold)
+    {
+        if (previous == 0)
+        {
+            // If previous is zero, only allow if current is also zero
+            return current == 0;
+        }
+        
+        // Calculate percentage change as a decimal fraction (e.g., 0.2 = 20%)
+        var percentageChange = Math.Abs((current - previous) / previous);
+        
+        // The threshold is expected to be in decimal format (e.g., 0.1 = 10%)
+        return percentageChange <= threshold;
     }
 }

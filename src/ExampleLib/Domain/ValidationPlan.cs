@@ -1,3 +1,5 @@
+using System;
+
 namespace ExampleLib.Domain;
 
 /// <summary>
