@@ -33,6 +33,54 @@ public class ValidationRunner : IValidationRunner
         return summaryValid && manualValid && sequenceValid;
     }
 
+    /// <inheritdoc />
+    public async Task<bool> ValidateManyAsync<T>(IEnumerable<T> entities, CancellationToken cancellationToken = default)
+        where T : IValidatable, IBaseEntity, IRootEntity
+    {
+        if (entities == null)
+            throw new ArgumentNullException(nameof(entities));
+
+        var entityList = entities.ToList();
+        if (entityList.Count == 0)
+            return true;
+
+        // Execute validations in the correct order: Manual ? Sequence ? Summary
+        // For bulk validation, we need to validate all entities for each step
+        
+        // Step 1: Manual validation - check all entities
+        var manualValid = true;
+        foreach (var entity in entityList)
+        {
+            if (!_manualValidator.Validate(entity!))
+            {
+                manualValid = false;
+                break; // Fail fast for manual validation
+            }
+        }
+        
+        if (!manualValid)
+            return false;
+
+        // Step 2: Sequence validation - validate all entities as a collection
+        var sequenceValid = await ValidateSequenceManyAsync(entityList, cancellationToken);
+        
+        if (!sequenceValid)
+            return false;
+
+        // Step 3: Summary validation - validate each entity individually
+        var summaryValid = true;
+        foreach (var entity in entityList)
+        {
+            if (!await _validationService.ValidateAndSaveAsync(entity!, cancellationToken))
+            {
+                summaryValid = false;
+                break; // Fail fast for summary validation
+            }
+        }
+        
+        return summaryValid;
+    }
+
     /// <summary>
     /// Performs sequence validation using ValidationPlan if available.
     /// Validates against SaveAudit records using SequenceValidator extensions.
@@ -97,6 +145,90 @@ public class ValidationRunner : IValidationRunner
 
             // Perform sequence validation against SaveAudit records
             var entities = new[] { entity };
+            var result = await SequenceValidatorExtensions.ValidateWithPlanAndProviderAsync(
+                entities,
+                auditDbContext.SaveAudits,
+                entityIdProvider,
+                plan,
+                valueSelector,
+                applicationNameProvider.ApplicationName,
+                cancellationToken
+            );
+
+            return result;
+        }
+        catch (Exception)
+        {
+            // If sequence validation fails due to configuration issues or other exceptions,
+            // we gracefully skip sequence validation (return true) rather than failing the entire validation
+            // This ensures system resilience when sequence validation is misconfigured
+            return true;
+        }
+    }
+
+    /// <summary>
+    /// Performs sequence validation for a collection of entities using ValidationPlan if available.
+    /// Validates against SaveAudit records using SequenceValidator extensions.
+    /// </summary>
+    private async Task<bool> ValidateSequenceManyAsync<T>(IEnumerable<T> entities, CancellationToken cancellationToken = default)
+        where T : IValidatable, IBaseEntity, IRootEntity
+    {
+        try
+        {
+            // Check if ValidationPlan exists for this entity type
+            var validationPlanStore = _serviceProvider.GetService<IValidationPlanStore>();
+            if (validationPlanStore == null || !validationPlanStore.HasPlan<T>())
+            {
+                // No ValidationPlan configured, sequence validation passes by default
+                return true;
+            }
+
+            var plan = validationPlanStore.GetPlan<T>();
+            if (plan == null)
+            {
+                return true;
+            }
+
+            // Get required services for sequence validation
+            var auditDbContext = _serviceProvider.GetService<TheNannyDbContext>();
+            var entityIdProvider = _serviceProvider.GetService<IEntityIdProvider>();
+            var applicationNameProvider = _serviceProvider.GetService<IApplicationNameProvider>();
+
+            if (auditDbContext == null || entityIdProvider == null || applicationNameProvider == null)
+            {
+                // Required services not available, skip sequence validation gracefully
+                return true;
+            }
+
+            // Try to get the value selector from SummarisationPlan first, otherwise derive from entity properties
+            Func<T, decimal> valueSelector;
+            var summarisationPlanStore = _serviceProvider.GetService<ISummarisationPlanStore>();
+            
+            if (summarisationPlanStore != null && summarisationPlanStore.HasPlan<T>())
+            {
+                try
+                {
+                    var summarisationPlan = summarisationPlanStore.GetPlan<T>();
+                    if (summarisationPlan != null)
+                    {
+                        valueSelector = new Func<T, decimal>(e => summarisationPlan.MetricSelector(e));
+                    }
+                    else
+                    {
+                        valueSelector = GetDefaultValueSelector<T>();
+                    }
+                }
+                catch (Exception)
+                {
+                    valueSelector = GetDefaultValueSelector<T>();
+                }
+            }
+            else
+            {
+                valueSelector = GetDefaultValueSelector<T>();
+            }
+
+            // Perform sequence validation against SaveAudit records for the entire collection
             var result = await SequenceValidatorExtensions.ValidateWithPlanAndProviderAsync(
                 entities,
                 auditDbContext.SaveAudits,

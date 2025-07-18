@@ -39,6 +39,33 @@ namespace WorkerService1.Repositories
             await _context.SaveChangesAsync();
         }
 
+        /// <summary>
+        /// Add multiple entities with bulk validation using ValidationRunner.ValidateManyAsync.
+        /// This is more efficient than validating each entity individually.
+        /// </summary>
+        public async Task AddManyAsync(IEnumerable<T> entities)
+        {
+            if (entities == null)
+                throw new ArgumentNullException(nameof(entities));
+
+            var entityList = entities.ToList();
+            if (entityList.Count == 0)
+                return;
+
+            // INTEGRATION POINT: Use ExampleLib ValidationRunner for bulk validation
+            // This includes manual validation, summarisation validation, and sequence validation for all entities
+            var isValid = await _validationRunner.ValidateManyAsync(entityList);
+            
+            // Set validation status for all entities
+            foreach (var entity in entityList)
+            {
+                entity.Validated = isValid;
+            }
+            
+            _dbSet.AddRange(entityList);
+            await _context.SaveChangesAsync();
+        }
+
         public async Task UpdateAsync(T entity)
         {
             // Run validation before updating
@@ -46,6 +73,33 @@ namespace WorkerService1.Repositories
             entity.Validated = isValid;
             
             _dbSet.Update(entity);
+            await _context.SaveChangesAsync();
+        }
+
+        /// <summary>
+        /// Update multiple entities with bulk validation using ValidationRunner.ValidateManyAsync.
+        /// This is more efficient than validating each entity individually.
+        /// </summary>
+        public async Task UpdateManyAsync(IEnumerable<T> entities)
+        {
+            if (entities == null)
+                throw new ArgumentNullException(nameof(entities));
+
+            var entityList = entities.ToList();
+            if (entityList.Count == 0)
+                return;
+
+            // INTEGRATION POINT: Use ExampleLib ValidationRunner for bulk validation
+            // This includes manual validation, summarisation validation, and sequence validation for all entities
+            var isValid = await _validationRunner.ValidateManyAsync(entityList);
+            
+            // Set validation status for all entities
+            foreach (var entity in entityList)
+            {
+                entity.Validated = isValid;
+            }
+            
+            _dbSet.UpdateRange(entityList);
             await _context.SaveChangesAsync();
         }
 
@@ -63,6 +117,16 @@ namespace WorkerService1.Repositories
         {
             // INTEGRATION POINT: Expose ValidationRunner functionality to repository consumers
             return await _validationRunner.ValidateAsync(entity, cancellationToken);
+        }
+
+        /// <summary>
+        /// Validate multiple entities using bulk validation.
+        /// This is more efficient than validating each entity individually.
+        /// </summary>
+        public async Task<bool> ValidateManyAsync(IEnumerable<T> entities, CancellationToken cancellationToken = default)
+        {
+            // INTEGRATION POINT: Expose ValidationRunner bulk functionality to repository consumers
+            return await _validationRunner.ValidateManyAsync(entities, cancellationToken);
         }
 
         public async Task<T?> GetLastAsync()

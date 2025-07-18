@@ -12,9 +12,12 @@ namespace WorkerService1.Repositories
         Task<T?> GetByIdAsync(int id);
         Task<List<T>> GetAllAsync();
         Task AddAsync(T entity);
+        Task AddManyAsync(IEnumerable<T> entities);
         Task UpdateAsync(T entity);
+        Task UpdateManyAsync(IEnumerable<T> entities);
         Task DeleteAsync(int id);
         Task<bool> ValidateAsync(T entity, CancellationToken cancellationToken = default);
+        Task<bool> ValidateManyAsync(IEnumerable<T> entities, CancellationToken cancellationToken = default);
         Task<T?> GetLastAsync();
     }
 }
